@@ -14,6 +14,7 @@ import ReservationDetailScreen from "../screens/ReservationDetailScreen";
 import BookingsScreen from "../screens/BookingsScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import { useAuth } from "../store/useAuth";
+import RestaurantPanelScreen from "../screens/RestaurantPanelScreen";
 
 const Stack = createNativeStackNavigator();
 const Tabs = createBottomTabNavigator();
@@ -61,6 +62,7 @@ export default function RootNavigator() {
             <Stack.Screen name="Rezervasyon - Menü" component={ReservationStep2Screen} />
             <Stack.Screen name="Rezervasyon - Özet" component={ReservationStep3Screen} />
             <Stack.Screen name="Rezervasyon Detayı" component={ReservationDetailScreen} />
+             <Stack.Screen name="RestaurantPanel" component={RestaurantPanelScreen} />
           </>
         )}
       </Stack.Navigator>

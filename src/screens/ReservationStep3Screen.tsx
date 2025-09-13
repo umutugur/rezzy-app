@@ -1,140 +1,52 @@
-import React from "react";
-import { View, Alert } from "react-native";
-import { Screen, Text } from "../components/Themed";
-import Button from "../components/Button";
-import UploadButton from "../components/UploadButton";
+import React, { useEffect, useState } from "react";
+import { View, Text } from "react-native";
+import dayjs from "dayjs";
+import "dayjs/locale/tr";
 import { useReservation } from "../store/useReservation";
-import { createReservation, uploadReceipt } from "../api/reservations";
-import { getRestaurant } from "../api/restaurants";
-import * as Clipboard from "expo-clipboard";
-import { useNavigation } from "@react-navigation/native";
+import { getRestaurant, type Restaurant as ApiRestaurant } from "../api/restaurants";
 
-type Totals = { total: number; deposit: number };
+dayjs.locale("tr");
 
-export default function ReservationStep3Screen() {
-  const nav = useNavigation<any>();
-  const { restaurantId, dateTimeISO, selections, reset } = useReservation();
+type FixMenu = { _id?: string; title: string; description?: string; pricePerPerson: number; isActive?: boolean };
+type ExtendedRestaurant = ApiRestaurant & {
+  iban?: string; ibanName?: string; bankName?: string;
+  priceRange?: string; description?: string; menus?: FixMenu[];
+};
 
-  const [reservationId, setReservationId] = React.useState<string | undefined>();
-  const [totals, setTotals] = React.useState<Totals | undefined>();
-  const [iban, setIban] = React.useState<string | undefined>();
-  const [file, setFile] = React.useState<{ uri: string; name: string; type: string } | undefined>();
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | undefined>();
+export default function ReservationStep3Screen({ route }: any) {
+  const res = useReservation((s: any) => ({
+    restaurantId: s.restaurant,
+    dateTime: s.dateTime,
+    party: s.party,
+    menu: s.menu,
+  }));
 
-  // 1) Rezervasyonu oluştur
-  
-  const onCreate = async () => {
-    
-    if (!restaurantId || !dateTimeISO) return;
-    setLoading(true);
-    setError(undefined);
-    try {
-      const res = await createReservation({
-        restaurantId: restaurantId!,
-        dateTimeISO: dateTimeISO!,
-        selections,
-      });
-      const id = res.reservationId;
-      setReservationId(id);
-      setTotals({ total: res.total, deposit: res.deposit });
+  const restaurantId: string = String(route?.params?.restaurantId ?? res.restaurantId ?? "");
+  const dateTime: string = String(route?.params?.dateTime ?? res.dateTime ?? "");
+  const partySize: number = Number(route?.params?.party ?? res.party ?? 2);
 
-      // 2) IBAN bilgisini getir (restoran detayından)
-      try {
-        const r = await getRestaurant(restaurantId!);
-        setIban(r?.iban || r?.bank?.iban || r?.restaurant?.iban);
-      } catch {
-        // IBAN gelmezse de kullanıcı dekontu yükleyebilir
-      }
-    } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || "Rezervasyon oluşturulamadı");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [restaurant, setRestaurant] = useState<ExtendedRestaurant | null>(null);
 
-  // 3) Dekont yükle ve Detay’a geç
-  const onUpload = async () => {
+  useEffect(() => {
+    if (!restaurantId) return;
+    (async () => {
+      const data = (await getRestaurant(restaurantId)) as ExtendedRestaurant;
+      setRestaurant(data);
+    })();
+  }, [restaurantId]);
 
-    if (!reservationId || !file) return;
-    setLoading(true);
-    setError(undefined);
-    try {
-      await uploadReceipt(reservationId, file);
-      reset();
-      // Detay sayfasına replace: geri dönünce tekrar oluşturma ekranına dönmesin
-      nav.replace("Rezervasyon Detayı", { id: reservationId });
-    } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || "Dekont yüklenemedi");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const copyIban = async () => {
-    if (!iban) return;
-    await Clipboard.setStringAsync(iban);
-    Alert.alert("Kopyalandı", "IBAN panoya kopyalandı.");
-  };
+  const dateTimeLabel = dateTime ? dayjs(dateTime).format("DD MMM, HH:mm") : "";
 
   return (
-    <Screen>
-      <Text style={{ fontSize: 20, fontWeight: "700", marginBottom: 8 }}>Özet & Dekont</Text>
-
-      {/* 0. durum: daha oluşturulmadı */}
-      {!reservationId ? (
-        <>
-          <Text secondary>
-            Rezervasyon oluşturduktan sonra işletmenin IBAN’ına havale/EFT yapıp dekontu burada
-            yükleyeceksin.
-          </Text>
-          <View style={{ height: 12 }} />
-          <Button title="Rezervasyonu Oluştur" onPress={onCreate} loading={loading} />
-          {error && <Text style={{ color: "red", marginTop: 8 }}>{error}</Text>}
-        </>
-      ) : (
-        <>
-          {/* 1. durum: oluşturuldu → tutar + IBAN + upload */}
-          <View
-            style={{
-              borderWidth: 1,
-              borderColor: "#E6E6E6",
-              borderRadius: 12,
-              padding: 12,
-              marginBottom: 12,
-            }}
-          >
-            <Text style={{ fontWeight: "700", marginBottom: 6 }}>Tutar</Text>
-            <Text>Toplam: ₺{totals?.total}</Text>
-            <Text>Ön ödeme (%10): ₺{totals?.deposit}</Text>
-          </View>
-
-          <View
-            style={{
-              borderWidth: 1,
-              borderColor: "#E6E6E6",
-              borderRadius: 12,
-              padding: 12,
-              marginBottom: 12,
-              backgroundColor: "#FAFAFA",
-            }}
-          >
-            <Text style={{ fontWeight: "700", marginBottom: 6 }}>IBAN</Text>
-            <Text style={{ fontSize: 16, marginBottom: 8 }}>{iban || "IBAN bilgisi yüklenemedi"}</Text>
-            <Button title="IBAN'ı Kopyala" variant="outline" onPress={copyIban} disabled={!iban} />
-          </View>
-
-          <UploadButton onPicked={(f) => setFile(f)} />
-          <View style={{ height: 12 }} />
-          <Button
-            title="Dekontu Gönder & Tamamla"
-            onPress={onUpload}
-            loading={loading}
-            disabled={!file}
-          />
-          {error && <Text style={{ color: "red", marginTop: 8 }}>{error}</Text>}
-        </>
+    <View style={{ padding: 16 }}>
+      <Text style={{ fontWeight: "700", marginBottom: 8 }}>Rezervasyon Özeti</Text>
+      <Text>{restaurant?.name ?? "Restoran"}</Text>
+      {!!dateTimeLabel && <Text>{dateTimeLabel}</Text>}
+      <Text>Kişi: {partySize}</Text>
+      {!!restaurant?.bankName && <Text>Banka: {restaurant.bankName}</Text>}
+      {!!restaurant?.ibanName && !!restaurant?.iban && (
+        <Text>IBAN: {restaurant.ibanName} • {restaurant.iban}</Text>
       )}
-    </Screen>
+    </View>
   );
 }

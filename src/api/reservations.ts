@@ -1,151 +1,161 @@
-// api/reservations.ts
 import { api } from "./client";
-import * as FileSystem from "expo-file-system";
-import { useAuth } from "../store/useAuth";
+import { Platform } from "react-native";
 
-/* ---------- Types ---------- */
+export type ReservationStatus = "pending" | "confirmed" | "arrived" | "no_show" | "cancelled";
 
-export type ReservationLite = {
+export type Reservation = {
   _id: string;
-  restaurantId: { _id: string; name: string };
   dateTimeUTC: string;
-  status: "pending" | "confirmed" | "arrived" | "no_show" | "cancelled" | string;
+  partySize: number;
+  totalPrice: number;
+  depositAmount: number;
+  status: ReservationStatus;
   receiptUrl?: string;
-  partySize?: number;            // backend artık döndürüyor
-  totalPrice?: number;           // opsiyonel (liste için)
-  depositAmount?: number;        // opsiyonel (liste için)
+  user?: { name?: string; email?: string };
 };
 
-export async function getMyReservations(status?: string) {
-  const { data } = await api.get<ReservationLite[]>(
-    `/reservations${status ? `?status=${encodeURIComponent(status)}` : ""}`
+export type ReservationListResp = {
+  items: Reservation[];
+  total: number;
+  page: number;
+  limit: number;
+};
+
+// -----------------------------
+// ID normalize helper (restaurantId için)
+// -----------------------------
+function ensureId(val: any): string {
+  if (!val) return "";
+  if (typeof val === "string") {
+    const m = val.match(/ObjectId\('([0-9a-fA-F]{24})'\)/);
+    if (m) return m[1];
+    try {
+      const maybe = JSON.parse(val);
+      if (maybe && typeof maybe === "object" && maybe._id) return String(maybe._id);
+    } catch {}
+    const m2 = val.match(/_id['"]?\s*:\s*['"]?([0-9a-fA-F]{24})['"]?/);
+    if (m2) return m2[1];
+    return val;
+  }
+  if (typeof val === "object" && val !== null && "_id" in val) {
+    return String((val as any)._id || "");
+  }
+  return String(val);
+}
+
+export async function fetchReservationsByRestaurant(params: {
+  restaurantId: string;
+  from?: string;
+  to?: string;
+  status?: ReservationStatus;
+  page?: number;
+  limit?: number;
+}) {
+  const { restaurantId, ...q } = params;
+  const rid = ensureId(restaurantId);
+  const { data } = await api.get<ReservationListResp>(
+    `/restaurants/${encodeURIComponent(rid)}/reservations`,
+    { params: q }
   );
   return data;
 }
 
-export type ReservationSelectionDto = {
-  person: number;
-  menuId: string;
-  price: number; // kişi başı fiyat (snapshot)
+export async function updateReservationStatus(rid: string, next: ReservationStatus) {
+  if (next === "confirmed") {
+    const { data } = await api.post<{ ok: true; qrDataUrl?: string }>(
+      `/reservations/${rid}/approve`, {}
+    );
+    return data;
+  }
+  if (next === "cancelled") {
+    const { data } = await api.post<{ ok: true }>(
+      `/reservations/${rid}/reject`, {}
+    );
+    return data;
+  }
+  // Gerekirse diğer durumlar için backend eklenir
+  throw new Error("Desteklenmeyen durum geçişi");
+}
+
+export type ReservationStats = {
+  rangeLabel: string;
+  totalCount: number;
+  totalAmount: number;
+  confirmedCount: number;
+  pendingCount: number;
+  rejectedCount: number;
 };
 
-export type ReservationDto = {
-  _id: string;
-  restaurantId: { _id: string; name: string; depositRate?: number } | string;
-  userId: string;
-  dateTimeUTC: string;
-  status: "pending" | "confirmed" | "arrived" | "no_show" | "cancelled" | string;
-  receiptUrl?: string;
-  qrSig?: string;
+export async function fetchReservationStats(params: {
+  restaurantId: string;
+  start?: string; // YYYY-MM-DD
+  end?: string;   // YYYY-MM-DD
+}) {
+  const rid = ensureId(params.restaurantId);
+  const { start, end } = params;
+  const { data } = await api.get<{
+    range: { from: string; to: string };
+    counts: { total: number; pending: number; confirmed: number; arrived: number; cancelled: number };
+    totals: { gross: number; deposit: number };
+    byDay: Array<{ date: string; count: number; amount: number }>;
+  }>(`/restaurants/${encodeURIComponent(rid)}/insights`, { params: { from: start, to: end } });
 
-  // ↓ Backend’in detayda döndürdükleri
-  partySize: number;
-  selections: ReservationSelectionDto[];
-  totalPrice: number;
-  depositAmount: number;
+  return {
+    rangeLabel: `${data.range.from} - ${data.range.to}`,
+    totalCount: data.counts.total,
+    totalAmount: data.totals.gross,
+    confirmedCount: data.counts.confirmed,
+    pendingCount: data.counts.pending,
+    rejectedCount: data.counts.cancelled,
+  } as ReservationStats;
+}
 
-  checkinAt?: string;
-  cancelledAt?: string;
-  noShowAt?: string;
-  createdAt?: string;
-  updatedAt?: string;
-};
+// ----------------------------------------------------
+// Eklenen / Tamamlanan fonksiyonlar
+// ----------------------------------------------------
 
-export async function getReservation(reservationId: string) {
-  const { data } = await api.get<ReservationDto>(`/reservations/${reservationId}`);
+// (A) Müşteri rezervasyonu iptal et
+export async function cancelReservation(rid: string) {
+  const { data } = await api.post<{ ok: true; status: ReservationStatus }>(
+    `/reservations/${rid}/cancel`, {}
+  );
   return data;
 }
 
-/* ---------- Create ---------- */
-
-export type CreateReservationInput = {
-  restaurantId: string;
-  dateTimeISO: string;
-  selections: Array<{ menuId: string; person: number }>;
-  // partySize'ı burada vermesen de hesaplanır ve body'ye eklenir.
-};
-
-export type CreateReservationResponse = {
-  reservationId: string;
-  partySize: number;
-  total: number;
-  deposit: number;
-  status: "pending" | "confirmed" | "arrived" | "no_show" | "cancelled";
-  _id?: string;
-};
-
-function sumPartySize(selections: Array<{ person: number }>) {
-  return (selections || []).reduce((a, s) => a + (Number(s.person) || 0), 0);
+// (B) QR data URL getir (müşteri detay ekranında gösterilecek)
+export async function getReservationQR(rid: string) {
+  const { data } = await api.get<{ qrDataUrl: string }>(
+    `/reservations/${rid}/qr`
+  );
+  return data.qrDataUrl as string;
 }
 
-export async function createReservation(payload: CreateReservationInput): Promise<CreateReservationResponse> {
-  if (!payload?.selections?.length) {
-    throw new Error("En az bir seçim gerekli");
-  }
-  const partySize = sumPartySize(payload.selections);
-  if (partySize < 1) {
-    throw new Error("Kişi sayısı toplamı en az 1 olmalı");
-  }
-
-  const { data } = await api.post("/reservations", {
-    restaurantId: payload.restaurantId,
-    dateTimeISO: payload.dateTimeISO,
-    // 👇 Backend validator gereği zorunlu
-    partySize,
-    selections: payload.selections.map(s => ({
-      menuId: s.menuId,
-      person: Number(s.person) || 0,
-    })),
-  });
-
-  return data as CreateReservationResponse;
+// (C) Dekont yükleme — RN FormData
+function normalizeUri(uri: string) {
+  return Platform.OS === "ios" ? uri.replace("file://", "") : uri;
 }
 
-/* ---------- Receipt Upload ---------- */
-
-export async function uploadReceipt(
-  reservationId: string,
-  file: { uri: string; name: string; type: string }
+export async function uploadReservationReceipt(
+  rid: string,
+  file: { uri: string; name?: string; type?: string }
 ) {
-  const token = useAuth.getState().token;
-  const url = `${api.defaults.baseURL}/reservations/${reservationId}/receipt`;
+  const form = new FormData();
 
-  // Android content:// -> cache
-  let fileUri = file.uri;
-  if (fileUri.startsWith("content://")) {
-    const dest = `${FileSystem.cacheDirectory}${file.name}`;
-    await FileSystem.copyAsync({ from: fileUri, to: dest });
-    fileUri = dest;
-  }
+  // RN tip uyumu için bilinçli cast
+  const part = {
+    uri: normalizeUri(file.uri),
+    name: file.name ?? `receipt_${Date.now()}.jpg`,
+    type: file.type ?? "image/jpeg",
+  } as unknown as Blob;
 
-  const res = await FileSystem.uploadAsync(url!, fileUri, {
-    httpMethod: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-    uploadType: FileSystem.FileSystemUploadType.MULTIPART,
-    fieldName: "file",
-    mimeType: file.type,
-    parameters: { filename: file.name },
-  });
+  form.append("file", part);
 
-  if (res.status !== 200) {
-    throw new Error(`HTTP ${res.status}: ${res.body}`);
-  }
-
-  return JSON.parse(res.body) as {
-    receiptUrl: string;
-    status: string;
-    public_id?: string;
-  };
+  const { data } = await api.post<{ receiptUrl: string; status: string }>(
+    `/reservations/${rid}/receipt`,
+    form
+  );
+  return data;
 }
 
-/* ---------- Other actions ---------- */
-
-export async function approveReservation(reservationId: string) {
-  const { data } = await api.post(`/reservations/${reservationId}/approve`);
-  return data as { ok: boolean; qrDataUrl: string };
-}
-
-export async function cancelReservation(reservationId: string) {
-  const { data } = await api.post(`/reservations/${reservationId}/cancel`);
-  return data as { ok: boolean; status: string };
-}
+// (D) Eski çağrılara uyumluluk için kısa ad
+export const uploadReceipt = uploadReservationReceipt;

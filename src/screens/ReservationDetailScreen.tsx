@@ -1,13 +1,25 @@
 // screens/ReservationDetailScreen.tsx
 import React from "react";
-import { View, Alert, ActivityIndicator, ScrollView } from "react-native";
+import {
+  View,
+  Alert,
+  ActivityIndicator,
+  ScrollView,
+  Modal,
+  Image,
+  Pressable,
+} from "react-native";
 import { useRoute } from "@react-navigation/native";
 import { Screen, Text } from "../components/Themed";
 import Button from "../components/Button";
 import StatusBadge from "../components/StatusBadge";
 import ReceiptCard from "../components/ReceiptCard";
 import { useReservationDetail } from "../hooks/useReservationDetail";
-import { uploadReceipt, cancelReservation } from "../api/reservations";
+import {
+  uploadReceipt,         // ✅ api’de alias olarak mevcut
+  cancelReservation,     // ✅ eklendi
+  getReservationQR,      // ✅ eklendi
+} from "../api/reservations";
 import { formatDateTime } from "../utils/format";
 
 type Selection = { person: number; menuId: string; price: number };
@@ -30,7 +42,12 @@ export default function ReservationDetailScreen() {
   const [uploading, setUploading] = React.useState(false);
   const [canceling, setCanceling] = React.useState(false);
 
-  // Backend verilerini güvenli şekilde çıkar (undefined olsa da hook'lar koşulsuz çalışır)
+  // ✅ QR modal state
+  const [qrOpen, setQrOpen] = React.useState(false);
+  const [qrLoading, setQrLoading] = React.useState(false);
+  const [qrUrl, setQrUrl] = React.useState<string | null>(null);
+
+  // Backend verilerini güvenli şekilde çıkar
   const restaurantName = (r as any)?.restaurantId?.name ?? "";
   const dateTimeUTC = (r as any)?.dateTimeUTC as string | undefined;
   const status = ((r as any)?.status as string) ?? "pending";
@@ -43,7 +60,7 @@ export default function ReservationDetailScreen() {
   const selectionMode = (((r as any)?.selectionMode ?? "count") as "index" | "count");
   const menus = (((r as any)?.menus ?? []) as MenuLite[]) || [];
 
-  // Menü map ve gruplar: HOOK olarak her zaman çağrılıyor
+  // Menü map ve gruplar
   const menuMap = React.useMemo(() => {
     const m = new Map<string, MenuLite>();
     menus.forEach((x) => m.set(String(x._id), x));
@@ -68,6 +85,7 @@ export default function ReservationDetailScreen() {
   }, [selections, menuMap, selectionMode]);
 
   const canCancel = status === "pending";
+  const canShowQR = status === "confirmed";
 
   const handleReplace = async (file: { uri: string; name: string; type: string }) => {
     try {
@@ -107,7 +125,22 @@ export default function ReservationDetailScreen() {
     ]);
   };
 
-  // ----- RENDER: erken return yok; content değişkeniyle dallanıyoruz -----
+  // ✅ QR açma
+  const onOpenQR = async () => {
+    try {
+      setQrLoading(true);
+      // Sunucudan data URL al
+      const url = await getReservationQR(id);
+      setQrUrl(url);
+      setQrOpen(true);
+    } catch (e: any) {
+      Alert.alert("Hata", e?.message ?? "QR alınamadı.");
+    } finally {
+      setQrLoading(false);
+    }
+  };
+
+  // ----- RENDER -----
   let content: React.ReactNode = null;
 
   if (loading) {
@@ -223,10 +256,16 @@ export default function ReservationDetailScreen() {
 
         <View style={{ height: 24 }} />
 
-        {/* QR Bilgi */}
+        {/* ✅ QR Bilgi + Buton */}
         <Text style={{ fontWeight: "700", marginBottom: 8 }}>Giriş QR</Text>
-        {status === "confirmed" ? (
-          <Text secondary>Rezervasyonun onaylandı. QR üretildiğinde burada görünecek.</Text>
+        {canShowQR ? (
+          <>
+            <Button
+              title={qrLoading ? "QR getiriliyor..." : "QR Kodumu Göster"}
+              onPress={onOpenQR}
+              disabled={qrLoading}
+            />
+          </>
         ) : (
           <Text secondary>Onaylandıktan sonra QR burada görünecek.</Text>
         )}
@@ -239,6 +278,42 @@ export default function ReservationDetailScreen() {
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
         {content}
       </ScrollView>
+
+      {/* ✅ QR Modal */}
+      <Modal visible={qrOpen} transparent animationType="fade" onRequestClose={() => setQrOpen(false)}>
+        <View style={{
+          flex: 1, backgroundColor: "rgba(0,0,0,0.5)",
+          justifyContent: "center", alignItems: "center", padding: 24
+        }}>
+          <View style={{
+            width: "100%", maxWidth: 360, backgroundColor: "#fff",
+            borderRadius: 16, padding: 20, alignItems: "center"
+          }}>
+            <Text style={{ fontWeight: "700", marginBottom: 12 }}>Giriş QR Kodu</Text>
+
+            {!qrUrl ? (
+              <ActivityIndicator />
+            ) : (
+              <Image
+                source={{ uri: qrUrl }}
+                style={{ width: 260, height: 260, borderRadius: 12, backgroundColor: "#F3F4F6" }}
+                resizeMode="contain"
+              />
+            )}
+
+            <View style={{ height: 16 }} />
+            <Pressable
+              onPress={() => setQrOpen(false)}
+              style={{
+                paddingVertical: 12, paddingHorizontal: 18,
+                borderRadius: 999, backgroundColor: "#1F2937"
+              }}
+            >
+              <Text style={{ color: "#fff", fontWeight: "600" }}>Kapat</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </Screen>
   );
 }

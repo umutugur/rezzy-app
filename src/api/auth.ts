@@ -1,7 +1,13 @@
 import { api } from "./client";
-export async function login(email: string, password: string){
-  const { data } = await api.post("/auth/login", { email, password });
-  return data as { token: string };
+import type { User } from "../store/useAuth"; // oradan tipi al
+export type LoginResp = {
+  token: string;
+  user: User; // { id, name, role, restaurantId? ... } — store’da genişlettin
+};
+
+export async function login(email: string, password: string): Promise<LoginResp> {
+  const { data } = await api.post<LoginResp>("/auth/login", { email, password });
+  return data;
 }
 export async function register(name: string, email: string, password: string){
   const { data } = await api.post("/auth/register", { name, email, password, role:"customer" });
