@@ -1,11 +1,6 @@
 // src/screens/ReservationStep2Screen.tsx
 import React from "react";
-import {
-  View,
-  ScrollView,
-  ActivityIndicator,
-  TouchableOpacity,
-} from "react-native";
+import { View, ScrollView, ActivityIndicator, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Screen, Text } from "../components/Themed";
 import Button from "../components/Button";
@@ -18,24 +13,18 @@ type MenuItem = { _id: string; name: string; price: number };
 function parsePrice(input: any): number {
   if (input == null) return 0;
 
-  // sayı ise direkt döndür
   if (typeof input === "number" && isFinite(input)) return input;
 
-  // string ise: para sembolleri/boşlukları temizle, binlik noktasını sil, virgülü noktaya çevir
   if (typeof input === "string") {
     const cleaned = input
       .trim()
-      // para sembolleri ve harfleri at
       .replace(/[^\d.,-]/g, "")
-      // 1.234.567,89 → binlik noktalarını kaldır
       .replace(/\.(?=\d{3}(?:[^\d]|$))/g, "")
-      // son virgülü noktaya çevir
       .replace(",", ".");
     const n = Number(cleaned);
     return isFinite(n) ? n : 0;
   }
 
-  // obje ise olası alanları dene (value/amount/price/tl/try)
   if (typeof input === "object") {
     const candidates = [
       (input as any).value,
@@ -71,20 +60,18 @@ export default function ReservationStep2Screen() {
         const d = await getRestaurant(restaurantId);
         if (!alive) return;
 
-        // --- NORMALIZE (güçlü fiyat parse) ---
         const normalized: MenuItem[] = (d?.menus || []).map((m: any, idx: number) => ({
-  _id: String(m?._id ?? m?.id ?? m?.key ?? idx),
-  name: String(m?.name ?? m?.title ?? m?.label ?? `Menü ${idx + 1}`),
-  // ⬇️ Burada pricePerPerson ve muhtemel varyantlarını ilk sıraya aldık
-  price: parsePrice(
-    m?.pricePerPerson ??
-    m?.price_per_person ??
-    m?.price ??
-    m?.amount ??
-    m?.cost ??
-    m?.pricing
-  ),
-}));
+          _id: String(m?._id ?? m?.id ?? m?.key ?? idx),
+          name: String(m?.name ?? m?.title ?? m?.label ?? `Menü ${idx + 1}`),
+          price: parsePrice(
+            m?.pricePerPerson ??
+              m?.price_per_person ??
+              m?.price ??
+              m?.amount ??
+              m?.cost ??
+              m?.pricing
+          ),
+        }));
 
         setMenus(normalized);
         setError(null);
@@ -114,16 +101,14 @@ export default function ReservationStep2Screen() {
     selections.length === partySize && selections.every((s) => !!s.menuId);
 
   const onSelect = (personIndex: number, menuId: string) => {
-    setSelection(personIndex, menuId);
+    useReservation.getState().setSelection(personIndex, menuId);
   };
 
   return (
     <Screen>
       <View style={{ paddingBottom: 12 }}>
         <Text style={{ fontWeight: "800", fontSize: 18 }}>Kişi & Menü Seçimi</Text>
-        <Text secondary style={{ marginTop: 4 }}>
-          Her kişi için bir menü seçin.
-        </Text>
+        <Text secondary style={{ marginTop: 4 }}>Her kişi için bir menü seçin.</Text>
       </View>
 
       {loading ? (
@@ -169,7 +154,7 @@ export default function ReservationStep2Screen() {
                     const isSelected = selected === m._id;
                     return (
                       <TouchableOpacity
-                        key={m._id}
+                        key={`${personIndex}-${m._id}`}
                         onPress={() => onSelect(personIndex, m._id)}
                         activeOpacity={0.9}
                         style={{
@@ -188,7 +173,6 @@ export default function ReservationStep2Screen() {
                           </Text>
                         </View>
 
-                        {/* Radio */}
                         <View
                           style={{
                             width: 24,
@@ -220,7 +204,6 @@ export default function ReservationStep2Screen() {
             })}
           </ScrollView>
 
-          {/* Alt sabit buton */}
           <View
             style={{
               position: "absolute",

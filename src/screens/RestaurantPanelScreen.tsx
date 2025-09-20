@@ -1,21 +1,27 @@
-// src/screens/RestaurantPanelScreen.tsx
-import React, { useEffect, useRef, useState } from "react";
+// screens/RestaurantPanelScreen.tsx
+// Bu ekran restoran sahiplerinin yönetim panelidir. Buradan genel bilgiler,
+// menüler, masalar, çalışma saatleri ve rezervasyon politikaları düzenlenebilir.
+// Bu sürümde ayrıca rezervasyon listesi, dekont önizleme ve QR ile check-in bulunur.
+
+import React, { useEffect, useState } from "react";
 import {
   View,
+  Text,
   ScrollView,
-  StyleSheet,
   TextInput,
   TouchableOpacity,
   FlatList,
   Image,
   Alert,
   ActivityIndicator,
-  Text,
+  StyleSheet,
   Modal,
+  Linking,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useRoute } from "@react-navigation/native";
 import dayjs from "dayjs";
 import "dayjs/locale/tr";
+
 import { lightTheme } from "../theme/theme";
 import {
   getRestaurant,
@@ -23,49 +29,27 @@ import {
   updateOpeningHours,
   updateTables,
   updatePolicies,
+  updateMenus,
   addPhoto,
   removePhoto,
-  type Restaurant as ApiRestaurant,
   type OpeningHour,
-  type TableItem,
 } from "../api/restaurants";
-
 import {
   fetchReservationsByRestaurant,
   updateReservationStatus,
-  fetchReservationStats,
-  uploadReservationReceipt,
   type Reservation,
-  type ReservationStatus,
-  type ReservationStats,
 } from "../api/reservations";
-
 import * as ImagePicker from "expo-image-picker";
-import { CameraView, useCameraPermissions } from "expo-camera"; // ✅ expo-camera
-import { api } from "../api/client";
+import { CameraView, useCameraPermissions } from "expo-camera";
+// YENİ
+import { checkinByQR, checkinManual } from "../api/restaurantTools";
+import { api } from "../api/client"; // <-- ham axios yanıtını/logları görmek için
+const DEBUG_RES = true;
+
 
 dayjs.locale("tr");
 
-// ---- Tipler ----
-type FixMenu = {
-  _id?: string;
-  title: string;
-  description?: string;
-  pricePerPerson: number;
-  isActive?: boolean;
-};
-
-type ExtendedRestaurant = ApiRestaurant & {
-  iban?: string;
-  ibanName?: string;
-  bankName?: string;
-  priceRange?: string;
-  description?: string;
-  menus?: FixMenu[];
-};
-
-type Range = "today" | "week" | "month" | "custom";
-
+// Varsayılan çalışma saatleri (10:00 - 23:00 arası, her gün açık)
 const DEFAULT_OPENING_HOURS: OpeningHour[] = Array.from({ length: 7 }, (_, i) => ({
   day: i,
   open: "10:00",
@@ -73,330 +57,232 @@ const DEFAULT_OPENING_HOURS: OpeningHour[] = Array.from({ length: 7 }, (_, i) =>
   isClosed: false,
 }));
 
-function trStatus(s: ReservationStatus) {
-  switch (s) {
-    case "pending":
-      return "Beklemede";
-    case "confirmed":
-      return "Onaylı";
-    case "arrived":
-      return "Geldi";
-    case "no_show":
-      return "Gelmedi";
-    case "cancelled":
-      return "İptal";
-    default:
-      return s;
-  }
-}
-// ... importlar
-
-function coerceRestaurantId(val: unknown): string {
-  if (!val) return "";
-  if (typeof val === "string") {
-    // Yanlışlıkla { _id: new ObjectId('...') ... } string'i geldiyse 24 haneli hex’i çek.
-    const m = val.match(/ObjectId\('([0-9a-fA-F]{24})'\)/);
-    if (m) return m[1];
-    try {
-      const maybe = JSON.parse(val);
-      if (maybe && typeof maybe === "object" && "_id" in (maybe as any)) {
-        return String((maybe as any)._id || "");
-      }
-    } catch {}
-    return val;
-  }
-  if (typeof val === "object" && val !== null && "_id" in (val as any)) {
-    return String((val as any)._id || "");
-  }
-  return "";
+// Küçük sekme bileşeni
+function Tab({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  return (
+    <TouchableOpacity onPress={onPress} style={[styles.tabButton, active && styles.tabButtonActive]}>
+      <Text style={[styles.tabButtonText, active && styles.tabButtonTextActive]}>{label}</Text>
+    </TouchableOpacity>
+  );
 }
 
-export default function RestaurantPanelScreen({ route }: any) {
-  // 🔧 DÜZELTME: ID’yi normalize et
-  const raw = route?.params?.restaurantId ?? route?.params?.id;
-  const restaurantId = coerceRestaurantId(raw);
+export default function RestaurantPanelScreen() {
+  const route = useRoute<any>();
+  const restaurantId: string = route.params?.restaurantId || route.params?.id;
 
-  if (!restaurantId) {
-    return (
-      <View style={styles.center}>
-        <Text style={{ color: "red" }}>restaurantId parametresi eksik/geçersiz.</Text>
-      </View>
-    );
-  }
-
-  // ... dosyanın geri kalanı aynı (getRestaurant, fetchReservationsByRestaurant vs. hep bu restaurantId değişkenini kullansın)
-
-  // ----- Genel state -----
-  const [loading, setLoading] = useState(true);
-  const [r, setR] = useState<ExtendedRestaurant | null>(null);
-  const [activeTab, setActiveTab] = useState<
-    | "general"
-    | "photos"
-    | "menus"
-    | "tables"
-    | "hours"
-    | "policies"
-    | "reservations"
-    | "analytics"
-  >("general");
-
-  // Genel form
-  const [name, setName] = useState("");
-  const [city, setCity] = useState("");
-  const [address, setAddress] = useState("");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  const [coverImage, setCoverImage] = useState("");
-  const [iban, setIban] = useState("");
-  const [ibanName, setIbanName] = useState("");
-  const [bankName, setBankName] = useState("");
-  const [priceRange, setPriceRange] = useState("");
-  const [description, setDescription] = useState("");
+  // Genel bilgiler
+  const [name, setName] = useState<string>("");
+  const [city, setCity] = useState<string>("");
+  const [address, setAddress] = useState<string>("");
+  const [phone, setPhone] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
+  const [priceRange, setPriceRange] = useState<string>("");
+  const [description, setDescription] = useState<string>("");
+  const [iban, setIban] = useState<string>("");
+  const [ibanName, setIbanName] = useState<string>("");
+  const [bankName, setBankName] = useState<string>("");
 
   // Fotoğraflar
   const [photos, setPhotos] = useState<string[]>([]);
 
   // Menüler
-  const [menus, setMenus] = useState<FixMenu[]>([]);
+  type MenuItem = { _id?: string; title: string; description?: string; pricePerPerson: number; isActive?: boolean };
+  const [menus, setMenus] = useState<MenuItem[]>([]);
 
   // Masalar
-  const [tables, setTables] = useState<TableItem[]>([]);
+  type Table = { name: string; capacity: number; isActive?: boolean };
+  const [tables, setTables] = useState<Table[]>([]);
 
-  // Saatler
+  // Çalışma saatleri
   const [openingHours, setOpeningHours] = useState<OpeningHour[]>(DEFAULT_OPENING_HOURS);
 
   // Politikalar
-  const [minPartySize, setMinPartySize] = useState(1);
-  const [maxPartySize, setMaxPartySize] = useState(8);
-  const [slotMinutes, setSlotMinutes] = useState(90);
-  const [depositRequired, setDepositRequired] = useState(false);
-  const [depositAmount, setDepositAmount] = useState(0);
+  const [minPartySize, setMinPartySize] = useState<number>(1);
+  const [maxPartySize, setMaxPartySize] = useState<number>(8);
+  const [slotMinutes, setSlotMinutes] = useState<number>(90);
+  const [depositRequired, setDepositRequired] = useState<boolean>(false);
+  const [depositAmount, setDepositAmount] = useState<number>(0);
   const [blackoutDates, setBlackoutDates] = useState<string[]>([]);
-  const [newBlackout, setNewBlackout] = useState("");
+  const [newBlackout, setNewBlackout] = useState<string>("");
 
   // Rezervasyonlar
-  const [resLoading, setResLoading] = useState(false);
   const [reservations, setReservations] = useState<Reservation[]>([]);
-  const [statusFilter, setStatusFilter] = useState<ReservationStatus | "all">("all");
+  const [resLoading, setResLoading] = useState<boolean>(false);
 
-  // Analitik
-  const [statsLoading, setStatsLoading] = useState(false);
-  const [range, setRange] = useState<Range>("today");
-  const [customStart, setCustomStart] = useState(dayjs().format("YYYY-MM-DD"));
-  const [customEnd, setCustomEnd] = useState(dayjs().format("YYYY-MM-DD"));
-  const [stats, setStats] = useState<ReservationStats | null>(null);
-
-  // =====================
-  // ✅ QR & Manuel Check-in state’leri
-  // =====================
-  const [qrModalOpen, setQrModalOpen] = useState(false);
-  const [scanningResId, setScanningResId] = useState<string | null>(null);
-  const [scannedOnce, setScannedOnce] = useState(false);
-
-  // expo-camera izinleri
+  // QR Check-in durumu
   const [permission, requestPermission] = useCameraPermissions();
+  const [scannerVisible, setScannerVisible] = useState<boolean>(false);
 
-  const [manualModalOpen, setManualModalOpen] = useState(false);
-  const [manualResId, setManualResId] = useState<string | null>(null);
-  const [manualCount, setManualCount] = useState<string>("");
+  // Sekme kontrolü
+  const [activeTab, setActiveTab] = useState<string>("general");
 
-  // hydrate: aynı id için yalnızca 1 kez
-  const hydratedForId = useRef<string | null>(null);
+  // Restoran verisini yükle
   useEffect(() => {
-    if (!restaurantId) return;
-    if (hydratedForId.current === restaurantId) return;
-
-    let alive = true;
-    (async () => {
+    async function loadRestaurant() {
       try {
-        setLoading(true);
-        const data = (await getRestaurant(restaurantId)) as ExtendedRestaurant;
-        if (!alive) return;
-
-        setR(data);
-        setName(data.name || "");
-        setCity(data.city || "");
-        setAddress(data.address || "");
-        setPhone(data.phone || "");
-        setEmail(data.email || "");
-        setCoverImage((data.photos && data.photos[0]) || "");
-        setPhotos(data.photos || []);
-        setIban(data.iban || "");
-        setIbanName(data.ibanName || "");
-        setBankName(data.bankName || "");
-        setPriceRange(data.priceRange || "");
-        setDescription(data.description || "");
-        setMenus(((data.menus || []) as any[]).map((m) => ({
-          _id: m._id,
-          title: m.title ?? "",
-          description: m.description ?? "",
-          pricePerPerson:
-            typeof m.pricePerPerson === "number" ? m.pricePerPerson : parseFloat((m as any).price) || 0,
-          isActive: m.isActive ?? true,
-        })));
-
-        setOpeningHours(
-          (data.openingHours?.length ? data.openingHours : DEFAULT_OPENING_HOURS).map((oh) => ({
-            day: oh.day,
-            open: oh.open,
-            close: oh.close,
-            isClosed: !!oh.isClosed,
-          }))
-        );
-        setTables(data.tables || []);
-        setMinPartySize(data.minPartySize ?? 1);
-        setMaxPartySize(data.maxPartySize ?? 8);
-        setSlotMinutes(data.slotMinutes ?? 90);
-        setDepositRequired(!!data.depositRequired);
-        setDepositAmount(data.depositAmount ?? 0);
-        setBlackoutDates(data.blackoutDates || []);
-
-        hydratedForId.current = restaurantId;
+        const r: any = await getRestaurant(restaurantId);
+        setName(r.name || "");
+        setCity(r.city || "");
+        setAddress(r.address || "");
+        setPhone(r.phone || "");
+        setEmail(r.email || "");
+        setPriceRange(r.priceRange || "");
+        setDescription(r.description || "");
+        setIban(r.iban || "");
+        setIbanName((r as any).ibanName || "");
+        setBankName((r as any).bankName || "");
+        setPhotos(r.photos || []);
+        setMenus(r.menus || []);
+        setTables(r.tables || []);
+        setOpeningHours(r.openingHours?.length ? r.openingHours : DEFAULT_OPENING_HOURS);
+        setMinPartySize((r as any).minPartySize ?? 1);
+        setMaxPartySize((r as any).maxPartySize ?? 8);
+        setSlotMinutes((r as any).slotMinutes ?? 90);
+        setDepositRequired((r as any).depositRequired ?? false);
+        setDepositAmount((r as any).depositAmount ?? 0);
+        setBlackoutDates((r as any).blackoutDates || []);
       } catch (e: any) {
-        Alert.alert("Hata", e?.response?.data?.message || e.message || "Yüklenemedi");
-      } finally {
-        if (alive) setLoading(false);
+        Alert.alert("Hata", e?.message || "Restoran yüklenemedi");
       }
-    })();
-
-    return () => {
-      alive = false;
-    };
+    }
+    if (restaurantId) loadRestaurant();
   }, [restaurantId]);
-
-  // Rezervasyonları çek
-  const loadReservations = async () => {
+    
+  // Rezervasyonları yükle
+  // useEffect(() => {
+  //   async function loadReservations() {
+  //     if (!restaurantId || activeTab !== "reservations") return;
+  //     try {
+  //       setResLoading(true);
+  //       const data: any = await fetchReservationsByRestaurant(restaurantId);
+  //       // API iki şekilde dönebilir: [] veya {items:[]}
+  //       const list: Reservation[] = Array.isArray(data) ? data : (data?.items ?? []);
+  //       setReservations(list);
+  //     } catch (e: any) {
+  //       Alert.alert("Hata", e?.message || "Rezervasyonlar yüklenemedi");
+  //     } finally {
+  //       setResLoading(false);
+  //     }
+  //   }
+  //   loadReservations();
+  // }, [activeTab, restaurantId]);
+useEffect(() => {
+  async function loadReservations() {
+    if (!restaurantId || activeTab !== "reservations") return;
     try {
       setResLoading(true);
-      const res = await fetchReservationsByRestaurant({
-        restaurantId,
-        status: statusFilter === "all" ? undefined : statusFilter,
+
+      const url = `/restaurants/${restaurantId}/reservations?_cb=${Date.now()}`;
+      if (DEBUG_RES) console.log("[RP] GET", url);
+
+      // Ham axios yanıtını alıyoruz ki header + raw body görebilelim
+      const res = await api.get(url, {
+        transformResponse: v => v,      // string olarak kalsın
+        validateStatus: () => true,     // 304 vs hepsini loglamak için
+        headers: {
+          "Cache-Control": "no-cache",
+          Pragma: "no-cache",
+          "If-None-Match": "",          // ETag bypass
+        },
       });
-      setReservations(res.items);
+
+      if (DEBUG_RES) {
+        console.log("[RP] status:", res.status);
+        console.log("[RP] headers:", res.headers);
+        console.log("[RP] raw data:", typeof res.data, res.data);
+      }
+
+      let parsed: any = null;
+      try {
+        parsed = typeof res.data === "string" && res.data ? JSON.parse(res.data) : res.data;
+      } catch (e) {
+        if (DEBUG_RES) console.log("[RP] JSON parse error:", (e as any)?.message);
+      }
+
+      const list = Array.isArray(parsed) ? parsed : (parsed?.items ?? []);
+      if (DEBUG_RES) console.log("[RP] parsed reservations length:", Array.isArray(list) ? list.length : "N/A");
+
+      setReservations(Array.isArray(list) ? list : []);
     } catch (e: any) {
-      Alert.alert("Hata", e?.response?.data?.message || e.message || "Rezervasyonlar yüklenemedi.");
+      console.log("[RP] loadReservations error:", e?.response?.data || e?.message || e);
+      Alert.alert("Hata", e?.response?.data?.message || e?.message || "Rezervasyonlar yüklenemedi");
     } finally {
       setResLoading(false);
     }
-  };
-  useEffect(() => {
-    if (activeTab === "reservations") loadReservations();
-  }, [activeTab, statusFilter, restaurantId]);
+  }
 
-  // Analitik çek
-  const loadStats = async () => {
-    try {
-      setStatsLoading(true);
-      let start: string | undefined;
-      let end: string | undefined;
-      if (range === "today") {
-        start = dayjs().startOf("day").format("YYYY-MM-DD");
-        end = dayjs().endOf("day").format("YYYY-MM-DD");
-      } else if (range === "week") {
-        start = dayjs().startOf("week").format("YYYY-MM-DD");
-        end = dayjs().endOf("week").format("YYYY-MM-DD");
-      } else if (range === "month") {
-        start = dayjs().startOf("month").format("YYYY-MM-DD");
-        end = dayjs().endOf("month").format("YYYY-MM-DD");
-      } else {
-        start = customStart;
-        end = customEnd;
-      }
-      const s = await fetchReservationStats({ restaurantId, start, end });
-      setStats(s);
-    } catch (e: any) {
-      Alert.alert("Hata", e?.response?.data?.message || e.message || "İstatistik yüklenemedi.");
-    } finally {
-      setStatsLoading(false);
-    }
-  };
-  useEffect(() => {
-    if (activeTab === "analytics") loadStats();
-  }, [activeTab, range, customStart, customEnd, restaurantId]);
+  loadReservations();
+}, [activeTab, restaurantId]);
 
-  // ----- Kaydetmeler -----
+  // Kaydet fonksiyonları
   const saveGeneral = async () => {
     try {
-      const payload: Partial<ExtendedRestaurant> = {
+      const payload: any = {
         name,
         city,
         address,
         phone,
         email,
-        photos,
+        priceRange,
+        description,
         iban,
         ibanName,
         bankName,
-        priceRange,
-        description,
+        photos,
       };
-      const updated = (await updateRestaurant(restaurantId, payload as any)) as ExtendedRestaurant;
-      setR(updated);
+      await updateRestaurant(restaurantId, payload);
       Alert.alert("Başarılı", "Genel bilgiler güncellendi.");
     } catch (e: any) {
-      Alert.alert("Hata", e?.response?.data?.message || e.message || "Güncellenemedi.");
+      Alert.alert("Hata", e?.message || "Güncellenemedi.");
     }
   };
 
   const saveMenus = async () => {
     try {
-      const updated = (await updateRestaurant(restaurantId, { menus } as any)) as ExtendedRestaurant;
-      setMenus(updated.menus || []);
-      setR(updated);
+      await updateMenus(restaurantId, menus);
       Alert.alert("Başarılı", "Menüler güncellendi.");
     } catch (e: any) {
-      Alert.alert("Hata", e?.response?.data?.message || e.message || "Güncellenemedi.");
+      Alert.alert("Hata", e?.message || "Menüler güncellenemedi.");
     }
   };
 
   const saveTables = async () => {
     try {
-      const clean = tables.map((t) => ({
-        ...t,
-        name: t.name?.trim() || "Masa",
-        capacity: Math.max(1, t.capacity || 1),
-        isActive: t.isActive ?? true,
-      }));
-      const updated = (await updateTables(restaurantId, clean)) as ExtendedRestaurant;
-      setTables(updated.tables || []);
-      setR(updated);
+      await updateTables(restaurantId, tables);
       Alert.alert("Başarılı", "Masalar güncellendi.");
     } catch (e: any) {
-      Alert.alert("Hata", e?.response?.data?.message || e.message || "Güncellenemedi.");
+      Alert.alert("Hata", e?.message || "Masalar güncellenemedi.");
     }
   };
 
   const saveHours = async () => {
     try {
-      const updated = (await updateOpeningHours(restaurantId, openingHours)) as ExtendedRestaurant;
-      setOpeningHours(updated.openingHours || []);
-      setR(updated);
+      await updateOpeningHours(restaurantId, openingHours);
       Alert.alert("Başarılı", "Çalışma saatleri güncellendi.");
     } catch (e: any) {
-      Alert.alert("Hata", e?.response?.data?.message || e.message || "Güncellenemedi.");
+      Alert.alert("Hata", e?.message || "Çalışma saatleri güncellenemedi.");
     }
   };
 
   const savePolicies = async () => {
     try {
       const payload = {
-        minPartySize: Math.max(1, minPartySize || 1),
-        maxPartySize: Math.max(minPartySize, maxPartySize || minPartySize),
-        slotMinutes: Math.max(30, slotMinutes || 90),
+        minPartySize: Math.max(1, minPartySize),
+        maxPartySize: Math.max(minPartySize, maxPartySize),
+        slotMinutes: Math.max(30, slotMinutes),
         depositRequired,
-        depositAmount: Math.max(0, depositAmount || 0),
+        depositAmount: Math.max(0, depositAmount),
         blackoutDates,
       };
-      const updated = (await updatePolicies(restaurantId, payload)) as ExtendedRestaurant;
-      setR(updated);
+      await updatePolicies(restaurantId, payload);
       Alert.alert("Başarılı", "Rezervasyon politikaları güncellendi.");
     } catch (e: any) {
-      Alert.alert("Hata", e?.response?.data?.message || e.message || "Güncellenemedi.");
+      Alert.alert("Hata", e?.message || "Politikalar güncellenemedi.");
     }
   };
 
-  // Fotoğraf ekle/sil
-  const pickImage = async () => {
+  // Fotoğraf seçme
+  const pickImage = async (): Promise<{ uri: string; fileName?: string; mimeType?: string } | null> => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.8,
@@ -409,151 +295,102 @@ export default function RestaurantPanelScreen({ route }: any) {
     const file = await pickImage();
     if (!file) return;
     try {
-      const updated = (await addPhoto(
-        restaurantId,
-        file.uri,
-        file.fileName ?? "image.jpg",
-        file.mimeType ?? "image/jpeg"
-      )) as ExtendedRestaurant;
-      setPhotos(updated.photos || []);
-      setR(updated);
+      const updated = await addPhoto(restaurantId, file.uri, file.fileName ?? "image.jpg", file.mimeType ?? "image/jpeg");
+      setPhotos((updated as any).photos || []);
+      Alert.alert("Başarılı", "Fotoğraf yüklendi.");
     } catch (e: any) {
-      Alert.alert("Hata", e?.response?.data?.message || e.message || "Fotoğraf yüklenemedi.");
+      Alert.alert("Hata", e?.message || "Fotoğraf yüklenemedi.");
     }
   };
 
   const onRemovePhoto = async (url: string) => {
     try {
-      const updated = (await removePhoto(restaurantId, url)) as ExtendedRestaurant;
-      setPhotos(updated.photos || []);
-      setR(updated);
+      const updated = await removePhoto(restaurantId, url);
+      setPhotos((updated as any).photos || []);
     } catch (e: any) {
-      Alert.alert("Hata", e?.response?.data?.message || e.message || "Fotoğraf silinemedi.");
+      Alert.alert("Hata", e?.message || "Fotoğraf silinemedi.");
     }
   };
 
-  // =====================
-  // ✅ QR izin isteği (expo-camera)
-  // =====================
-  useEffect(() => {
-    if (qrModalOpen) {
-      setScannedOnce(false);
-      if (!permission?.granted) {
-        // Kamerayı açmadan önce izin iste
-        requestPermission();
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qrModalOpen]);
-
-  // QR payload parse helper
-  function parseQRPayload(raw: string): null | { rid: string; mid: string; ts: string; sig: string } {
+  // Rezervasyon onaylama ve reddetme (backend /approve | /reject)
+  const handleConfirmReservation = async (id: string) => {
     try {
-      const j = JSON.parse(raw);
-      if (j?.rid && j?.mid && j?.ts && j?.sig) return j;
-    } catch {}
-
-    try {
-      const u = new URL(raw);
-      const rid = u.searchParams.get("rid");
-      const mid = u.searchParams.get("mid");
-      const ts = u.searchParams.get("ts");
-      const sig = u.searchParams.get("sig");
-      if (rid && mid && ts && sig) return { rid, mid, ts, sig };
-    } catch {}
-
-    try {
-      const cleaned = raw.replace(/\s+/g, "");
-      const parts = cleaned.includes("|") ? cleaned.split("|") : cleaned.split(",");
-      if (parts.length === 4) {
-        const [rid, mid, ts, sig] = parts;
-        if (rid && mid && ts && sig) return { rid, mid, ts, sig };
-      }
-    } catch {}
-
-    return null;
-  }
-
-  // ✅ QR ile check-in
-  async function doQRCheckin(qrRaw: string, fallbackArrived?: number) {
-    const parsed = parseQRPayload(qrRaw);
-    if (!parsed) {
-      Alert.alert("Hata", "QR verisi okunamadı.");
-      return;
-    }
-    try {
-      await api.post("/reservations/checkin", {
-        ...parsed,
-        arrivedCount: typeof fallbackArrived === "number" ? fallbackArrived : undefined,
-      });
-      Alert.alert("Başarılı", "Check-in tamamlandı.");
-      setQrModalOpen(false);
-      setScanningResId(null);
-      loadReservations();
+      await updateReservationStatus(id, "confirmed");
+      setReservations((prev) => prev.map((rv) => (rv._id === id ? { ...rv, status: "confirmed" } : rv)));
     } catch (e: any) {
-      Alert.alert("Hata", e?.response?.data?.message || e.message || "Check-in başarısız.");
+      Alert.alert("Hata", e?.message || "Onaylanamadı");
     }
-  }
+  };
 
-  // ✅ Manuel check-in
-  async function doManualCheckin() {
-    if (!manualResId) return;
-    const arrivedCount = Math.max(0, parseInt(manualCount || "0", 10));
+  const handleRejectReservation = async (id: string) => {
     try {
-      await api.post(`/reservations/${manualResId}/checkin-manual`, { arrivedCount });
-      Alert.alert("Başarılı", "Manuel check-in tamamlandı.");
-      setManualModalOpen(false);
-      setManualResId(null);
-      setManualCount("");
-      loadReservations();
+      await updateReservationStatus(id, "cancelled");
+      setReservations((prev) => prev.map((rv) => (rv._id === id ? { ...rv, status: "cancelled" } : rv)));
     } catch (e: any) {
-      Alert.alert("Hata", e?.response?.data?.message || e.message || "Manuel check-in failed");
+      Alert.alert("Hata", e?.message || "Reddedilemedi");
     }
-  }
+  };
 
-  // ----- UI Bölümleri -----
+  // QR kod tarayıcı callback'i: backend doğrulamasına uygun
+  const handleBarCodeScanned = async ({ data }: { data: string }) => {
+    try {
+      const obj = JSON.parse(data);
+      const rid = obj.rid || obj._id || obj.id;
+      const mid = obj.mid || obj.restaurantId || obj.rid2;
+      const ts = obj.ts;
+      const sig = obj.sig;
+      if (!rid || !mid || !ts || !sig) throw new Error("Geçersiz QR");
+      await checkinByQR({ rid: String(rid), mid: String(mid), ts: String(ts), sig: String(sig) });
+      setReservations((prev) => prev.map((rv) => (String(rv._id) === String(rid) ? { ...rv, status: "arrived" } : rv)));
+      Alert.alert("Başarılı", "Müşteri check-in yapıldı.");
+    } catch (err: any) {
+      Alert.alert("Hata", err?.message || "QR kod okunamadı.");
+    } finally {
+      setScannerVisible(false);
+    }
+  };
+
+  // UI render fonksiyonları
   const renderGeneral = () => (
-    <ScrollView contentContainerStyle={styles.tabContainer}>
-      <Card title="Temel Bilgiler">
-        <Input label="Ad" value={name} onChangeText={setName} />
-        <Row>
-          <Input label="Şehir" value={city} onChangeText={setCity} />
-          <Input label="Telefon" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
-        </Row>
-        <Input label="Adres" value={address} onChangeText={setAddress} />
-        <Input label="E-posta" value={email} onChangeText={setEmail} keyboardType="email-address" />
-        <Input label="Fiyat Aralığı" value={priceRange} onChangeText={setPriceRange} />
-        <Input label="Kapak Görseli (URL)" value={coverImage} onChangeText={setCoverImage} />
-
-        <Input label="IBAN" value={iban} onChangeText={setIban} />
-        <Row>
-          <Input label="IBAN İsim" value={ibanName} onChangeText={setIbanName} />
-          <Input label="Banka" value={bankName} onChangeText={setBankName} />
-        </Row>
-
-        <Input
-          label="Hakkında"
-          value={description}
-          onChangeText={setDescription}
-          placeholder="Restoran açıklaması"
-        />
-
+    <ScrollView style={styles.tabContainer} keyboardShouldPersistTaps="handled">
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Genel Bilgiler</Text>
+        <Text>İsim</Text>
+        <TextInput value={name} onChangeText={setName} style={styles.input} placeholder="Restoran adı" />
+        <Text>Şehir</Text>
+        <TextInput value={city} onChangeText={setCity} style={styles.input} placeholder="Şehir" />
+        <Text>Adres</Text>
+        <TextInput value={address} onChangeText={setAddress} style={styles.input} placeholder="Adres" />
+        <Text>Telefon</Text>
+        <TextInput value={phone} onChangeText={setPhone} style={styles.input} placeholder="Telefon" keyboardType="phone-pad" />
+        <Text>E-mail</Text>
+        <TextInput value={email} onChangeText={setEmail} style={styles.input} placeholder="E-mail" keyboardType="email-address" />
+        <Text>Fiyat Aralığı</Text>
+        <TextInput value={priceRange} onChangeText={setPriceRange} style={styles.input} placeholder="₺, ₺₺, ₺₺₺" />
+        <Text>Açıklama</Text>
+        <TextInput value={description} onChangeText={setDescription} style={[styles.input, { height: 80 }]} placeholder="Açıklama" multiline />
+        <Text>IBAN</Text>
+        <TextInput value={iban} onChangeText={setIban} style={styles.input} placeholder="TR..." />
+        <Text>IBAN Adı</Text>
+        <TextInput value={ibanName} onChangeText={setIbanName} style={styles.input} placeholder="Hesap Sahibi" />
+        <Text>Banka Adı</Text>
+        <TextInput value={bankName} onChangeText={setBankName} style={styles.input} placeholder="Banka Adı" />
         <TouchableOpacity style={styles.primaryBtn} onPress={saveGeneral}>
           <Text style={styles.primaryBtnText}>Kaydet</Text>
         </TouchableOpacity>
-      </Card>
+      </View>
     </ScrollView>
   );
 
   const renderPhotos = () => (
-    <ScrollView contentContainerStyle={styles.tabContainer}>
-      <Card title="Fotoğraflar">
+    <ScrollView style={styles.tabContainer} keyboardShouldPersistTaps="handled">
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Fotoğraflar</Text>
         {photos.length > 0 ? (
           <FlatList
             data={photos}
             horizontal
-            keyExtractor={(u, i) => `${u}-${i}`}
-            showsHorizontalScrollIndicator={false}
+            keyExtractor={(item) => item}
             renderItem={({ item }) => (
               <View style={{ marginRight: 12 }}>
                 <Image source={{ uri: item }} style={styles.photo} />
@@ -566,271 +403,233 @@ export default function RestaurantPanelScreen({ route }: any) {
         ) : (
           <Text style={styles.muted}>Henüz fotoğraf yok.</Text>
         )}
-        <TouchableOpacity style={styles.secondaryBtn} onPress={onAddPhoto}>
-          <Text style={styles.secondaryBtnText}>+ Fotoğraf Yükle</Text>
+        <TouchableOpacity style={styles.primaryBtn} onPress={onAddPhoto}>
+          <Text style={styles.primaryBtnText}>+ Fotoğraf Yükle</Text>
         </TouchableOpacity>
-      </Card>
+      </View>
     </ScrollView>
   );
 
   const renderMenus = () => (
-    <ScrollView contentContainerStyle={styles.tabContainer}>
-      <Card title="Fix Menüler">
-        {menus.length === 0 ? (
-          <Text style={styles.muted}>Henüz menü eklenmemiş.</Text>
-        ) : (
-          menus.map((m, idx) => (
-            <View key={m._id ?? idx} style={styles.tableCard}>
-              <Input
-                label="Başlık"
-                value={m.title}
-                onChangeText={(v) => {
-                  const next = [...menus];
-                  next[idx] = { ...next[idx], title: v };
-                  setMenus(next);
-                }}
-              />
-              <Input
-                label="Açıklama"
-                value={m.description || ""}
-                onChangeText={(v) => {
-                  const next = [...menus];
-                  next[idx] = { ...next[idx], description: v };
-                  setMenus(next);
-                }}
-              />
-              <Input
-                label="Fiyat (kişi başı)"
-                value={String(m.pricePerPerson ?? 0)}
-                keyboardType="decimal-pad"
-                onChangeText={(v) => {
-                  const next = [...menus];
-                  next[idx] = { ...next[idx], pricePerPerson: parseFloat(v || "0") };
-                  setMenus(next);
-                }}
-              />
-              <TouchableOpacity
-                style={styles.deleteBtn}
-                onPress={() => setMenus(menus.filter((_, i) => i !== idx))}
-              >
-                <Text style={styles.deleteBtnText}>Sil</Text>
-              </TouchableOpacity>
-            </View>
-          ))
-        )}
-
+    <ScrollView style={styles.tabContainer} keyboardShouldPersistTaps="handled">
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Menüler</Text>
+        {menus.length === 0 && <Text style={styles.muted}>Henüz menü eklenmemiş.</Text>}
+        {menus.map((m, idx) => (
+          <View key={idx} style={[styles.tableCard, { marginBottom: 12 }]}>
+            <TextInput
+              value={m.title}
+              onChangeText={(v) => {
+                const next = [...menus];
+                next[idx] = { ...next[idx], title: v };
+                setMenus(next);
+              }}
+              style={styles.input}
+              placeholder="Menü adı"
+            />
+            <TextInput
+              value={m.description ?? ""}
+              onChangeText={(v) => {
+                const next = [...menus];
+                next[idx] = { ...next[idx], description: v };
+                setMenus(next);
+              }}
+              style={[styles.input, { height: 60 }]}
+              placeholder="Açıklama"
+              multiline
+            />
+            <TextInput
+              value={String(m.pricePerPerson)}
+              onChangeText={(v) => {
+                const next = [...menus];
+                next[idx] = { ...next[idx], pricePerPerson: parseFloat(v || "0") };
+                setMenus(next);
+              }}
+              style={styles.input}
+              placeholder="Fiyat (kişi başı)"
+              keyboardType="numeric"
+            />
+            <TouchableOpacity style={styles.deleteBtn} onPress={() => setMenus(menus.filter((_, i) => i !== idx))}>
+              <Text style={styles.deleteBtnText}>Sil</Text>
+            </TouchableOpacity>
+          </View>
+        ))}
         <TouchableOpacity
           style={styles.secondaryBtn}
-          onPress={() =>
-            setMenus((m) => [
-              ...m,
-              { title: "Yeni Menü", description: "", pricePerPerson: 0, isActive: true },
-            ])
-          }
+          onPress={() => setMenus((m) => [...m, { title: "Yeni Menü", description: "", pricePerPerson: 0, isActive: true }])}
         >
           <Text style={styles.secondaryBtnText}>+ Menü Ekle</Text>
         </TouchableOpacity>
-
         <TouchableOpacity style={styles.primaryBtn} onPress={saveMenus}>
           <Text style={styles.primaryBtnText}>Menüleri Kaydet</Text>
         </TouchableOpacity>
-      </Card>
+      </View>
     </ScrollView>
   );
 
   const renderTables = () => (
-    <ScrollView contentContainerStyle={styles.tabContainer}>
-      <Card title="Masalar">
-        {tables.length === 0 ? (
-          <Text style={styles.muted}>Henüz masa eklenmemiş.</Text>
-        ) : (
-          tables.map((t, idx) => (
-            <View key={idx} style={styles.tableCard}>
-              <Row>
-                <Input
-                  label="Ad"
-                  value={t.name}
-                  onChangeText={(v) => {
-                    const next = [...tables];
-                    next[idx] = { ...next[idx], name: v };
-                    setTables(next);
-                  }}
-                />
-                <Input
-                  label="Kapasite"
-                  value={String(t.capacity)}
-                  keyboardType="number-pad"
-                  onChangeText={(v) => {
-                    const cap = Math.max(1, parseInt(v || "1", 10));
-                    const next = [...tables];
-                    next[idx] = { ...next[idx], capacity: cap };
-                    setTables(next);
-                  }}
-                />
-              </Row>
-
-              <Row>
-                <TouchableOpacity
-                  style={t.isActive === false ? styles.secondaryBtn : styles.successBtn}
-                  onPress={() => {
-                    const next = [...tables];
-                    next[idx] = { ...next[idx], isActive: !(t.isActive ?? true) };
-                    setTables(next);
-                  }}
-                >
-                  <Text
-                    style={
-                      t.isActive === false ? styles.secondaryBtnText : styles.successBtnText
-                    }
-                  >
-                    {t.isActive === false ? "Aktifleştir" : "Pasifleştir"}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.deleteBtn}
-                  onPress={() => setTables(tables.filter((_, i) => i !== idx))}
-                >
-                  <Text style={styles.deleteBtnText}>Sil</Text>
-                </TouchableOpacity>
-              </Row>
-            </View>
-          ))
-        )}
-
+    <ScrollView style={styles.tabContainer} keyboardShouldPersistTaps="handled">
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Masalar</Text>
+        {tables.length === 0 && <Text style={styles.muted}>Henüz masa eklenmemiş.</Text>}
+        {tables.map((t, idx) => (
+          <View key={idx} style={[styles.tableCard, { marginBottom: 12 }]}>
+            <TextInput
+              value={t.name}
+              onChangeText={(v) => {
+                const next = [...tables];
+                next[idx] = { ...next[idx], name: v };
+                setTables(next);
+              }}
+              style={styles.input}
+              placeholder="Masa adı"
+            />
+            <TextInput
+              value={String(t.capacity)}
+              onChangeText={(v) => {
+                const cap = Math.max(1, parseInt(v || "1", 10));
+                const next = [...tables];
+                next[idx] = { ...next[idx], capacity: cap };
+                setTables(next);
+              }}
+              style={styles.input}
+              placeholder="Kapasite"
+              keyboardType="numeric"
+            />
+            <TouchableOpacity
+              style={styles.secondaryBtn}
+              onPress={() => {
+                const next = [...tables];
+                next[idx] = { ...next[idx], isActive: !(t.isActive ?? true) };
+                setTables(next);
+              }}
+            >
+              <Text style={styles.secondaryBtnText}>{t.isActive === false ? "Aktifleştir" : "Pasifleştir"}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.deleteBtn} onPress={() => setTables(tables.filter((_, i) => i !== idx))}>
+              <Text style={styles.deleteBtnText}>Sil</Text>
+            </TouchableOpacity>
+          </View>
+        ))}
         <TouchableOpacity
           style={styles.secondaryBtn}
           onPress={() => setTables((t) => [...t, { name: `Masa ${t.length + 1}`, capacity: 2, isActive: true }])}
         >
           <Text style={styles.secondaryBtnText}>+ Masa Ekle</Text>
         </TouchableOpacity>
-
         <TouchableOpacity style={styles.primaryBtn} onPress={saveTables}>
           <Text style={styles.primaryBtnText}>Masaları Kaydet</Text>
         </TouchableOpacity>
-      </Card>
+      </View>
     </ScrollView>
   );
 
   const renderHours = () => (
-    <ScrollView contentContainerStyle={styles.tabContainer}>
-      <Card title="Çalışma Saatleri">
+    <ScrollView style={styles.tabContainer} keyboardShouldPersistTaps="handled">
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Çalışma Saatleri</Text>
         {openingHours.map((oh, idx) => (
-          <View key={oh.day} style={styles.tableCard}>
-            <Text style={{ fontWeight: "700", marginBottom: 6, color: lightTheme.colors.text }}>
-              {["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"][oh.day]}
-            </Text>
-            <Row>
-              <Input
-                label="Açılış"
-                value={oh.open}
-                onChangeText={(v) => {
-                  const next = [...openingHours];
-                  next[idx] = { ...next[idx], open: v };
-                  setOpeningHours(next);
-                }}
-                placeholder="10:00"
-              />
-              <Input
-                label="Kapanış"
-                value={oh.close}
-                onChangeText={(v) => {
-                  const next = [...openingHours];
-                  next[idx] = { ...next[idx], close: v };
-                  setOpeningHours(next);
-                }}
-                placeholder="23:00"
-              />
-            </Row>
+          <View key={idx} style={[styles.tableCard, { flexDirection: "row", alignItems: "center", marginBottom: 8 }]}>
+            <Text style={{ width: 40 }}>{["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"][oh.day]}</Text>
+            <TextInput
+              value={oh.open}
+              onChangeText={(v) => {
+                const next = [...openingHours];
+                next[idx] = { ...next[idx], open: v };
+                setOpeningHours(next);
+              }}
+              style={[styles.input, { flex: 1 }]}
+              placeholder="10:00"
+            />
+            <TextInput
+              value={oh.close}
+              onChangeText={(v) => {
+                const next = [...openingHours];
+                next[idx] = { ...next[idx], close: v };
+                setOpeningHours(next);
+              }}
+              style={[styles.input, { flex: 1 }]}
+              placeholder="23:00"
+            />
             <TouchableOpacity
-              style={oh.isClosed ? styles.secondaryBtn : styles.warningBtn}
+              style={styles.secondaryBtn}
               onPress={() => {
                 const next = [...openingHours];
                 next[idx] = { ...next[idx], isClosed: !oh.isClosed };
                 setOpeningHours(next);
               }}
             >
-              <Text style={oh.isClosed ? styles.secondaryBtnText : styles.warningBtnText}>
-                {oh.isClosed ? "Açık Yap" : "Kapalı Gün"}
-              </Text>
+              <Text style={styles.secondaryBtnText}>{oh.isClosed ? "Açık Yap" : "Kapalı Gün"}</Text>
             </TouchableOpacity>
           </View>
         ))}
-
         <TouchableOpacity style={styles.primaryBtn} onPress={saveHours}>
           <Text style={styles.primaryBtnText}>Saatleri Kaydet</Text>
         </TouchableOpacity>
-      </Card>
+      </View>
     </ScrollView>
   );
 
   const renderPolicies = () => (
-    <ScrollView contentContainerStyle={styles.tabContainer}>
-      <Card title="Rezervasyon Politikaları">
-        <Row>
-          <Input
-            label="Min Kişi"
-            value={String(minPartySize)}
-            keyboardType="number-pad"
-            onChangeText={(v) => setMinPartySize(Math.max(1, parseInt(v || "1", 10)))}
-          />
-          <Input
-            label="Max Kişi"
-            value={String(maxPartySize)}
-            keyboardType="number-pad"
-            onChangeText={(v) => {
-              const val = Math.max(minPartySize, parseInt(v || String(minPartySize), 10));
-              setMaxPartySize(val);
-            }}
-          />
-        </Row>
-        <Input
-          label="Slot Süresi (dk)"
+    <ScrollView style={styles.tabContainer} keyboardShouldPersistTaps="handled">
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Rezervasyon Politikaları</Text>
+        <Text>Minimum kişi sayısı</Text>
+        <TextInput
+          value={String(minPartySize)}
+          onChangeText={(v) => setMinPartySize(Math.max(1, parseInt(v || "1", 10)))}
+          style={styles.input}
+          keyboardType="numeric"
+        />
+        <Text>Maksimum kişi sayısı</Text>
+        <TextInput
+          value={String(maxPartySize)}
+          onChangeText={(v) => setMaxPartySize(Math.max(minPartySize, parseInt(v || String(minPartySize), 10)))}
+          style={styles.input}
+          keyboardType="numeric"
+        />
+        <Text>Slot süresi (dakika)</Text>
+        <TextInput
           value={String(slotMinutes)}
-          keyboardType="number-pad"
           onChangeText={(v) => setSlotMinutes(Math.max(30, parseInt(v || "30", 10)))}
+          style={styles.input}
+          keyboardType="numeric"
         />
-        <Row>
-          <TouchableOpacity
-            style={depositRequired ? styles.successBtn : styles.secondaryBtn}
-            onPress={() => setDepositRequired(!depositRequired)}
-          >
-            <Text style={depositRequired ? styles.successBtnText : styles.secondaryBtnText}>
-              {depositRequired ? "Depozito: Açık" : "Depozito: Kapalı"}
-            </Text>
-          </TouchableOpacity>
-          <Input
-            label="Depozito Tutarı"
-            value={String(depositAmount)}
-            keyboardType="decimal-pad"
-            onChangeText={(v) => setDepositAmount(Math.max(0, parseFloat(v || "0")))}
-          />
-        </Row>
-
+        <TouchableOpacity style={styles.secondaryBtn} onPress={() => setDepositRequired(!depositRequired)}>
+          <Text style={styles.secondaryBtnText}>{depositRequired ? "Depozito: Açık" : "Depozito: Kapalı"}</Text>
+        </TouchableOpacity>
+        {depositRequired && (
+          <>
+            <Text>Depozito Tutarı (TRY)</Text>
+            <TextInput
+              value={String(depositAmount)}
+              onChangeText={(v) => setDepositAmount(Math.max(0, parseFloat(v || "0")))}
+              style={styles.input}
+              keyboardType="numeric"
+            />
+          </>
+        )}
         <Text style={styles.sectionLabel}>Kara Günler (YYYY-MM-DD)</Text>
-        <FlatList
-          data={blackoutDates}
-          keyExtractor={(d, i) => `${d}-${i}`}
-          horizontal
-          renderItem={({ item, index }) => (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{item}</Text>
-              <TouchableOpacity
-                onPress={() => setBlackoutDates(blackoutDates.filter((_, i) => i !== index))}
-              >
-                <Text style={styles.badgeDelete}>✕</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-          ListEmptyComponent={<Text style={styles.muted}>Liste boş.</Text>}
-        />
-        <Row>
-          <Input
-            label="Yeni Gün (YYYY-MM-DD)"
-            value={newBlackout}
-            onChangeText={setNewBlackout}
-            placeholder="2025-10-15"
+        {blackoutDates.length > 0 ? (
+          <FlatList
+            data={blackoutDates}
+            horizontal
+            keyExtractor={(item, index) => `${item}-${index}`}
+            renderItem={({ item, index }) => (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{item}</Text>
+                <TouchableOpacity onPress={() => setBlackoutDates(blackoutDates.filter((_, i) => i !== index))}>
+                  <Text style={styles.badgeDelete}>✕</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            ListEmptyComponent={<Text style={styles.muted}>Liste boş.</Text>}
           />
+        ) : (
+          <Text style={styles.muted}>Liste boş.</Text>
+        )}
+        <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8 }}>
+          <TextInput value={newBlackout} onChangeText={setNewBlackout} style={[styles.input, { flex: 1 }]} placeholder="2025-12-31" />
           <TouchableOpacity
             style={styles.secondaryBtn}
             onPress={() => {
@@ -843,198 +642,91 @@ export default function RestaurantPanelScreen({ route }: any) {
           >
             <Text style={styles.secondaryBtnText}>Ekle</Text>
           </TouchableOpacity>
-        </Row>
-
+        </View>
         <TouchableOpacity style={styles.primaryBtn} onPress={savePolicies}>
           <Text style={styles.primaryBtnText}>Politikaları Kaydet</Text>
         </TouchableOpacity>
-      </Card>
+      </View>
     </ScrollView>
   );
 
   const renderReservations = () => (
-    <ScrollView contentContainerStyle={styles.tabContainer}>
-      <Card title="Rezervasyonlar">
-        <Row>
-          <FilterChip label="Tümü" active={statusFilter === "all"} onPress={() => setStatusFilter("all")} />
-          <FilterChip label="Beklemede" active={statusFilter === "pending"} onPress={() => setStatusFilter("pending")} />
-          <FilterChip label="Onaylı" active={statusFilter === "confirmed"} onPress={() => setStatusFilter("confirmed")} />
-          <FilterChip label="İptal" active={statusFilter === "cancelled"} onPress={() => setStatusFilter("cancelled")} />
-        </Row>
+    <ScrollView style={styles.tabContainer}>
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Rezervasyonlar</Text>
+        {DEBUG_RES && (
+  <View style={{ backgroundColor: "#FFF7ED", borderWidth: 1, borderColor: "#FDBA74", padding: 8, borderRadius: 8, marginBottom: 8 }}>
+    <Text style={{ color: "#9A3412", fontWeight: "700" }}>DEBUG</Text>
+    <Text style={{ color: "#9A3412" }}>restaurantId: {String(restaurantId)}</Text>
+    <Text style={{ color: "#9A3412" }}>reservations.length: {reservations.length}</Text>
+  </View>
+)}
 
-        {resLoading ? (
-          <ActivityIndicator color={lightTheme.colors.primary} />
-        ) : reservations.length === 0 ? (
-          <Text style={styles.muted}>Kayıt yok.</Text>
-        ) : (
+        {/* QR check-in butonu */}
+        <TouchableOpacity style={[styles.primaryBtn, { marginBottom: 8 }]} onPress={() => setScannerVisible(true)}>
+          <Text style={styles.primaryBtnText}>QR Okut ve Check-in</Text>
+        </TouchableOpacity>
+
+        {resLoading && <ActivityIndicator size="small" />}
+        {!resLoading && reservations.length === 0 && <Text style={styles.muted}>Kayıt yok.</Text>}
+
+        {!resLoading &&
           reservations.map((rv) => (
-            <View key={rv._id} style={styles.tableCard}>
-              <Text style={{ fontWeight: "700", color: lightTheme.colors.text }}>
+            <View key={rv._id} style={[styles.tableCard, { marginBottom: 12 }]}>
+              <Text style={{ fontWeight: "600" }}>
                 {dayjs(rv.dateTimeUTC).locale("tr").format("DD MMM, HH:mm")} • {rv.partySize} kişi
               </Text>
-              <Text style={styles.muted}>Durum: {trStatus(rv.status)}</Text>
-              {!!rv.totalPrice && (
-                <Text style={styles.muted}>Tutar: ₺{rv.totalPrice.toLocaleString("tr-TR")}</Text>
-              )}
-              {!!rv.depositAmount && (
-                <Text style={styles.muted}>Kapora: ₺{rv.depositAmount.toLocaleString("tr-TR")}</Text>
-              )}
+              <Text>Durum: {rv.status}</Text>
+              {rv.totalPrice != null && <Text>Tutar: ₺{Number(rv.totalPrice).toLocaleString("tr-TR")}</Text>}
+              {rv.depositAmount != null && <Text>Kapora: ₺{Number(rv.depositAmount).toLocaleString("tr-TR")}</Text>}
 
-              {!!rv.receiptUrl && (
-                <>
-                  <Text style={styles.sectionLabel}>Dekont</Text>
-                  <Image
-                    source={{ uri: rv.receiptUrl }}
-                    style={{
-                      width: 220,
-                      height: 130,
-                      borderRadius: 8,
-                      backgroundColor: lightTheme.colors.muted,
-                    }}
-                  />
-                </>
+              {/* Dekont */}
+              {rv.receiptUrl ? (
+                <View style={{ marginTop: 8 }}>
+                  <Text style={{ fontWeight: "600", marginBottom: 6 }}>Dekont</Text>
+                  {/\.((png|jpe?g|webp|gif))$/i.test(String(rv.receiptUrl)) ? (
+                    <TouchableOpacity onPress={() => Linking.openURL(String(rv.receiptUrl))} style={{ alignSelf: "flex-start" }}>
+                      <Image
+                        source={{ uri: String(rv.receiptUrl) }}
+                        style={{ width: 160, height: 100, borderRadius: 8, borderWidth: 1, borderColor: "#e5e7eb" }}
+                      />
+                      <Text style={{ marginTop: 6, color: lightTheme.colors.primary }}>Tam görüntüyü aç</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      onPress={() => Linking.openURL(String(rv.receiptUrl))}
+                      style={[styles.secondaryBtn, { marginTop: 0 }]}
+                    >
+                      <Text style={styles.secondaryBtnText}>
+                        {String(rv.receiptUrl).toLowerCase().endsWith(".pdf") ? "PDF Dekontu Aç" : "Dekontu Aç"}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ) : (
+                <Text style={[styles.muted, { marginTop: 8 }]}>Dekont yüklenmemiş.</Text>
               )}
 
               {rv.status === "pending" && (
-                <Row>
-                  <TouchableOpacity
-                    style={styles.successBtn}
-                    onPress={async () => {
-                      try {
-                        await updateReservationStatus(rv._id, "confirmed");
-                        loadReservations();
-                      } catch (e: any) {
-                        Alert.alert("Hata", e?.response?.data?.message || e.message || "Onaylanamadı.");
-                      }
-                    }}
-                  >
+                <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
+                  <TouchableOpacity style={styles.successBtn} onPress={() => handleConfirmReservation(rv._id)}>
                     <Text style={styles.successBtnText}>Onayla</Text>
                   </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.deleteBtn}
-                    onPress={async () => {
-                      try {
-                        await updateReservationStatus(rv._id, "cancelled");
-                        loadReservations();
-                      } catch (e: any) {
-                        Alert.alert("Hata", e?.response?.data?.message || e.message || "Reddedilemedi.");
-                      }
-                    }}
-                  >
-                    <Text style={styles.deleteBtnText}>Reddet</Text>
+                  <TouchableOpacity style={styles.warningBtn} onPress={() => handleRejectReservation(rv._id)}>
+                    <Text style={styles.warningBtnText}>Reddet</Text>
                   </TouchableOpacity>
-                </Row>
-              )}
-
-              {/* ✅ Onaylı rezervasyon için QR ve manuel check-in */}
-              {rv.status === "confirmed" && (
-                <Row>
-                  <TouchableOpacity
-                    style={styles.warningBtn}
-                    onPress={() => {
-                      setScanningResId(rv._id);
-                      setQrModalOpen(true);
-                    }}
-                  >
-                    <Text style={styles.warningBtnText}>QR ile Check-in</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.secondaryBtn}
-                    onPress={() => {
-                      setManualResId(rv._id);
-                      setManualCount(String(rv.partySize ?? 0));
-                      setManualModalOpen(true);
-                    }}
-                  >
-                    <Text style={styles.secondaryBtnText}>Manuel Check-in</Text>
-                  </TouchableOpacity>
-                </Row>
-              )}
-
-              {/* İsteğe bağlı: Panelden de dekont yükleme (genelde müşteri yükler) */}
-              {rv.status !== "cancelled" && (
-                <TouchableOpacity
-                  style={styles.secondaryBtn}
-                  onPress={async () => {
-                    try {
-                      const picked = await ImagePicker.launchImageLibraryAsync({
-                        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                        quality: 0.9,
-                      });
-                      if (picked.canceled) return;
-                      const asset = picked.assets[0];
-                      await uploadReservationReceipt(rv._id, {
-                        uri: asset.uri,
-                        name: asset.fileName ?? "receipt.jpg",
-                        type: asset.mimeType ?? "image/jpeg",
-                      });
-                      loadReservations();
-                    } catch (e: any) {
-                      Alert.alert("Hata", e?.response?.data?.message || e.message || "Dekont yüklenemedi.");
-                    }
-                  }}
-                >
-                  <Text style={styles.secondaryBtnText}>Dekont Yükle</Text>
-                </TouchableOpacity>
+                </View>
               )}
             </View>
-          ))
-        )}
-      </Card>
-    </ScrollView>
-  );
-
-  const renderAnalytics = () => (
-    <ScrollView contentContainerStyle={styles.tabContainer}>
-      <Card title="Analitik">
-        <Row>
-          <FilterChip label="Bugün" active={range === "today"} onPress={() => setRange("today")} />
-          <FilterChip label="Bu Hafta" active={range === "week"} onPress={() => setRange("week")} />
-          <FilterChip label="Bu Ay" active={range === "month"} onPress={() => setRange("month")} />
-          <FilterChip label="Özel" active={range === "custom"} onPress={() => setRange("custom")} />
-        </Row>
-
-        {range === "custom" && (
-          <Row>
-            <Input label="Başlangıç" value={customStart} onChangeText={setCustomStart} placeholder="YYYY-MM-DD" />
-            <Input label="Bitiş" value={customEnd} onChangeText={setCustomEnd} placeholder="YYYY-MM-DD" />
-          </Row>
-        )}
-
-        <TouchableOpacity style={styles.secondaryBtn} onPress={loadStats}>
-          <Text style={styles.secondaryBtnText}>Yenile</Text>
-        </TouchableOpacity>
-
-        {statsLoading ? (
-          <ActivityIndicator color={lightTheme.colors.primary} />
-        ) : stats ? (
-          <View style={styles.tableCard}>
-            <Text style={{ fontWeight: "700", color: lightTheme.colors.text }}>{stats.rangeLabel}</Text>
-            <Text style={styles.muted}>Toplam Rezervasyon: {stats.totalCount}</Text>
-            <Text style={styles.muted}>Toplam Tutar: ₺{stats.totalAmount.toLocaleString("tr-TR")}</Text>
-            <Text style={styles.muted}>
-              Onaylı: {stats.confirmedCount} • Beklemede: {stats.pendingCount} • Reddedilen: {stats.rejectedCount}
-            </Text>
-          </View>
-        ) : (
-          <Text style={styles.muted}>Henüz veri yok.</Text>
-        )}
-      </Card>
-    </ScrollView>
-  );
-
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color={lightTheme.colors.primary} />
+          ))}
       </View>
-    );
-  }
+    </ScrollView>
+  );
 
+  // Ana render
   return (
     <View style={styles.screen}>
+      {/* Sekmeler */}
       <View style={styles.tabs}>
         <Tab label="Genel" active={activeTab === "general"} onPress={() => setActiveTab("general")} />
         <Tab label="Fotoğraflar" active={activeTab === "photos"} onPress={() => setActiveTab("photos")} />
@@ -1043,9 +735,9 @@ export default function RestaurantPanelScreen({ route }: any) {
         <Tab label="Saatler" active={activeTab === "hours"} onPress={() => setActiveTab("hours")} />
         <Tab label="Politikalar" active={activeTab === "policies"} onPress={() => setActiveTab("policies")} />
         <Tab label="Rezervasyonlar" active={activeTab === "reservations"} onPress={() => setActiveTab("reservations")} />
-        <Tab label="Analitik" active={activeTab === "analytics"} onPress={() => setActiveTab("analytics")} />
       </View>
 
+      {/* Aktif sekme içeriği */}
       {activeTab === "general" && renderGeneral()}
       {activeTab === "photos" && renderPhotos()}
       {activeTab === "menus" && renderMenus()}
@@ -1053,183 +745,40 @@ export default function RestaurantPanelScreen({ route }: any) {
       {activeTab === "hours" && renderHours()}
       {activeTab === "policies" && renderPolicies()}
       {activeTab === "reservations" && renderReservations()}
-      {activeTab === "analytics" && renderAnalytics()}
 
-      {/* ===================== */}
-      {/* ✅ QR SCAN MODAL (expo-camera) */}
-      {/* ===================== */}
-      <Modal
-        visible={qrModalOpen}
-        animationType="slide"
-        onRequestClose={() => setQrModalOpen(false)}
-        transparent={false}
-      >
-        <View style={{ flex: 1, backgroundColor: "#000" }}>
-          {!permission ? (
-            <View style={[styles.center, { backgroundColor: "#000" }]}>
-              <Text style={{ color: "#fff" }}>Kamera izni kontrol ediliyor…</Text>
-              <TouchableOpacity style={[styles.deleteBtn, { marginTop: 12 }]} onPress={() => setQrModalOpen(false)}>
-                <Text style={styles.deleteBtnText}>Kapat</Text>
+      {/* QR tarayıcı modalı */}
+      {scannerVisible && (
+        <Modal visible={scannerVisible} transparent animationType="fade" onRequestClose={() => setScannerVisible(false)}>
+          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.8)", justifyContent: "center", alignItems: "center" }}>
+            {/* Kamera izni henüz alınmamışsa göstergeler */}
+            {permission === null && <ActivityIndicator size="large" color="#fff" />}
+            {permission && !permission.granted && (
+              <TouchableOpacity onPress={requestPermission} style={{ padding: 16, backgroundColor: "#1F2937", borderRadius: 8 }}>
+                <Text style={{ color: "#fff" }}>Kamera izni ver</Text>
               </TouchableOpacity>
-            </View>
-          ) : !permission.granted ? (
-            <View style={[styles.center, { backgroundColor: "#000" }]}>
-              <Text style={{ color: "#fff", marginBottom: 8 }}>Kamera izni gerekli</Text>
-              <TouchableOpacity
-                style={[styles.secondaryBtn]}
-                onPress={() => {
-                  requestPermission();
-                }}
-              >
-                <Text style={styles.secondaryBtnText}>İzin ver</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.deleteBtn, { marginTop: 12 }]} onPress={() => setQrModalOpen(false)}>
-                <Text style={styles.deleteBtnText}>Kapat</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <>
-              <CameraView
-                style={{ flex: 1 }}
-                barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-                onBarcodeScanned={({ data }) => {
-                  if (scannedOnce) return;
-                  setScannedOnce(true);
-                  const rv = reservations.find((x) => x._id === scanningResId);
-                  const fallback = rv?.partySize ?? undefined;
-                  doQRCheckin(data, fallback);
-                }}
-              />
-              <View style={{ position: "absolute", bottom: 30, left: 0, right: 0, alignItems: "center" }}>
-                <TouchableOpacity style={styles.secondaryBtn} onPress={() => setQrModalOpen(false)}>
-                  <Text style={styles.secondaryBtnText}>Kapat</Text>
+            )}
+            {permission && permission.granted && (
+              <View style={{ width: "90%", height: "70%" }}>
+                <CameraView style={{ flex: 1 }} onBarcodeScanned={handleBarCodeScanned} barcodeScannerSettings={{ barcodeTypes: ["qr"] }} />
+                <TouchableOpacity
+                  onPress={() => setScannerVisible(false)}
+                  style={{ position: "absolute", bottom: 10, alignSelf: "center", padding: 12, backgroundColor: "#1F2937", borderRadius: 8 }}
+                >
+                  <Text style={{ color: "#fff" }}>Kapat</Text>
                 </TouchableOpacity>
               </View>
-            </>
-          )}
-        </View>
-      </Modal>
-
-      {/* ===================== */}
-      {/* ✅ MANUEL CHECK-IN MODAL */}
-      {/* ===================== */}
-      <Modal visible={manualModalOpen} animationType="fade" transparent onRequestClose={() => setManualModalOpen(false)}>
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: "rgba(0,0,0,0.5)",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <View
-            style={{
-              backgroundColor: lightTheme.colors.surface,
-              padding: 16,
-              borderRadius: 12,
-              width: "86%",
-            }}
-          >
-            <Text style={{ fontWeight: "700", color: lightTheme.colors.text, marginBottom: 8 }}>
-              Manuel Check-in
-            </Text>
-            <Input label="Gelen Kişi" value={manualCount} onChangeText={setManualCount} keyboardType="number-pad" placeholder="0" />
-            <Row>
-              <TouchableOpacity style={styles.secondaryBtn} onPress={() => setManualModalOpen(false)}>
-                <Text style={styles.secondaryBtnText}>Vazgeç</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.primaryBtn} onPress={doManualCheckin}>
-                <Text style={styles.primaryBtnText}>Onayla</Text>
-              </TouchableOpacity>
-            </Row>
+            )}
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      )}
     </View>
   );
 }
 
-// ---- küçük yardımcı UI parçaları ----
-function Tab({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  return (
-    <TouchableOpacity onPress={onPress} style={[styles.tabButton, active && styles.tabButtonActive]}>
-      <Text style={[styles.tabButtonText, active && styles.tabButtonTextActive]}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <View style={styles.card}>
-      <Text style={styles.cardTitle}>{title}</Text>
-      {children}
-    </View>
-  );
-}
-function Row({ children }: { children: React.ReactNode }) {
-  return <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap" }}>{children}</View>;
-}
-function Input({
-  label,
-  value,
-  onChangeText,
-  keyboardType,
-  placeholder,
-}: {
-  label: string;
-  value: string;
-  onChangeText: (v: string) => void;
-  keyboardType?: any;
-  placeholder?: string;
-}) {
-  return (
-    <View style={{ marginBottom: 12, flex: 1, minWidth: 140 }}>
-      <Text style={{ marginBottom: 4, color: lightTheme.colors.text }}>{label}</Text>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        keyboardType={keyboardType}
-        placeholder={placeholder}
-        placeholderTextColor="#9CA3AF"
-        style={{
-          backgroundColor: lightTheme.colors.muted,
-          borderRadius: lightTheme.radius.md,
-          paddingHorizontal: 12,
-          paddingVertical: 10,
-          color: lightTheme.colors.text,
-          borderWidth: 1,
-          borderColor: lightTheme.colors.border,
-        }}
-      />
-    </View>
-  );
-}
-function FilterChip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      style={[
-        {
-          paddingHorizontal: 10,
-          paddingVertical: 8,
-          borderRadius: 999,
-          borderWidth: 1,
-          marginBottom: 8,
-        },
-        active
-          ? { backgroundColor: lightTheme.colors.primary, borderColor: lightTheme.colors.primary }
-          : { backgroundColor: lightTheme.colors.muted, borderColor: lightTheme.colors.border },
-      ]}
-    >
-      <Text style={{ color: active ? "#fff" : lightTheme.colors.text }}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
-
-// ----- styles -----
+// Stil tanımları
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: lightTheme.colors.background },
-  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: lightTheme.colors.background },
-  tabs: { flexDirection: "row", padding: 8, gap: 6, flexWrap: "wrap" },
+  tabs: { flexDirection: "row", flexWrap: "wrap", padding: 8, gap: 6 },
   tabButton: {
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -1239,7 +788,7 @@ const styles = StyleSheet.create({
   tabButtonActive: { backgroundColor: lightTheme.colors.primary },
   tabButtonText: { color: lightTheme.colors.text },
   tabButtonTextActive: { color: "#FFFFFF", fontWeight: "700" },
-  tabContainer: { padding: 16, gap: 12 },
+  tabContainer: { padding: 16 },
   card: {
     backgroundColor: lightTheme.colors.surface,
     padding: 16,
@@ -1248,7 +797,16 @@ const styles = StyleSheet.create({
     borderColor: lightTheme.colors.border,
     marginBottom: 16,
   },
-  cardTitle: { fontWeight: "700", marginBottom: 8, color: lightTheme.colors.text },
+  cardTitle: { fontWeight: "700", marginBottom: 8, color: lightTheme.colors.text, fontSize: 16 },
+  input: {
+    borderWidth: 1,
+    borderColor: lightTheme.colors.border,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: lightTheme.radius.sm,
+    marginBottom: 8,
+    color: lightTheme.colors.text,
+  },
   primaryBtn: {
     backgroundColor: lightTheme.colors.primary,
     paddingVertical: 12,
@@ -1256,6 +814,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     alignSelf: "flex-start",
     marginTop: 6,
+    paddingHorizontal: 16,
   },
   primaryBtnText: { color: "#FFFFFF", fontWeight: "700" },
   secondaryBtn: {
@@ -1266,6 +825,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     alignSelf: "flex-start",
     marginTop: 6,
+    marginRight: 8,
   },
   secondaryBtnText: { color: lightTheme.colors.primary, fontWeight: "500" },
   successBtn: {
@@ -1275,7 +835,6 @@ const styles = StyleSheet.create({
     borderRadius: lightTheme.radius.md,
     alignItems: "center",
     alignSelf: "flex-start",
-    marginTop: 6,
   },
   successBtnText: { color: "#FFFFFF", fontWeight: "600" },
   warningBtn: {
@@ -1285,7 +844,6 @@ const styles = StyleSheet.create({
     borderRadius: lightTheme.radius.md,
     alignItems: "center",
     alignSelf: "flex-start",
-    marginTop: 6,
   },
   warningBtnText: { color: "#FFFFFF", fontWeight: "600" },
   deleteBtn: {
@@ -1302,7 +860,7 @@ const styles = StyleSheet.create({
     height: 130,
     borderRadius: lightTheme.radius.md,
     backgroundColor: lightTheme.colors.muted,
-    marginRight: 12,
+    marginBottom: 8,
   },
   tableCard: {
     backgroundColor: lightTheme.colors.surface,
@@ -1310,7 +868,6 @@ const styles = StyleSheet.create({
     padding: 12,
     borderWidth: 1,
     borderColor: lightTheme.colors.border,
-    marginBottom: 10,
     minWidth: "100%",
   },
   muted: { color: lightTheme.colors.textSecondary },
@@ -1323,7 +880,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 6,
     marginRight: 8,
-    marginTop: 8,
   },
   badgeText: { color: lightTheme.colors.text },
   badgeDelete: { marginLeft: 6, color: lightTheme.colors.error, fontWeight: "700" },

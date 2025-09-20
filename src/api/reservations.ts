@@ -1,161 +1,146 @@
 import { api } from "./client";
-import { Platform } from "react-native";
+import { normalizeMongoId } from "./restaurants";
 
-export type ReservationStatus = "pending" | "confirmed" | "arrived" | "no_show" | "cancelled";
-
-export type Reservation = {
+export interface Reservation {
   _id: string;
   dateTimeUTC: string;
   partySize: number;
-  totalPrice: number;
-  depositAmount: number;
-  status: ReservationStatus;
+  totalPrice?: number;
+  depositAmount?: number;
+  status: string;
+  restaurantId?: any;
+  userId?: any;
   receiptUrl?: string;
-  user?: { name?: string; email?: string };
-};
-
-export type ReservationListResp = {
-  items: Reservation[];
-  total: number;
-  page: number;
-  limit: number;
-};
-
-// -----------------------------
-// ID normalize helper (restaurantId için)
-// -----------------------------
-function ensureId(val: any): string {
-  if (!val) return "";
-  if (typeof val === "string") {
-    const m = val.match(/ObjectId\('([0-9a-fA-F]{24})'\)/);
-    if (m) return m[1];
-    try {
-      const maybe = JSON.parse(val);
-      if (maybe && typeof maybe === "object" && maybe._id) return String(maybe._id);
-    } catch {}
-    const m2 = val.match(/_id['"]?\s*:\s*['"]?([0-9a-fA-F]{24})['"]?/);
-    if (m2) return m2[1];
-    return val;
-  }
-  if (typeof val === "object" && val !== null && "_id" in val) {
-    return String((val as any)._id || "");
-  }
-  return String(val);
+  [key: string]: any;
 }
 
-export async function fetchReservationsByRestaurant(params: {
+export type ReservationStatus =
+  | "pending"
+  | "confirmed"
+  | "arrived"
+  | "no_show"
+  | "cancelled";
+
+async function unwrap<T>(promise: Promise<{ data: T }>): Promise<T> {
+  const res = await promise;
+  return res.data;
+}
+
+export type CreateReservationPayload = {
   restaurantId: string;
-  from?: string;
-  to?: string;
-  status?: ReservationStatus;
-  page?: number;
-  limit?: number;
-}) {
-  const { restaurantId, ...q } = params;
-  const rid = ensureId(restaurantId);
-  const { data } = await api.get<ReservationListResp>(
-    `/restaurants/${encodeURIComponent(rid)}/reservations`,
-    { params: q }
-  );
-  return data;
-}
-
-export async function updateReservationStatus(rid: string, next: ReservationStatus) {
-  if (next === "confirmed") {
-    const { data } = await api.post<{ ok: true; qrDataUrl?: string }>(
-      `/reservations/${rid}/approve`, {}
-    );
-    return data;
-  }
-  if (next === "cancelled") {
-    const { data } = await api.post<{ ok: true }>(
-      `/reservations/${rid}/reject`, {}
-    );
-    return data;
-  }
-  // Gerekirse diğer durumlar için backend eklenir
-  throw new Error("Desteklenmeyen durum geçişi");
-}
-
-export type ReservationStats = {
-  rangeLabel: string;
-  totalCount: number;
-  totalAmount: number;
-  confirmedCount: number;
-  pendingCount: number;
-  rejectedCount: number;
+  dateTimeISO: string;
+  partySize: number;
+  selections: { person: number; menuId: string; price?: number }[];
+  notes?: string;
 };
 
-export async function fetchReservationStats(params: {
-  restaurantId: string;
-  start?: string; // YYYY-MM-DD
-  end?: string;   // YYYY-MM-DD
-}) {
-  const rid = ensureId(params.restaurantId);
-  const { start, end } = params;
-  const { data } = await api.get<{
-    range: { from: string; to: string };
-    counts: { total: number; pending: number; confirmed: number; arrived: number; cancelled: number };
-    totals: { gross: number; deposit: number };
-    byDay: Array<{ date: string; count: number; amount: number }>;
-  }>(`/restaurants/${encodeURIComponent(rid)}/insights`, { params: { from: start, to: end } });
-
-  return {
-    rangeLabel: `${data.range.from} - ${data.range.to}`,
-    totalCount: data.counts.total,
-    totalAmount: data.totals.gross,
-    confirmedCount: data.counts.confirmed,
-    pendingCount: data.counts.pending,
-    rejectedCount: data.counts.cancelled,
-  } as ReservationStats;
+export async function createReservation(
+  payload: CreateReservationPayload
+): Promise<Reservation> {
+  const body: any = { ...payload, dateTime: payload.dateTimeISO };
+  return unwrap(api.post<Reservation>("/reservations", body));
 }
 
-// ----------------------------------------------------
-// Eklenen / Tamamlanan fonksiyonlar
-// ----------------------------------------------------
-
-// (A) Müşteri rezervasyonu iptal et
-export async function cancelReservation(rid: string) {
-  const { data } = await api.post<{ ok: true; status: ReservationStatus }>(
-    `/reservations/${rid}/cancel`, {}
+/**
+ * Restoran rezervasyonlarını getirir.
+ * Sunucu hem [] hem { items, nextCursor } döndürebildiği için normalize ediyoruz.
+ * Ayrıca 304’ü önlemek için client.ts’de cache-buster var; yine de burada da header/param koyuyoruz.
+ */
+export async function fetchReservationsByRestaurant(
+  restId: string
+): Promise<Reservation[]> {
+  const rid = normalizeMongoId(restId);
+  return unwrap(
+    api.get<Reservation[]>(`/restaurants/${rid}/reservations`, {
+      params: { _cb: Date.now() }, // ekstra güvenlik
+    })
   );
-  return data;
 }
 
-// (B) QR data URL getir (müşteri detay ekranında gösterilecek)
-export async function getReservationQR(rid: string) {
-  const { data } = await api.get<{ qrDataUrl: string }>(
-    `/reservations/${rid}/qr`
+
+export async function updateReservationStatus(
+  id: string,
+  status: string
+): Promise<Reservation> {
+  return unwrap(
+    api.put<Reservation>(`/restaurants/reservations/${id}/status`, { status })
   );
-  return data.qrDataUrl as string;
 }
 
-// (C) Dekont yükleme — RN FormData
-function normalizeUri(uri: string) {
-  return Platform.OS === "ios" ? uri.replace("file://", "") : uri;
-}
-
-export async function uploadReservationReceipt(
-  rid: string,
-  file: { uri: string; name?: string; type?: string }
-) {
-  const form = new FormData();
-
-  // RN tip uyumu için bilinçli cast
-  const part = {
-    uri: normalizeUri(file.uri),
-    name: file.name ?? `receipt_${Date.now()}.jpg`,
-    type: file.type ?? "image/jpeg",
-  } as unknown as Blob;
-
-  form.append("file", part);
-
-  const { data } = await api.post<{ receiptUrl: string; status: string }>(
-    `/reservations/${rid}/receipt`,
-    form
+export async function getReservationQR(id: string): Promise<string> {
+  const data = await unwrap(
+    api.get<{ qrDataUrl: string }>(`/reservations/${id}/qr`)
   );
-  return data;
+  return data.qrDataUrl;
 }
 
-// (D) Eski çağrılara uyumluluk için kısa ad
-export const uploadReceipt = uploadReservationReceipt;
+export async function cancelReservation(id: string): Promise<Reservation> {
+  return unwrap(
+    api.put<Reservation>(`/restaurants/reservations/${id}/status`, {
+      status: "cancelled",
+    })
+  );
+}
+
+export async function uploadReceipt(
+  id: string,
+  file: { uri: string; name: string; type: string }
+): Promise<Reservation> {
+  const data = new FormData();
+  data.append(
+    "file",
+    {
+      uri: file.uri,
+      name: file.name ?? "receipt.jpg",
+      type: file.type ?? "image/jpeg",
+    } as any
+  );
+
+  try {
+    return await unwrap(
+      api.post<Reservation>(`/reservations/${id}/receipt`, data, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+    );
+  } catch (e: any) {
+    if (e?.response?.status === 404) {
+      return await unwrap(
+        api.post<Reservation>(`/restaurants/reservations/${id}/receipt`, data, {
+          headers: { "Content-Type": "multipart/form-data" },
+        })
+      );
+    }
+    throw e;
+  }
+}
+
+export async function getReservation(id: string): Promise<Reservation> {
+  return unwrap(api.get<Reservation>(`/reservations/${id}`));
+}
+
+export async function getMyReservations(): Promise<Reservation[]> {
+  try {
+    // Aynı 304 önlemi burada da:
+    const res = await api.get<Reservation[]>(`/reservations`, {
+      params: { _cb: Date.now() },
+      headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
+    });
+    return res.data;
+  } catch {
+    return [];
+  }
+}
+
+/** ✅ Listeler için hafif tip (export edildi!) */
+export type ReservationLite = Pick<
+  Reservation,
+  | "_id"
+  | "dateTimeUTC"
+  | "partySize"
+  | "totalPrice"
+  | "depositAmount"
+  | "status"
+  | "restaurantId"
+  | "userId"
+  | "receiptUrl"
+>;

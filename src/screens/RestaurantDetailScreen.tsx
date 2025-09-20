@@ -110,21 +110,21 @@ export default function RestaurantDetailScreen() {
   };
 
   const onContinue = () => {
-  if (!selectedSlot || !r) return;
+    if (!selectedSlot || !r) return;
 
-  // label içinden saat al (örn. "13:30")
-  const [h, m] = selectedSlot.label.split(":");
-  const localDateTime = dayjs(date)
-    .hour(Number(h))
-    .minute(Number(m))
-    .second(0)
-    .toISOString();
+    // label içinden saat al (örn. "13:30")
+    const [h, m] = selectedSlot.label.split(":");
+    const localDateTime = dayjs(date)
+      .hour(Number(h))
+      .minute(Number(m))
+      .second(0)
+      .toISOString();
 
-  setRestaurant(r._id);
-  setDateTime(localDateTime); // artık UTC kayması yok
-  setParty(partySize);
-  nav.navigate("Rezervasyon - Menü");
-};
+    setRestaurant(r._id);
+    setDateTime(localDateTime); // artık UTC kayması yok
+    setParty(partySize);
+    nav.navigate("Rezervasyon - Menü");
+  };
 
   const onPhotoScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const idx = Math.round(e.nativeEvent.contentOffset.x / PHOTO_W);
@@ -244,49 +244,48 @@ export default function RestaurantDetailScreen() {
           <Text style={styles.sectionTitle}>Uygun Saat Bul</Text>
 
           <View style={styles.controlsRow}>
-  {/* Tarih kontrolleri (sol) */}
-  <View style={styles.dateControls}>
-    <TouchableOpacity
-      onPress={() => setDate(dayjs(date).subtract(1, "day").format("YYYY-MM-DD"))}
-      disabled={dayjs(date).isSame(dayjs(), "day")}
-      style={[styles.iconBtn, dayjs(date).isSame(dayjs(), "day") && styles.disabled]}
-    >
-      <Text style={styles.iconText}>{"<"}</Text>
-    </TouchableOpacity>
+            {/* Tarih kontrolleri (sol) */}
+            <View style={styles.dateControls}>
+              <TouchableOpacity
+                onPress={() => setDate(dayjs(date).subtract(1, "day").format("YYYY-MM-DD"))}
+                disabled={dayjs(date).isSame(dayjs(), "day")}
+                style={[styles.iconBtn, dayjs(date).isSame(dayjs(), "day") && styles.disabled]}
+              >
+                <Text style={styles.iconText}>{"<"}</Text>
+              </TouchableOpacity>
 
-    <Text
-      style={styles.dateText}
-      numberOfLines={1}
-      ellipsizeMode="tail"
-    >
-      {dayjs(date).format("DD Eyl YYYY ddd")} {/* örnek; senin formatını koru */}
-    </Text>
+              <Text
+                style={styles.dateText}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {dayjs(date).format("DD Eyl YYYY ddd")} {/* örnek; senin formatını koru */}
+              </Text>
 
-    <TouchableOpacity
-      onPress={() => setDate(dayjs(date).add(1, "day").format("YYYY-MM-DD"))}
-      style={styles.iconBtn}
-    >
-      <Text style={styles.iconText}>{">"}</Text>
-    </TouchableOpacity>
-  </View>
+              <TouchableOpacity
+                onPress={() => setDate(dayjs(date).add(1, "day").format("YYYY-MM-DD"))}
+                style={styles.iconBtn}
+              >
+                <Text style={styles.iconText}>{">"}</Text>
+              </TouchableOpacity>
+            </View>
 
-  {/* Kişi kontrolleri (sağ) */}
-  <View style={styles.partyControls}>
-    <TouchableOpacity
-      onPress={() => setPartySize((p) => Math.max(1, p - 1))}
-      style={[styles.iconBtn, partySize <= 1 && styles.disabled]}
-    >
-      <Text style={styles.iconText}>-</Text>
-    </TouchableOpacity>
+            {/* Kişi kontrolleri (sağ) */}
+            <View style={styles.partyControls}>
+              <TouchableOpacity
+                onPress={() => setPartySize((p) => Math.max(1, p - 1))}
+                style={[styles.iconBtn, partySize <= 1 && styles.disabled]}
+              >
+                <Text style={styles.iconText}>-</Text>
+              </TouchableOpacity>
 
-    <Text style={styles.partyText}>Kişi: {partySize}</Text>
+              <Text style={styles.partyText}>Kişi: {partySize}</Text>
 
-    <TouchableOpacity onPress={() => setPartySize((p) => p + 1)} style={styles.iconBtn}>
-      <Text style={styles.iconText}>+</Text>
-    </TouchableOpacity>
-  </View>
-</View>
-
+              <TouchableOpacity onPress={() => setPartySize((p) => p + 1)} style={styles.iconBtn}>
+                <Text style={styles.iconText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
 
           {fetchingSlots ? (
             <ActivityIndicator color={lightTheme.colors.primary} />
@@ -333,7 +332,7 @@ export default function RestaurantDetailScreen() {
       <View style={styles.ctaBar}>
         <View style={{ flex: 1 }}>
           <Text style={styles.ctaTitle}>
-             {selectedSlot ? `${dayLabel}, ${selectedSlot.label}` : "Tarih & Saat seç"}
+            {selectedSlot ? `${dayLabel}, ${selectedSlot.label}` : "Tarih & Saat seç"}
           </Text>
           <Text style={styles.ctaSub}>Kişi: {partySize}</Text>
         </View>
@@ -500,7 +499,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 8,
     gap: 8,
-    flexWrap: "wrap", // dar ekranlarda alt satıra iner
+    flexWrap: "wrap",
   },
   dateControls: {
     flexDirection: "row",

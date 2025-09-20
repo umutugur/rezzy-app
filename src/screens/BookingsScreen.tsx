@@ -11,7 +11,7 @@ import { Screen, Text } from "../components/Themed";
 import FilterTabs from "../components/FilterTabs";   // value: "all" | "active" | "past"
 import TimeTabs from "../components/TimeTabs";       // value: "all" | "today" | "week" | "custom"
 import SearchBar from "../components/SearchBar";
-import { getMyReservations, ReservationLite } from "../api/reservations";
+import { getMyReservations, type Reservation } from "../api/reservations";
 import ReservationCard from "../components/ReservationCard";
 
 const NAV_DETAIL = "Rezervasyon Detayı";
@@ -41,7 +41,6 @@ function isPastStatus(s: string) {
   return n === "arrived" || n === "no_show" || n === "cancelled" || n === "rejected";
 }
 
-// İstanbul gün başlangıcı/bitişi
 function startOfTodayLocal() {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).getTime();
@@ -53,13 +52,23 @@ function endOfTodayLocal() {
 function startOfWeekLocal() {
   const now = new Date();
   const day = now.getDay(); // 0=Sun
-  const diff = day === 0 ? 6 : day - 1; // Pazartesi başlangıç
-  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff, 0, 0, 0, 0);
+  const diff = day === 0 ? 6 : day - 1; // Pazartesi
+  const monday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() - diff,
+    0, 0, 0, 0
+  );
   return monday.getTime();
 }
 function endOfWeekLocal() {
   const start = new Date(startOfWeekLocal());
-  const sunday = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6, 23, 59, 59, 999);
+  const sunday = new Date(
+    start.getFullYear(),
+    start.getMonth(),
+    start.getDate() + 6,
+    23, 59, 59, 999
+  );
   return sunday.getTime();
 }
 
@@ -81,17 +90,17 @@ export default function BookingsScreen() {
   const [query, setQuery] = React.useState("");
 
   // ---- Data & state ----
-  const [data, setData] = React.useState<ReservationLite[]>([]);
+  const [data, setData] = React.useState<Reservation[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  // ---- Yükleme (tüm listeyi çek; filtreler UI'da) ----
+  // ---- Yükleme (tüm liste) ----
   const load = React.useCallback(async () => {
     try {
       setError(null);
       setLoading(true);
-      const list = await getMyReservations(); // tümünü çek
+      const list = await getMyReservations();
       setData(list);
     } catch (e: any) {
       setError(e?.message ?? "Yüklenemedi");
@@ -112,14 +121,9 @@ export default function BookingsScreen() {
   const filtered = React.useMemo(() => {
     let arr = [...data];
 
-    // 1) Durum filtresi
-    if (filterTab === "active") {
-      arr = arr.filter((x) => isActiveStatus(x.status));
-    } else if (filterTab === "past") {
-      arr = arr.filter((x) => isPastStatus(x.status));
-    }
+    if (filterTab === "active") arr = arr.filter((x) => isActiveStatus(x.status));
+    else if (filterTab === "past") arr = arr.filter((x) => isPastStatus(x.status));
 
-    // 2) Zaman filtresi
     if (timeTab === "today") {
       const s = startOfTodayLocal(), e = endOfTodayLocal();
       arr = arr.filter((x) => inRange(x.dateTimeUTC, s, e));
@@ -132,13 +136,9 @@ export default function BookingsScreen() {
       if (s || e) arr = arr.filter((x) => inRange(x.dateTimeUTC, s, e));
     }
 
-    // 3) Arama (restoran adına göre)
     const q = query.trim().toLowerCase();
-    if (q) {
-      arr = arr.filter((x) => (x.restaurantId as any)?.name?.toLowerCase?.().includes(q));
-    }
+    if (q) arr = arr.filter((x) => (x.restaurantId as any)?.name?.toLowerCase?.().includes(q));
 
-    // 4) Sıralama: Geçmiş → yeni önce (desc), diğerlerinde → yaklaşan önce (asc)
     if (filterTab === "past" || timeTab === "today" || timeTab === "week" || timeTab === "custom") {
       arr.sort((a, b) => new Date(b.dateTimeUTC).getTime() - new Date(a.dateTimeUTC).getTime());
     } else {
@@ -148,8 +148,7 @@ export default function BookingsScreen() {
     return arr;
   }, [data, filterTab, timeTab, range.start, range.end, query]);
 
-  // ---- Render item ----
-  const renderItem = React.useCallback(({ item }: { item: ReservationLite }) => (
+  const renderItem = React.useCallback(({ item }: { item: Reservation }) => (
     <ReservationCard
       title={(item.restaurantId as any)?.name || "Restoran"}
       dateISO={item.dateTimeUTC}
@@ -161,22 +160,18 @@ export default function BookingsScreen() {
 
   return (
     <Screen>
-      {/* 1) Durum filtresi */}
-      <FilterTabs
-        value={filterTab}
-        onChange={setFilterTab}
-      />
+      <FilterTabs value={filterTab} onChange={setFilterTab} />
 
-      {/* 2) Zaman filtresi */}
       <View style={{ marginTop: 10 }}>
         <TimeTabs
           value={timeTab}
           onChange={setTimeTab}
-          onCustomChange={(startISO: string, endISO: string) => setRange({ start: startISO, end: endISO })}
+          onCustomChange={(startISO: string, endISO: string) =>
+            setRange({ start: startISO, end: endISO })
+          }
         />
       </View>
 
-      {/* 3) Arama */}
       <View style={{ marginTop: 10 }}>
         <SearchBar value={query} onChange={setQuery} />
       </View>
@@ -189,7 +184,6 @@ export default function BookingsScreen() {
       ) : (
         <>
           {error ? <Text secondary style={{ marginVertical: 8 }}>Hata: {error}</Text> : null}
-
           <FlatList
             data={filtered}
             keyExtractor={(it) => it._id}
