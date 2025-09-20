@@ -24,13 +24,25 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-barcode-scanner"
-    ]
+      "expo-barcode-scanner",
+      "expo-apple-authentication"
+    ],
+    "extra": {
+      "googleClientIdAndroid": "661428302727-n3jdtangvmk094kcn2340tqeoadl9jpl.apps.googleusercontent.com",
+      "googleClientIdIos": "YOUR-IOS-CLIENT-ID.apps.googleusercontent.com",
+      "googleClientIdWeb": "661428302727-rh362fibpvi2ug1b6phh6ogc9mno45bq.apps.googleusercontent.com",
+      "eas": {
+        "projectId": "49189fbc-e9bb-4507-a5c7-713e5c73b3f6"
+      }
+    }
   }
 }

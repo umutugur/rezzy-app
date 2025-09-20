@@ -2,9 +2,10 @@ import axios from "axios";
 import { useAuth } from "../store/useAuth";
 
 export const api = axios.create({
-  baseURL: "http://192.168.1.131:4000/api",
+  baseURL: "https://rezzy-backend.onrender.com/api",
   timeout: 30000,
 });
+
 
 api.interceptors.request.use((config) => {
   const token = useAuth.getState().token;

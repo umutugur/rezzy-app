@@ -1,24 +1,29 @@
+// src/api/auth.ts
 import { api } from "./client";
-import type { User } from "../store/useAuth"; // oradan tipi al
+import type { User } from "../store/useAuth";
+
 export type LoginResp = {
   token: string;
-  user: User; // { id, name, role, restaurantId? ... } — store’da genişlettin
+  user: User;
 };
 
 export async function login(email: string, password: string): Promise<LoginResp> {
   const { data } = await api.post<LoginResp>("/auth/login", { email, password });
   return data;
 }
+
 export async function register(name: string, email: string, password: string){
-  const { data } = await api.post("/auth/register", { name, email, password, role:"customer" });
-  return data as { token: string };
+  const { data } = await api.post<LoginResp>("/auth/register", { name, email, password, role:"customer" });
+  return data;
 }
-// Google: expo-auth-session ile idToken al; backend'e gönder
-export async function googleSignIn(idToken: string){
-  const { data } = await api.post("/auth/google", { idToken });
-  return data as { token: string };
+
+// ✅ Sunucu { token, user } döndürüyor → LoginResp
+export async function googleSignIn(idToken: string): Promise<LoginResp> {
+  const { data } = await api.post<LoginResp>("/auth/google", { idToken });
+  return data;
 }
-export async function appleSignIn(identityToken: string){
-  const { data } = await api.post("/auth/apple", { identityToken });
-  return data as { token: string };
+
+export async function appleSignIn(identityToken: string): Promise<LoginResp> {
+  const { data } = await api.post<LoginResp>("/auth/apple", { identityToken });
+  return data;
 }
