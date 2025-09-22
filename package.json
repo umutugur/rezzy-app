@@ -24,6 +24,7 @@
     "expo-constants": "^18.0.9",
     "expo-file-system": "~19.0.12",
     "expo-image-picker": "~17.0.8",
+    "expo-notifications": "^0.32.11",
     "expo-random": "^14.0.1",
     "expo-status-bar": "~3.0.8",
     "expo-web-browser": "^15.0.7",

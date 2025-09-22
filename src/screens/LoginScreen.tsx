@@ -11,7 +11,7 @@ import * as AppleAuthentication from "expo-apple-authentication";
 import * as Google from "expo-auth-session/providers/google";
 import { makeRedirectUri, ResponseType } from "expo-auth-session";
 import * as Random from "expo-random";
-
+import { registerPushToken } from "../hooks/usePushToken";
 import {
   GOOGLE_ANDROID_CLIENT_ID,
   GOOGLE_IOS_CLIENT_ID,
@@ -20,7 +20,7 @@ import {
 
 // 16 byte -> 32 hex (Google nonce)
 const bytesToHex = (b: Uint8Array) =>
-  Array.from(b).map(x => x.toString(16).padStart(2,"0")).join("");
+  Array.from(b).map((x) => x.toString(16).padStart(2, "0")).join("");
 
 export default function LoginScreen() {
   const navigation = useNavigation<any>();
@@ -38,6 +38,14 @@ export default function LoginScreen() {
       setLoading(true);
       const { token, user } = await login(email, password);
       setAuth(token, user);
+
+      // ✅ Girişten hemen sonra push token kaydı
+      try {
+        await registerPushToken();
+      } catch {
+        // token kaydı başarısız olsa bile akışı bozma
+      }
+
       navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
     } catch (e: any) {
       Alert.alert("Giriş Hatası", e?.response?.data?.message || "Giriş başarısız");
@@ -51,12 +59,9 @@ export default function LoginScreen() {
   const nonce = React.useMemo(() => bytesToHex(Random.getRandomBytes(16)), []);
 
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    // Native client ID’ler
     androidClientId: GOOGLE_ANDROID_CLIENT_ID || undefined,
     iosClientId: GOOGLE_IOS_CLIENT_ID || undefined,
-    // (Opsiyonel) Web’de test etmek istersen:
-    clientId: GOOGLE_WEB_CLIENT_ID || undefined,
-
+    clientId: GOOGLE_WEB_CLIENT_ID || undefined, // web testleri için opsiyonel
     responseType: ResponseType.IdToken,
     redirectUri,
     extraParams: { prompt: "select_account", nonce },
@@ -64,6 +69,7 @@ export default function LoginScreen() {
 
   React.useEffect(() => {
     if (!response) return;
+
     if (response.type === "success") {
       const anyResp = response as any;
       const idToken: string | undefined =
@@ -76,6 +82,14 @@ export default function LoginScreen() {
           if (!idToken) throw new Error("Google id_token alınamadı.");
           const { token, user } = await googleSignIn(idToken);
           setAuth(token, user);
+
+          // ✅ Girişten hemen sonra push token kaydı
+          try {
+            await registerPushToken();
+          } catch {
+            // hatayı yut
+          }
+
           navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
         } catch (err: any) {
           Alert.alert("Google Girişi Hatası", err?.response?.data?.message || err?.message);
@@ -99,7 +113,7 @@ export default function LoginScreen() {
     }
   };
 
-  // ---- Apple (iskelet; hazır dursun, iOS dışında gizli)
+  // ---- Apple (iskelet; iOS dışında gizli)
   const onApple = async () => {
     try {
       if (Platform.OS !== "ios") return;
@@ -117,6 +131,14 @@ export default function LoginScreen() {
       }
       const { token, user } = await appleSignIn(identityToken);
       setAuth(token, user);
+
+      // ✅ Girişten hemen sonra push token kaydı
+      try {
+        await registerPushToken();
+      } catch {
+        // hatayı yut
+      }
+
       navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
     } catch (e: any) {
       if (e?.code !== "ERR_CANCELED") {
