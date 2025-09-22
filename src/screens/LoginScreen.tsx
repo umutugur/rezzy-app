@@ -1,22 +1,31 @@
-// src/screens/LoginScreen.tsx
 import React from "react";
 import { View, Alert, Platform } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import { Screen, Text } from "../components/Themed";
 import Input from "../components/Input";
 import Button from "../components/Button";
 import { login, googleSignIn, appleSignIn } from "../api/auth";
 import { useAuth } from "../store/useAuth";
 
-import * as WebBrowser from "expo-web-browser";
 import * as AppleAuthentication from "expo-apple-authentication";
-import * as AuthSession from "expo-auth-session";
-import { useAuthRequest, makeRedirectUri, ResponseType } from "expo-auth-session";
-import { GOOGLE_ANDROID_CLIENT_ID, GOOGLE_IOS_CLIENT_ID, GOOGLE_WEB_CLIENT_ID } from "../config/keys";
+import * as Google from "expo-auth-session/providers/google";
+import { makeRedirectUri, ResponseType } from "expo-auth-session";
+import * as Random from "expo-random";
 
-WebBrowser.maybeCompleteAuthSession();
+import {
+  GOOGLE_ANDROID_CLIENT_ID,
+  GOOGLE_IOS_CLIENT_ID,
+  GOOGLE_WEB_CLIENT_ID,
+} from "../config/keys";
+
+// 16 byte -> 32 hex (Google nonce)
+const bytesToHex = (b: Uint8Array) =>
+  Array.from(b).map(x => x.toString(16).padStart(2,"0")).join("");
 
 export default function LoginScreen() {
+  const navigation = useNavigation<any>();
   const setAuth = useAuth((s) => s.setAuth);
+
   const [email, setEmail] = React.useState("new-owner@rezzy.app");
   const [password, setPassword] = React.useState("123456");
   const [loading, setLoading] = React.useState(false);
@@ -29,104 +38,90 @@ export default function LoginScreen() {
       setLoading(true);
       const { token, user } = await login(email, password);
       setAuth(token, user);
-      console.log("LOGIN OK ->", user);
+      navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
     } catch (e: any) {
-      console.log("LOGIN FAIL", e?.response?.data || e?.message);
       Alert.alert("Giriş Hatası", e?.response?.data?.message || "Giriş başarısız");
     } finally {
       setLoading(false);
     }
   };
 
-  // ---- Google (expo-auth-session) — id_token alacağız
-  const discovery = {
-    authorizationEndpoint: "https://accounts.google.com/o/oauth2/v2/auth",
-    tokenEndpoint: "https://oauth2.googleapis.com/token",
-  };
+  // ---- Google (APK/Dev Client odaklı: native scheme)
+  const redirectUri = makeRedirectUri({ scheme: "rezzy" });
+  const nonce = React.useMemo(() => bytesToHex(Random.getRandomBytes(16)), []);
 
-  const redirectUri = makeRedirectUri({ scheme: "rezzy" }); // app.json -> scheme
-  const [request, response, promptAsync] = useAuthRequest(
-    {
-       clientId:
-        Platform.OS === "android"
-          ? GOOGLE_ANDROID_CLIENT_ID
-          : Platform.OS === "ios"
-          ? GOOGLE_IOS_CLIENT_ID
-          : GOOGLE_WEB_CLIENT_ID,
-      responseType: ResponseType.IdToken, // id_token lazım
-      redirectUri,
-      scopes: ["openid", "email", "profile"],
-      extraParams: {
-        // Hesap seçimi pop-up
-        prompt: "select_account",
-      },
-    },
-    discovery
-  );
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
+    // Native client ID’ler
+    androidClientId: GOOGLE_ANDROID_CLIENT_ID || undefined,
+    iosClientId: GOOGLE_IOS_CLIENT_ID || undefined,
+    // (Opsiyonel) Web’de test etmek istersen:
+    clientId: GOOGLE_WEB_CLIENT_ID || undefined,
+
+    responseType: ResponseType.IdToken,
+    redirectUri,
+    extraParams: { prompt: "select_account", nonce },
+  });
 
   React.useEffect(() => {
-    const run = async () => {
-      if (response?.type === "success") {
-        try {
-          setGLoading(true);
-          const idToken = (response.params as any)?.id_token;
-          if (!idToken) throw new Error("Google id_token alınamadı.");
+    if (!response) return;
+    if (response.type === "success") {
+      const anyResp = response as any;
+      const idToken: string | undefined =
+        anyResp?.params?.id_token ||
+        anyResp?.authentication?.idToken ||
+        anyResp?.authentication?.params?.id_token;
 
+      (async () => {
+        try {
+          if (!idToken) throw new Error("Google id_token alınamadı.");
           const { token, user } = await googleSignIn(idToken);
           setAuth(token, user);
+          navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
         } catch (err: any) {
-          console.log("GOOGLE SIGNIN FAIL", err?.response?.data || err?.message);
-          Alert.alert(
-            "Google Girişi Hatası",
-            err?.response?.data?.message || "Google girişi başarısız."
-          );
+          Alert.alert("Google Girişi Hatası", err?.response?.data?.message || err?.message);
         } finally {
           setGLoading(false);
         }
-      }
-    };
-    run();
-  }, [response]);
+      })();
+    } else if (response.type === "error") {
+      setGLoading(false);
+      Alert.alert("Google Hatası", "Google ile giriş başarısız.");
+    }
+  }, [response, navigation, setAuth]);
 
   const onGoogle = async () => {
-    if (!GOOGLE_ANDROID_CLIENT_ID && !GOOGLE_IOS_CLIENT_ID && !GOOGLE_WEB_CLIENT_ID) {
-      Alert.alert("Kurulum Eksik", "Google client ID'leri app.json -> extra içine eklenmeli.");
-      return;
+    try {
+      setGLoading(true);
+      await promptAsync();
+    } catch (e: any) {
+      Alert.alert("Google Girişi Hatası", e?.message || "Bilinmeyen hata");
+      setGLoading(false);
     }
-    await promptAsync();
   };
 
-  // ---- Apple (iskelet) — iOS dışı platformda gizleyebiliriz
+  // ---- Apple (iskelet; hazır dursun, iOS dışında gizli)
   const onApple = async () => {
     try {
-      if (Platform.OS !== "ios") {
-        Alert.alert("Apple Girişi", "Apple ile giriş sadece iOS'ta kullanılabilir.");
-        return;
-      }
+      if (Platform.OS !== "ios") return;
       setALoading(true);
-
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
           AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
       });
-
       const identityToken = credential.identityToken;
       if (!identityToken) {
         Alert.alert("Apple", "identityToken alınamadı.");
         return;
       }
-
-      // Not: Şu an çalışmayabilir, ama backend endpoint hazır.
-      // İleride Apple portal ayarları tamamlanınca bu çağrı direkt çalışacak.
       const { token, user } = await appleSignIn(identityToken);
       setAuth(token, user);
+      navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
     } catch (e: any) {
-      // Kullanıcı iptal ettiyse:
-      if (e?.code === "ERR_CANCELED") return;
-      console.log("APPLE SIGNIN FAIL", e?.response?.data || e?.message);
-      Alert.alert("Apple Girişi", "Şu an aktif değil. Apple ayarları tamamlanınca çalışacak.");
+      if (e?.code !== "ERR_CANCELED") {
+        Alert.alert("Apple Girişi", "Şu an aktif değil. Ayarlar tamamlanınca çalışacak.");
+      }
     } finally {
       setALoading(false);
     }
@@ -154,12 +149,7 @@ export default function LoginScreen() {
       {Platform.OS === "ios" ? (
         <>
           <View style={{ height: 12 }} />
-          <Button
-            title="Apple ile devam et"
-            onPress={onApple}
-            loading={aLoading}
-            variant="outline"
-          />
+          <Button title="Apple ile devam et" onPress={onApple} loading={aLoading} variant="outline" />
         </>
       ) : null}
 

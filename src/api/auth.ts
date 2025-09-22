@@ -17,7 +17,7 @@ export async function register(name: string, email: string, password: string){
   return data;
 }
 
-// ✅ Sunucu { token, user } döndürüyor → LoginResp
+// Google: expo-auth-session ile idToken al; backend'e gönder
 export async function googleSignIn(idToken: string): Promise<LoginResp> {
   const { data } = await api.post<LoginResp>("/auth/google", { idToken });
   return data;

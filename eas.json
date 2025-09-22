@@ -7,6 +7,9 @@
       "android": { "buildType": "apk" },
       "ios": { "simulator": true }
     },
+     "apk": {
+      "android": { "buildType": "apk" }
+    },
     "preview": {
       "distribution": "internal",
       "android": { "buildType": "apk" }

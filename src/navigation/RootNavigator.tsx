@@ -16,17 +16,31 @@ import ProfileScreen from "../screens/ProfileScreen";
 import { useAuth } from "../store/useAuth";
 import RestaurantPanelScreen from "../screens/RestaurantPanelScreen";
 import AdminPanelScreen from "../screens/AdminPanelScreen";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const Stack = createNativeStackNavigator();
 const Tabs = createBottomTabNavigator();
 
 function TabsNav() {
+  const insets = useSafeAreaInsets();
+  const bottomPad = Math.max(insets.bottom, 8); // en az 8 px
+  const barHeight = 56 + bottomPad;             // tab yüksekliği + güvenli alan
+
   return (
     <Tabs.Navigator
       screenOptions={({ route }) => ({
         headerTitleAlign: "left",
         tabBarActiveTintColor: "#7B2C2C",
         tabBarInactiveTintColor: "#8A8A8A",
+        tabBarHideOnKeyboard: true, // klavye açılınca gizle
+        tabBarStyle: {
+          height: barHeight,
+          paddingBottom: bottomPad,
+          paddingTop: 8,
+          borderTopWidth: 0.5,
+          backgroundColor: "#fff",
+          elevation: 8, // Android gölge
+        },
         tabBarIcon: ({ color, size }) => {
           const nameMap: Record<string, any> = {
             "Keşfet": "compass-outline",
@@ -53,18 +67,14 @@ export default function RootNavigator() {
           <Stack.Screen name="Giriş" component={LoginScreen} options={{ headerShown: false }} />
         ) : (
           <>
-            <Stack.Screen
-              name="Tabs"
-              component={TabsNav}
-              options={{ headerShown: false }}
-            />
+            <Stack.Screen name="Tabs" component={TabsNav} options={{ headerShown: false }} />
             <Stack.Screen name="Restoran" component={RestaurantDetailScreen} />
             <Stack.Screen name="Rezervasyon - Tarih" component={ReservationStep1Screen} />
             <Stack.Screen name="Rezervasyon - Menü" component={ReservationStep2Screen} />
             <Stack.Screen name="Rezervasyon - Özet" component={ReservationStep3Screen} />
             <Stack.Screen name="Rezervasyon Detayı" component={ReservationDetailScreen} />
-             <Stack.Screen name="RestaurantPanel" component={RestaurantPanelScreen} />
-             <Stack.Screen name="AdminPanel" component={AdminPanelScreen}/>
+            <Stack.Screen name="RestaurantPanel" component={RestaurantPanelScreen} />
+            <Stack.Screen name="AdminPanel" component={AdminPanelScreen} />
           </>
         )}
       </Stack.Navigator>
