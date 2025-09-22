@@ -1,23 +1,46 @@
-// ör. src/hooks/usePushToken.ts
+// src/hooks/usePushToken.ts
 import * as Notifications from "expo-notifications";
-import { Platform } from "react-native";
+import * as Device from "expo-device";
 import Constants from "expo-constants";
-import { api } from "../api/client"; // senin axios wrapper
+import { Platform } from "react-native";
+import { api } from "../api/client";
+import { useAuth } from "../store/useAuth";
 
 export async function registerPushToken() {
+  if (!Device.isDevice) return null;
+
+  if (Platform.OS === "android") {
+    await Notifications.setNotificationChannelAsync("default", {
+      name: "default",
+      importance: Notifications.AndroidImportance.MAX,
+    });
+  }
+
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
   if (existingStatus !== "granted") {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
+    const req = await Notifications.requestPermissionsAsync();
+    finalStatus = req.status;
   }
   if (finalStatus !== "granted") return null;
 
-  const projectId = Constants?.expoConfig?.extra?.eas?.projectId || Constants?.easConfig?.projectId;
-  const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
-  if (!token) return null;
+  const projectId =
+    // @ts-ignore
+    Constants?.expoConfig?.extra?.eas?.projectId ||
+    // @ts-ignore
+    Constants?.easConfig?.projectId;
 
-  // Backend'e kaydet
-  await api.post("/notifications/register", { token });
-  return token;
+  if (!projectId) return null;
+
+  const expoToken = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+
+  // Auth header kesin dursun (axios default’un varsa bu blok sorun olmaz)
+  const jwt = useAuth.getState().token;
+  await api.post(
+    "/notifications/register",
+    { token: expoToken },
+    jwt ? { headers: { Authorization: `Bearer ${jwt}` } } : undefined
+  );
+
+  return expoToken;
 }
