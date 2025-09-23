@@ -1,12 +1,15 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:tools="http://schemas.android.com/tools">
+
   <!-- İzinler -->
   <uses-permission android:name="android.permission.INTERNET" />
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
   <uses-permission android:name="android.permission.VIBRATE" />
   <uses-permission android:name="android.permission.CAMERA" />
-  <!-- Depo izinleri isteğe bağlı; gerek yoksa temizleyebilirsin -->
-  <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/> -->
-  <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/> -->
+  <!-- İstersen bu ikisini tamamen kaldır: modern Android'de gerek yok
+  <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+  <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+  -->
 
   <queries>
     <intent>
@@ -27,9 +30,9 @@
     android:enableOnBackInvokedCallback="false">
 
     <!-- OTA kapalı -->
-    <meta-data android:name="expo.modules.updates.ENABLED" android:value="false" />
-    <meta-data android:name="expo.modules.updates.EXPO_UPDATES_CHECK_ON_LAUNCH" android:value="ALWAYS" />
-    <meta-data android:name="expo.modules.updates.EXPO_UPDATES_LAUNCH_WAIT_MS" android:value="0" />
+    <meta-data android:name="expo.modules.updates.ENABLED" android:value="false"/>
+    <meta-data android:name="expo.modules.updates.EXPO_UPDATES_CHECK_ON_LAUNCH" android:value="ALWAYS"/>
+    <meta-data android:name="expo.modules.updates.EXPO_UPDATES_LAUNCH_WAIT_MS" android:value="0"/>
 
     <activity
       android:name=".MainActivity"
@@ -40,30 +43,25 @@
       android:exported="true"
       android:screenOrientation="portrait">
 
-      <!-- launcher -->
+      <!-- Launcher -->
       <intent-filter>
         <action android:name="android.intent.action.MAIN" />
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
 
-      <!-- Uygulamanın kendi şeması (İmame tarzı redirect) -->
+      <!-- 🔑 OAuth redirect için SADECE UYGULAMA SCHEME'İN: com.rezzy.app -->
       <intent-filter>
         <action android:name="android.intent.action.VIEW" />
         <category android:name="android.intent.category.DEFAULT" />
         <category android:name="android.intent.category.BROWSABLE" />
-        <data android:scheme="rezzy" />
-        <data android:scheme="exp+rezzy" />
+        <data android:scheme="com.rezzy.app" />
       </intent-filter>
 
-      <!-- İstersen yedek olarak Google’ın scheme’i de dursun -->
-      <intent-filter>
-        <action android:name="android.intent.action.VIEW" />
-        <data
-          android:scheme="com.googleusercontent.apps.661428302727-n3jdtangvmk094kcn2340tqeoadl9jpl"
-          android:host="oauthredirect" />
-        <category android:name="android.intent.category.BROWSABLE" />
-        <category android:name="android.intent.category.DEFAULT" />
-      </intent-filter>
+      <!-- ⚠️ ŞUNLARI SİLDİK:
+           - <data android:scheme="rezzy" />
+           - <data android:scheme="exp+rezzy" />
+           - com.googleusercontent.apps.... / oauthredirect filtreleri
+           Karışıklık yaratıyor ve intent sana dönemiyor. -->
     </activity>
   </application>
 </manifest>

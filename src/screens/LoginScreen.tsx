@@ -1,4 +1,3 @@
-// screens/LoginScreen.tsx
 import React from "react";
 import { View, Alert, Platform } from "react-native";
 import { useNavigation } from "@react-navigation/native";
@@ -19,12 +18,11 @@ import {
   GOOGLE_WEB_CLIENT_ID,
 } from "../config/keys";
 
-// İmame'deki gibi: auth oturumlarını düzgün kapatır
 WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const navigation = useNavigation<any>();
-  const setAuth = useAuth((s) => s.setAuth);
+  const setAuth = useAuth(s => s.setAuth);
 
   const [email, setEmail] = React.useState("new-owner@rezzy.app");
   const [password, setPassword] = React.useState("123456");
@@ -46,56 +44,46 @@ export default function LoginScreen() {
     }
   };
 
-  // İmame tarzı: custom redirect (rezzy:/oauthredirect)
-  const redirectUri = React.useMemo(
-    () => makeRedirectUri({ native: "rezzy:/oauthredirect" }),
-    []
-  );
+  // --- Google (imame ile aynı yapı)
+  const redirectUri = makeRedirectUri({ native: "com.rezzy.app:/oauthredirect" });
 
   const [request, response, promptAsync] = Google.useAuthRequest({
     androidClientId: GOOGLE_ANDROID_CLIENT_ID || undefined,
-    iosClientId:     GOOGLE_IOS_CLIENT_ID || undefined,
-    clientId:        GOOGLE_WEB_CLIENT_ID || undefined,
+    iosClientId: GOOGLE_IOS_CLIENT_ID || undefined,
+    clientId: GOOGLE_WEB_CLIENT_ID || undefined,
     redirectUri,
-    // scopes: ["openid", "profile", "email"], // default'lar yeterli, istersen aç
+    scopes: ["openid", "profile", "email"],
   });
 
   React.useEffect(() => {
-    if (!response) return;
-    if (response.type === "success") {
-      const auth = (response as any).authentication;
-      const idToken: string | undefined =
-        auth?.idToken || response?.params?.id_token;
+    if (response?.type !== "success") return;
+    (async () => {
+      try {
+        const idToken = response.authentication?.idToken;
+        const accessToken = response.authentication?.accessToken;
 
-      (async () => {
-        try {
-          if (!idToken) throw new Error("Google id_token alınamadı.");
-          // Rezzy backend sözleşmesi korunuyor:
-          const { token, user } = await googleSignIn(idToken);
-          setAuth(token, user);
-          try { await registerPushToken(); } catch {}
-          navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
-        } catch (err: any) {
-          Alert.alert("Google Girişi Hatası", err?.response?.data?.message || err?.message);
-        } finally {
-          setGLoading(false);
-        }
-      })();
-    } else if (response.type === "error") {
-      setGLoading(false);
-      Alert.alert("Google Hatası", "Google ile giriş başarısız.");
-    }
-  }, [response, navigation, setAuth]);
+        if (!idToken && !accessToken) throw new Error("Google token alınamadı.");
+        const { token, user } = await googleSignIn(idToken || accessToken!);
+        setAuth(token, user);
+        try { await registerPushToken(); } catch {}
+        navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
+      } catch (err: any) {
+        Alert.alert("Google Girişi Hatası", err?.response?.data?.message || err?.message);
+      } finally {
+        setGLoading(false);
+      }
+    })();
+  }, [response]);
 
   const onGoogle = async () => {
-  try {
-    setGLoading(true);
-    await promptAsync();            // ✅ opsiyon yok
-  } catch (e: any) {
-    Alert.alert("Google Girişi Hatası", e?.message || "Bilinmeyen hata");
-    setGLoading(false);
-  }
-};
+    try {
+      setGLoading(true);
+      await promptAsync(); // imame’deki gibi; proxy yok, native akış
+    } catch (e: any) {
+      setGLoading(false);
+      Alert.alert("Google Girişi Hatası", e?.message || "Bilinmeyen hata");
+    }
+  };
 
   const onApple = async () => {
     try {
@@ -108,17 +96,14 @@ export default function LoginScreen() {
         ],
       });
       const identityToken = credential.identityToken;
-      if (!identityToken) {
-        Alert.alert("Apple", "identityToken alınamadı.");
-        return;
-      }
+      if (!identityToken) throw new Error("Apple identityToken alınamadı.");
       const { token, user } = await appleSignIn(identityToken);
       setAuth(token, user);
       try { await registerPushToken(); } catch {}
       navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
     } catch (e: any) {
       if (e?.code !== "ERR_CANCELED") {
-        Alert.alert("Apple Girişi", "Şu an aktif değil. Ayarlar tamamlanınca çalışacak.");
+        Alert.alert("Apple Girişi", e?.message || "Giriş başarısız.");
       }
     } finally {
       setALoading(false);
