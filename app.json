@@ -3,7 +3,7 @@
     "name": "rezzy-app",
     "slug": "rezzy-app",
     "scheme": "rezzy",
-    "owner":"umutugur",
+    "owner": "umutugur",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./src/assets/icon.png",
@@ -26,13 +26,21 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "permissions": [
-        "android.permission.CAMERA"
+      "permissions": ["android.permission.CAMERA"],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "category": ["BROWSABLE", "DEFAULT"],
+          "data": [
+            {
+              "scheme": "com.googleusercontent.apps.661428302727-n3jdtangvmk094kcn2340tqeoadl9jpl",
+              "host": "oauthredirect"
+            }
+          ]
+        }
       ]
     },
-    "web": {
-      "favicon": "./src/assets/favicon.png"
-    },
+    "web": { "favicon": "./src/assets/favicon.png" },
     "plugins": [
       "expo-apple-authentication",
       "expo-notifications"
@@ -41,9 +49,7 @@
       "googleClientIdAndroid": "661428302727-n3jdtangvmk094kcn2340tqeoadl9jpl.apps.googleusercontent.com",
       "googleClientIdIos": "YOUR-IOS-CLIENT-ID.apps.googleusercontent.com",
       "googleClientIdWeb": "661428302727-rh362fibpvi2ug1b6phh6ogc9mno45bq.apps.googleusercontent.com",
-      "eas": {
-        "projectId": "49189fbc-e9bb-4507-a5c7-713e5c73b3f6"
-      }
+      "eas": { "projectId": "49189fbc-e9bb-4507-a5c7-713e5c73b3f6" }
     }
   }
 }

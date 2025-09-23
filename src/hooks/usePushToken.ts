@@ -29,18 +29,16 @@ export async function registerPushToken() {
     Constants?.expoConfig?.extra?.eas?.projectId ||
     // @ts-ignore
     Constants?.easConfig?.projectId;
-
   if (!projectId) return null;
 
-  const expoToken = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+  const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
 
-  // Auth header kesin dursun (axios default’un varsa bu blok sorun olmaz)
   const jwt = useAuth.getState().token;
   await api.post(
     "/notifications/register",
-    { token: expoToken },
+    { token },
     jwt ? { headers: { Authorization: `Bearer ${jwt}` } } : undefined
   );
 
-  return expoToken;
+  return token;
 }
