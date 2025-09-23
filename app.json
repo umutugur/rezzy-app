@@ -26,17 +26,12 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "permissions": ["android.permission.CAMERA"],
+      "permissions": ["android.permission.CAMERA", "android.permission.POST_NOTIFICATIONS"],
       "intentFilters": [
         {
           "action": "VIEW",
           "category": ["BROWSABLE", "DEFAULT"],
-          "data": [
-            {
-              "scheme": "com.googleusercontent.apps.661428302727-n3jdtangvmk094kcn2340tqeoadl9jpl",
-              "host": "oauthredirect"
-            }
-          ]
+          "data": [{ "scheme": "rezzy" }]
         }
       ]
     },

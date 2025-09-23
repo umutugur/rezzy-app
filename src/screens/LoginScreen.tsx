@@ -1,3 +1,4 @@
+// screens/LoginScreen.tsx
 import React from "react";
 import { View, Alert, Platform } from "react-native";
 import { useNavigation } from "@react-navigation/native";
@@ -9,8 +10,8 @@ import { useAuth } from "../store/useAuth";
 
 import * as AppleAuthentication from "expo-apple-authentication";
 import * as Google from "expo-auth-session/providers/google";
-// import { makeRedirectUri, ResponseType } from "expo-auth-session"; // ❌
-import * as Random from "expo-random";
+import * as WebBrowser from "expo-web-browser";
+import { makeRedirectUri } from "expo-auth-session";
 import { registerPushToken } from "../hooks/usePushToken";
 import {
   GOOGLE_ANDROID_CLIENT_ID,
@@ -18,12 +19,12 @@ import {
   GOOGLE_WEB_CLIENT_ID,
 } from "../config/keys";
 
-const bytesToHex = (b: Uint8Array) =>
-  Array.from(b).map(x => x.toString(16).padStart(2,"0")).join("");
+// İmame'deki gibi: auth oturumlarını düzgün kapatır
+WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const navigation = useNavigation<any>();
-  const setAuth = useAuth(s => s.setAuth);
+  const setAuth = useAuth((s) => s.setAuth);
 
   const [email, setEmail] = React.useState("new-owner@rezzy.app");
   const [password, setPassword] = React.useState("123456");
@@ -45,27 +46,31 @@ export default function LoginScreen() {
     }
   };
 
-  // ---- Google: redirectUri YOK, native akış
-  const nonce = React.useMemo(() => bytesToHex(Random.getRandomBytes(16)), []);
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    androidClientId: GOOGLE_ANDROID_CLIENT_ID || undefined, // 6614... ile başlayan ANDROID client
+  // İmame tarzı: custom redirect (rezzy:/oauthredirect)
+  const redirectUri = React.useMemo(
+    () => makeRedirectUri({ native: "rezzy:/oauthredirect" }),
+    []
+  );
+
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    androidClientId: GOOGLE_ANDROID_CLIENT_ID || undefined,
     iosClientId:     GOOGLE_IOS_CLIENT_ID || undefined,
-    clientId:        GOOGLE_WEB_CLIENT_ID || undefined,     // opsiyonel (web test)
-    extraParams: { nonce },
+    clientId:        GOOGLE_WEB_CLIENT_ID || undefined,
+    redirectUri,
+    // scopes: ["openid", "profile", "email"], // default'lar yeterli, istersen aç
   });
 
   React.useEffect(() => {
     if (!response) return;
     if (response.type === "success") {
-      const anyResp = response as any;
+      const auth = (response as any).authentication;
       const idToken: string | undefined =
-        anyResp?.params?.id_token ||
-        anyResp?.authentication?.idToken ||
-        anyResp?.authentication?.params?.id_token;
+        auth?.idToken || response?.params?.id_token;
 
       (async () => {
         try {
           if (!idToken) throw new Error("Google id_token alınamadı.");
+          // Rezzy backend sözleşmesi korunuyor:
           const { token, user } = await googleSignIn(idToken);
           setAuth(token, user);
           try { await registerPushToken(); } catch {}
@@ -83,14 +88,14 @@ export default function LoginScreen() {
   }, [response, navigation, setAuth]);
 
   const onGoogle = async () => {
-    try {
-      setGLoading(true);
-      await promptAsync(); // { useProxy: false } default
-    } catch (e: any) {
-      Alert.alert("Google Girişi Hatası", e?.message || "Bilinmeyen hata");
-      setGLoading(false);
-    }
-  };
+  try {
+    setGLoading(true);
+    await promptAsync();            // ✅ opsiyon yok
+  } catch (e: any) {
+    Alert.alert("Google Girişi Hatası", e?.message || "Bilinmeyen hata");
+    setGLoading(false);
+  }
+};
 
   const onApple = async () => {
     try {

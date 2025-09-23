@@ -26,19 +26,23 @@ export async function registerPushToken() {
 
   const projectId =
     // @ts-ignore
-    Constants?.expoConfig?.extra?.eas?.projectId ||
+    Constants?.easConfig?.projectId ||
     // @ts-ignore
-    Constants?.easConfig?.projectId;
-  if (!projectId) return null;
+    Constants?.expoConfig?.extra?.eas?.projectId;
 
-  const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+  // İmame tarzı fallback: projectId yoksa parametresiz dene
+  const expoPushToken = projectId
+    ? (await Notifications.getExpoPushTokenAsync({ projectId })).data
+    : (await Notifications.getExpoPushTokenAsync()).data;
+
+  if (!expoPushToken) return null;
 
   const jwt = useAuth.getState().token;
   await api.post(
     "/notifications/register",
-    { token },
+    { token: expoPushToken },
     jwt ? { headers: { Authorization: `Bearer ${jwt}` } } : undefined
   );
 
-  return token;
+  return expoPushToken;
 }
