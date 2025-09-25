@@ -22,7 +22,7 @@ WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const navigation = useNavigation<any>();
-  const setAuth = useAuth(s => s.setAuth);
+  const setAuth = useAuth((s) => s.setAuth);
 
   const [email, setEmail] = React.useState("new-owner@rezzy.app");
   const [password, setPassword] = React.useState("123456");
@@ -44,41 +44,49 @@ export default function LoginScreen() {
     }
   };
 
-  // --- Google (imame ile aynı yapı)
+  // --- GOOGLE (ID Token akışı - EAS/Native)
   const redirectUri = makeRedirectUri({ native: "com.rezzy.app:/oauthredirect" });
 
-  const [request, response, promptAsync] = Google.useAuthRequest({
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
     androidClientId: GOOGLE_ANDROID_CLIENT_ID || undefined,
     iosClientId: GOOGLE_IOS_CLIENT_ID || undefined,
-    clientId: GOOGLE_WEB_CLIENT_ID || undefined,
+    clientId: GOOGLE_WEB_CLIENT_ID || undefined, // web test için
     redirectUri,
     scopes: ["openid", "profile", "email"],
   });
 
   React.useEffect(() => {
-    if (response?.type !== "success") return;
-    (async () => {
-      try {
-        const idToken = response.authentication?.idToken;
-        const accessToken = response.authentication?.accessToken;
+    if (!response) return;
+    if (response.type === "success") {
+      const anyResp = response as any;
+      const idToken: string | undefined =
+        anyResp?.params?.id_token ||
+        anyResp?.authentication?.idToken ||
+        anyResp?.authentication?.params?.id_token;
 
-        if (!idToken && !accessToken) throw new Error("Google token alınamadı.");
-        const { token, user } = await googleSignIn(idToken || accessToken!);
-        setAuth(token, user);
-        try { await registerPushToken(); } catch {}
-        navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
-      } catch (err: any) {
-        Alert.alert("Google Girişi Hatası", err?.response?.data?.message || err?.message);
-      } finally {
-        setGLoading(false);
-      }
-    })();
+      (async () => {
+        try {
+          if (!idToken) throw new Error("Google id_token alınamadı.");
+          const { token, user } = await googleSignIn(idToken);
+          setAuth(token, user);
+          try { await registerPushToken(); } catch {}
+          navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
+        } catch (err: any) {
+          Alert.alert("Google Girişi Hatası", err?.response?.data?.message || err?.message);
+        } finally {
+          setGLoading(false);
+        }
+      })();
+    } else if (response.type === "error") {
+      setGLoading(false);
+      Alert.alert("Google Hatası", "Google ile giriş başarısız.");
+    }
   }, [response]);
 
   const onGoogle = async () => {
     try {
       setGLoading(true);
-      await promptAsync(); // imame’deki gibi; proxy yok, native akış
+      await promptAsync(); // native akış (proxy yok)
     } catch (e: any) {
       setGLoading(false);
       Alert.alert("Google Girişi Hatası", e?.message || "Bilinmeyen hata");

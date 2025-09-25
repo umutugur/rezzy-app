@@ -1,4 +1,3 @@
-// src/hooks/usePushToken.ts (GEÇİCİ DEBUG)
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import Constants from "expo-constants";
@@ -8,10 +7,7 @@ import { useAuth } from "../store/useAuth";
 
 export async function registerPushToken() {
   try {
-    if (!Device.isDevice) {
-      Alert.alert("Push", "Emülatörde/cihaz dışı ortam");
-      return null;
-    }
+    if (!Device.isDevice) return null;
 
     if (Platform.OS === "android") {
       await Notifications.setNotificationChannelAsync("default", {
@@ -20,38 +16,27 @@ export async function registerPushToken() {
       });
     }
 
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-    if (existingStatus !== "granted") {
-      const req = await Notifications.requestPermissionsAsync();
-      finalStatus = req.status;
+    const perm = await Notifications.getPermissionsAsync();
+    let status = perm.status;
+    if (status !== "granted") {
+      status = (await Notifications.requestPermissionsAsync()).status;
     }
-    if (finalStatus !== "granted") {
-      Alert.alert("Push", "İzin verilmedi");
-      return null;
-    }
+    if (status !== "granted") return null;
 
-    // EAS Project Id
-    // @ts-ignore
-    const projectId = Constants?.easConfig?.projectId
+    const projectId =
+      // EAS build’de bu her zaman dolu olur.
+      // (run:android için olmaz – zaten onu kullanmıyoruz)
       // @ts-ignore
-      || Constants?.expoConfig?.extra?.eas?.projectId;
+      Constants?.easConfig?.projectId ||
+      // yedek
+      // @ts-ignore
+      Constants?.expoConfig?.extra?.eas?.projectId;
 
-    let token: string | null = null;
-    try {
-      const r = projectId
-        ? await Notifications.getExpoPushTokenAsync({ projectId })
-        : await Notifications.getExpoPushTokenAsync();
-      token = r?.data ?? null;
-    } catch (e: any) {
-      Alert.alert("Push getToken Hatası", e?.message || String(e));
-      return null;
-    }
+    const token = projectId
+      ? (await Notifications.getExpoPushTokenAsync({ projectId })).data
+      : (await Notifications.getExpoPushTokenAsync()).data;
 
-    if (!token) {
-      Alert.alert("Push", "Token null");
-      return null;
-    }
+    if (!token) return null;
 
     const jwt = useAuth.getState().token;
     await api.post(
@@ -60,10 +45,12 @@ export async function registerPushToken() {
       jwt ? { headers: { Authorization: `Bearer ${jwt}` } } : undefined
     );
 
-    Alert.alert("Push", `OK\nprojectId=${projectId}\n${token.slice(0,20)}...`);
     return token;
   } catch (e: any) {
-    Alert.alert("Push Genel Hata", e?.message || String(e));
+    Alert.alert(
+      "Push getToken Hatası",
+      e?.message || "Push token alınamadı."
+    );
     return null;
   }
 }
