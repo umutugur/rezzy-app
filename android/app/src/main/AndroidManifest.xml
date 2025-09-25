@@ -1,16 +1,20 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
   xmlns:tools="http://schemas.android.com/tools">
 
-  <!-- İzinler -->
+  <!-- Gerekli izinler -->
   <uses-permission android:name="android.permission.INTERNET" />
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
   <uses-permission android:name="android.permission.VIBRATE" />
   <uses-permission android:name="android.permission.CAMERA" />
-  
+
+  <!-- Eski depolama izinlerini KALDIRDIK -->
+  <!--
   <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+  -->
 
-
+  <!-- (Opsiyonel) queries bloğu: kaldırılabilir -->
+  <!--
   <queries>
     <intent>
       <action android:name="android.intent.action.VIEW" />
@@ -18,16 +22,18 @@
       <data android:scheme="https" />
     </intent>
   </queries>
+  -->
 
   <application
     android:name=".MainApplication"
     android:label="@string/app_name"
     android:icon="@mipmap/ic_launcher"
     android:roundIcon="@mipmap/ic_launcher_round"
-    android:allowBackup="true"
+    android:allowBackup="false"           
     android:theme="@style/AppTheme"
     android:supportsRtl="true"
-    android:enableOnBackInvokedCallback="false">
+    android:enableOnBackInvokedCallback="false"
+    android:usesCleartextTraffic="false"> <!-- opsiyonel, http çağrı yoksa -->
 
     <!-- OTA kapalı -->
     <meta-data android:name="expo.modules.updates.ENABLED" android:value="false"/>
@@ -49,7 +55,7 @@
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
 
-      <!-- 🔑 OAuth redirect için SADECE UYGULAMA SCHEME'İN: com.rezzy.app -->
+      <!-- OAuth redirect: SADECE app scheme -->
       <intent-filter>
         <action android:name="android.intent.action.VIEW" />
         <category android:name="android.intent.category.DEFAULT" />
@@ -57,11 +63,9 @@
         <data android:scheme="com.rezzy.app" />
       </intent-filter>
 
-      <!-- ⚠️ ŞUNLARI SİLDİK:
-           - <data android:scheme="rezzy" />
-           - <data android:scheme="exp+rezzy" />
-           - com.googleusercontent.apps.... / oauthredirect filtreleri
-           Karışıklık yaratıyor ve intent sana dönemiyor. -->
+      <!-- Eski/yanlış şemalar SİLİNDİ:
+           - rezzy / exp+rezzy
+           - com.googleusercontent.apps.* ve .../oauthredirect -->
     </activity>
   </application>
 </manifest>

@@ -16,21 +16,18 @@ export async function registerPushToken() {
       });
     }
 
-    const perm = await Notifications.getPermissionsAsync();
-    let status = perm.status;
+    let status = (await Notifications.getPermissionsAsync()).status;
     if (status !== "granted") {
       status = (await Notifications.requestPermissionsAsync()).status;
     }
     if (status !== "granted") return null;
 
-    const projectId =
-      // EAS build’de bu her zaman dolu olur.
-      // (run:android için olmaz – zaten onu kullanmıyoruz)
+    // EAS dev/prod build'lerde mevcut
+    // @ts-ignore
+    const projectId = Constants?.easConfig?.projectId
+      // expo run:* senaryosunda yedek
       // @ts-ignore
-      Constants?.easConfig?.projectId ||
-      // yedek
-      // @ts-ignore
-      Constants?.expoConfig?.extra?.eas?.projectId;
+      || Constants?.expoConfig?.extra?.eas?.projectId;
 
     const token = projectId
       ? (await Notifications.getExpoPushTokenAsync({ projectId })).data
@@ -47,10 +44,7 @@ export async function registerPushToken() {
 
     return token;
   } catch (e: any) {
-    Alert.alert(
-      "Push getToken Hatası",
-      e?.message || "Push token alınamadı."
-    );
+    Alert.alert("Push getToken Hatası", e?.message || "Push token alınamadı.");
     return null;
   }
 }

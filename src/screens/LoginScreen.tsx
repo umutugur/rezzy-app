@@ -44,19 +44,27 @@ export default function LoginScreen() {
     }
   };
 
-  // --- GOOGLE (ID Token akışı - EAS/Native)
-  const redirectUri = makeRedirectUri({ native: "com.rezzy.app:/oauthredirect" });
+  // --- GOOGLE (ID Token flow, web fallback güvenceye alındı)
+  const redirectUri = makeRedirectUri({
+    native: "com.rezzy.app:/oauthredirect",
+    // web fallback'te Expo proxy kullan: GCP'de redirect olarak zaten ekledin
+    // useProxy: true,
+  });
 
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    androidClientId: GOOGLE_ANDROID_CLIENT_ID || undefined,
-    iosClientId: GOOGLE_IOS_CLIENT_ID || undefined,
-    clientId: GOOGLE_WEB_CLIENT_ID || undefined, // web test için
-    redirectUri,
-    scopes: ["openid", "profile", "email"],
-  });
+  androidClientId: GOOGLE_ANDROID_CLIENT_ID || undefined,
+  iosClientId: GOOGLE_IOS_CLIENT_ID || undefined,
+  clientId: GOOGLE_WEB_CLIENT_ID || undefined,
+  redirectUri,
+  scopes: ["openid", "profile", "email"],
+});
 
   React.useEffect(() => {
     if (!response) return;
+
+    // DEBUG: Gerekirse aç
+    // console.log("Google response:", JSON.stringify(response, null, 2));
+
     if (response.type === "success") {
       const anyResp = response as any;
       const idToken: string | undefined =
@@ -80,13 +88,16 @@ export default function LoginScreen() {
     } else if (response.type === "error") {
       setGLoading(false);
       Alert.alert("Google Hatası", "Google ile giriş başarısız.");
+    } else if (response.type === "dismiss") {
+      setGLoading(false);
     }
   }, [response]);
 
   const onGoogle = async () => {
     try {
       setGLoading(true);
-      await promptAsync(); // native akış (proxy yok)
+      // web fallback'te proxy kullanılacak, native'de normal akış
+      await promptAsync();
     } catch (e: any) {
       setGLoading(false);
       Alert.alert("Google Girişi Hatası", e?.message || "Bilinmeyen hata");
