@@ -1,6 +1,6 @@
-// src/screens/ReservationStep2Screen.tsx
 import React from "react";
 import { View, ScrollView, ActivityIndicator, TouchableOpacity } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { Screen, Text } from "../components/Themed";
 import Button from "../components/Button";
@@ -9,12 +9,9 @@ import { useReservation } from "../store/useReservation";
 
 type MenuItem = { _id: string; name: string; price: number };
 
-// Farklı formatları sayıya çevir (₺500, 500,00, {value:500}, "1.200,50" vs.)
 function parsePrice(input: any): number {
   if (input == null) return 0;
-
   if (typeof input === "number" && isFinite(input)) return input;
-
   if (typeof input === "string") {
     const cleaned = input
       .trim()
@@ -24,7 +21,6 @@ function parsePrice(input: any): number {
     const n = Number(cleaned);
     return isFinite(n) ? n : 0;
   }
-
   if (typeof input === "object") {
     const candidates = [
       (input as any).value,
@@ -39,13 +35,13 @@ function parsePrice(input: any): number {
       if (n) return n;
     }
   }
-
   return 0;
 }
 
 export default function ReservationStep2Screen() {
+  const insets = useSafeAreaInsets();
   const nav = useNavigation<any>();
-  const { restaurantId, partySize, selections, setSelection } = useReservation();
+  const { restaurantId, partySize, selections } = useReservation();
 
   const [menus, setMenus] = React.useState<MenuItem[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -104,6 +100,8 @@ export default function ReservationStep2Screen() {
     useReservation.getState().setSelection(personIndex, menuId);
   };
 
+  const scrollPadBottom = insets.bottom + 88;
+
   return (
     <Screen>
       <View style={{ paddingBottom: 12 }}>
@@ -126,7 +124,7 @@ export default function ReservationStep2Screen() {
         </View>
       ) : (
         <>
-          <ScrollView contentContainerStyle={{ paddingBottom: 96 }}>
+          <ScrollView contentContainerStyle={{ paddingBottom: scrollPadBottom }}>
             {Array.from({ length: partySize }).map((_, i) => {
               const personIndex = i + 1;
               const selected = getSelectedFor(personIndex);
@@ -205,12 +203,14 @@ export default function ReservationStep2Screen() {
           </ScrollView>
 
           <View
+            pointerEvents="box-none"
             style={{
               position: "absolute",
               left: 0,
               right: 0,
               bottom: 0,
               padding: 12,
+              paddingBottom: 12 + insets.bottom,
               backgroundColor: "rgba(255,255,255,0.92)",
               borderTopWidth: 1,
               borderTopColor: "#E5E7EB",

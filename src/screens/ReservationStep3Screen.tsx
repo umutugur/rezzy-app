@@ -1,4 +1,3 @@
-// src/screens/ReservationStep3Screen.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
@@ -14,11 +13,9 @@ import "dayjs/locale/tr";
 import * as Clipboard from "expo-clipboard";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
+import { CommonActions } from "@react-navigation/native";
 import { Screen, Text } from "../components/Themed";
-// Kendi Button’unu kullanmak istersen üstteki TouchableOpacity’yi Button ile değiştir.
-import ReceiptCard from "../components/ReceiptCard";
-
+import ReceiptCard from "../components/ReceiptCard"; // ← senin bileşenin
 import { useReservation } from "../store/useReservation";
 import { getRestaurant, type Restaurant as ApiRestaurant } from "../api/restaurants";
 import {
@@ -29,7 +26,6 @@ import {
 
 dayjs.locale("tr");
 
-// Sticky CTA yüksekliği (daha geniş)
 const CTA_HEIGHT = 88;
 
 type FixMenu = {
@@ -49,7 +45,6 @@ type ExtendedRestaurant = ApiRestaurant & {
   menus?: FixMenu[];
   depositAmount?: number;
 };
-type Selection = { person: number; menuId: string };
 
 const formatTL = (n: number) =>
   new Intl.NumberFormat("tr-TR", {
@@ -62,7 +57,6 @@ export default function ReservationStep3Screen() {
   const nav = useNavigation<any>();
   const insets = useSafeAreaInsets();
 
-  // Store’dan
   const restaurantId = useReservation((s) => s.restaurantId);
   const dateTimeISO = useReservation((s) => s.dateTimeISO);
   const partySize = useReservation((s) => s.partySize);
@@ -71,18 +65,15 @@ export default function ReservationStep3Screen() {
   const [restaurant, setRestaurant] = useState<ExtendedRestaurant | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Dekont dosyası (seçilmiş ama henüz upload edilmemiş)
   const [receiptFile, setReceiptFile] = useState<{ uri: string; name: string; type: string } | null>(null);
   const [creating, setCreating] = useState(false);
 
-  // Küçük toast (modal)
   const [toast, setToast] = useState<{ visible: boolean; text: string }>({ visible: false, text: "" });
   const showToast = (text: string) => {
     setToast({ visible: true, text });
     setTimeout(() => setToast({ visible: false, text: "" }), 1200);
   };
 
-  // Restoranı çek
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -107,7 +98,6 @@ export default function ReservationStep3Screen() {
     };
   }, [restaurantId]);
 
-  // Menü haritası
   const menuMap = useMemo(() => {
     const m = new Map<string, { name: string; price: number; desc?: string }>();
     for (const it of restaurant?.menus || []) {
@@ -120,10 +110,9 @@ export default function ReservationStep3Screen() {
     return m;
   }, [restaurant?.menus]);
 
-  // Gruplu özet
   const groups = useMemo(() => {
     const acc: Record<string, { name: string; unit: number; count: number; subtotal: number }> = {};
-    for (const s of selections as Selection[]) {
+    for (const s of selections as { person: number; menuId: string }[]) {
       const info = s.menuId ? menuMap.get(String(s.menuId)) : undefined;
       const name = info?.name ?? "Menü";
       const unit = Number(info?.price ?? 0) || 0;
@@ -143,94 +132,84 @@ export default function ReservationStep3Screen() {
   const grandTotal = subtotal;
   const dateTimeLabel = dateTimeISO ? dayjs(dateTimeISO).format("DD MMM YYYY, HH:mm") : "";
 
-  // Kopyalama (Alert yerine toast)
   const onCopy = async (text?: string) => {
     if (!text) return;
     try {
       await Clipboard.setStringAsync(String(text));
       showToast("Kopyalandı");
-    } catch {
-      // no-op
-    }
+    } catch {}
   };
 
-  // ReceiptCard -> dosya seçildi
+  // ReceiptCard'dan dönen dosyayı state'e al
   const handlePickReceipt = async (file: { uri: string; name: string; type: string }) => {
-    setReceiptFile(file); // sadece state'e al; upload yok
+    setReceiptFile(file);
     showToast("Dekont seçildi");
   };
 
-  // Rezervasyon OLUŞTUR (JSON) + ardından dekont upload
+  const pickId = (obj: any): string => {
+    if (!obj) return "";
+    return String(
+      obj._id ??
+        obj.id ??
+        obj.reservationId ??
+        obj.reservation?._id ??
+        obj.data?._id ??
+        obj.data?.id ??
+        ""
+    );
+  };
 
-const pickId = (obj: any): string => {
-  if (!obj) return "";
-  return String(
-    obj._id ??
-    obj.id ??
-    obj.reservationId ??
-    obj.reservation?._id ??
-    obj.data?._id ??
-    obj.data?.id ??
-    ""
-  );
-};
+  const onCreateReservation = async () => {
+    if (creating || !receiptFile) return;
+    try {
+      setCreating(true);
+      if (!restaurantId || !dateTimeISO || !partySize || !(selections?.length > 0)) {
+        showToast("Eksik bilgi");
+        return;
+      }
 
-const onCreateReservation = async () => {
-  if (creating) return;
-  if (!receiptFile) return;
+      const payload: CreateReservationPayload = {
+        restaurantId,
+        dateTimeISO,
+        partySize,
+        selections,
+      };
 
-  try {
-    setCreating(true);
-    if (!restaurantId || !dateTimeISO || !partySize || !(selections?.length > 0)) {
-      showToast("Eksik bilgi");
-      return;
+      const created = await createReservation(payload);
+      const id = pickId(created);
+      if (!id) {
+        console.log("createReservation response (id bulunamadı):", created);
+        showToast("Rezervasyon ID alınamadı");
+        return;
+      }
+
+      await uploadReceipt(id, receiptFile);
+      nav.dispatch(
+  CommonActions.reset({
+    index: 1,
+    routes: [
+      { name: "Tabs" },                                // ana sayfa (istersen belirli taba da inebilirsin)
+      { name: "Rezervasyon Detayı", params: { id } },  // üstte görünecek ekran
+    ],
+  })
+);
+    } catch (e: any) {
+      console.log("Create/Upload error:", e?.response?.data || e?.message || e);
+      showToast(e?.response?.data?.message || "Oluşturma/Dekont hatası");
+    } finally {
+      setCreating(false);
     }
-
-    const payload: CreateReservationPayload = {
-      restaurantId,
-      dateTimeISO,
-      partySize,
-      selections,
-    };
-
-    // 1) Rezervasyonu oluştur (JSON)
-    const created = await createReservation(payload);
-
-    // ⬇️ dönen yanıttan ID’yi sağlamca çek
-    const id = pickId(created);
-    if (!id) {
-      console.log("createReservation response (id bulunamadı):", created);
-      showToast("Rezervasyon ID alınamadı");
-      return;
-    }
-
-    // 2) Dekontu bu ID ile yükle
-    const uploaded = await uploadReceipt(id, receiptFile);
-    console.log("uploadReceipt OK:", uploaded?._id || uploaded?.id || uploaded);
-
-    // 3) Detay sayfasına git
-    nav.navigate("Rezervasyon Detayı", { id });
-  } catch (e: any) {
-    console.log("Create/Upload error:", e?.response?.data || e?.message || e);
-    showToast(e?.response?.data?.message || "Oluşturma/Dekont hatası");
-  } finally {
-    setCreating(false);
-  }
-};
+  };
 
   const bottomPad = CTA_HEIGHT + insets.bottom + 24;
-  const ctaTitle = creating
-    ? "Oluşturuluyor..."
-    : receiptFile
-    ? "Rezervasyonu Oluştur"
-    : "Dekont Seçin";
+  const ctaTitle = creating ? "Oluşturuluyor..." : receiptFile ? "Rezervasyonu Oluştur" : "Dekont Seçin";
 
   return (
     <Screen>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+        keyboardVerticalOffset={0}
       >
         <ScrollView
           contentContainerStyle={{ padding: 16, paddingBottom: bottomPad }}
@@ -239,14 +218,12 @@ const onCreateReservation = async () => {
         >
           <Text style={styles.title}>Rezervasyon Özeti</Text>
 
-          {/* Restoran & Tarih */}
           <View style={styles.card}>
             <Text style={styles.cardTitle}>{restaurant?.name ?? "Restoran"}</Text>
             {!!dateTimeLabel && <Text secondary>{dateTimeLabel}</Text>}
             <Text secondary style={{ marginTop: 4 }}>Kişi: {partySize}</Text>
           </View>
 
-          {/* Menü Özeti */}
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Seçilen Menüler</Text>
             {Object.keys(groups).length ? (
@@ -276,7 +253,6 @@ const onCreateReservation = async () => {
             )}
           </View>
 
-          {/* Ödeme Bilgileri */}
           {(restaurant?.iban || restaurant?.ibanName || restaurant?.bankName) && (
             <View style={styles.card}>
               <Text style={styles.sectionTitle}>Ödeme Bilgileri</Text>
@@ -318,20 +294,23 @@ const onCreateReservation = async () => {
             </View>
           )}
 
-          {/* Dekont: DOSYA SEÇ (ReceiptCard içinde) */}
+          {/* Dekont: senin ReceiptCard'ını kullanıyoruz */}
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Dekont</Text>
             <ReceiptCard
-              url={receiptFile?.uri /* önizleme için local URI */}
+              url={receiptFile?.uri}
               onReplace={handlePickReceipt}
-              replacing={false /* burada upload yapılmıyor */}
-              canReplace={true}
+              replacing={false}
+              canReplace={!creating}
             />
           </View>
         </ScrollView>
 
         {/* Sticky CTA */}
-        <View style={[styles.ctaBar, { paddingBottom: Math.max(16, 16 + insets.bottom) }]}>
+        <View
+          pointerEvents="box-none"
+          style={[styles.ctaBar, { paddingBottom: Math.max(16, 16 + insets.bottom) }]}
+        >
           <TouchableOpacity
             onPress={onCreateReservation}
             disabled={!receiptFile || creating}
@@ -341,13 +320,10 @@ const onCreateReservation = async () => {
               (!receiptFile || creating) && styles.ctaBtnDisabled,
             ]}
           >
-            <Text style={styles.ctaBtnText}>
-              {ctaTitle}
-            </Text>
+            <Text style={styles.ctaBtnText}>{ctaTitle}</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Mini “kopyalandı” toast modalı */}
         <Modal visible={toast.visible} transparent animationType="fade">
           <View style={styles.toastWrap}>
             <View style={styles.toastCard}>
@@ -400,7 +376,6 @@ const styles = StyleSheet.create({
   copyBtnText: { color: "#fff", fontWeight: "700" },
   bold: { fontWeight: "700" },
 
-  // Sticky CTA
   ctaBar: {
     position: "absolute",
     left: 0,
@@ -416,8 +391,8 @@ const styles = StyleSheet.create({
   },
   ctaBtn: {
     backgroundColor: "#7C2D12",
-    minHeight: 56,       // daha büyük
-    paddingVertical: 14, // daha büyük
+    minHeight: 56,
+    paddingVertical: 14,
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
@@ -426,11 +401,10 @@ const styles = StyleSheet.create({
   ctaBtnText: {
     color: "#fff",
     fontWeight: "800",
-    fontSize: 16,        // daha büyük yazı
+    fontSize: 16,
     letterSpacing: 0.3,
   },
 
-  // Toast
   toastWrap: {
     flex: 1,
     backgroundColor: "transparent",

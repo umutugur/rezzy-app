@@ -1,4 +1,3 @@
-// src/screens/RestaurantDetailScreen.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
@@ -16,6 +15,7 @@ import {
   Platform,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import dayjs from "dayjs";
 import "dayjs/locale/tr";
 import { lightTheme } from "../theme/theme";
@@ -43,6 +43,7 @@ type FixMenu = {
 type Restaurant = ApiRestaurant & { menus?: FixMenu[] };
 
 export default function RestaurantDetailScreen() {
+  const insets = useSafeAreaInsets();
   const route = useRoute<any>();
   const nav = useNavigation<any>();
   const restaurantId: string = route.params?.id ?? route.params?.restaurantId ?? "";
@@ -50,7 +51,6 @@ export default function RestaurantDetailScreen() {
   const setRestaurant = useReservation?.((s: any) => s.setRestaurant) ?? (() => {});
   const setDateTime = useReservation?.((s: any) => s.setDateTime) ?? (() => {});
   const setParty = useReservation?.((s: any) => s.setParty) ?? (() => {});
-  const setMenu = useReservation?.((s: any) => s.setMenu) ?? (() => {});
   const [loading, setLoading] = useState(true);
   const [r, setR] = useState<Restaurant | null>(null);
   const [date, setDate] = useState(dayjs().format("YYYY-MM-DD"));
@@ -112,7 +112,6 @@ export default function RestaurantDetailScreen() {
   const onContinue = () => {
     if (!selectedSlot || !r) return;
 
-    // label içinden saat al (örn. "13:30")
     const [h, m] = selectedSlot.label.split(":");
     const localDateTime = dayjs(date)
       .hour(Number(h))
@@ -121,7 +120,7 @@ export default function RestaurantDetailScreen() {
       .toISOString();
 
     setRestaurant(r._id);
-    setDateTime(localDateTime); // artık UTC kayması yok
+    setDateTime(localDateTime);
     setParty(partySize);
     nav.navigate("Rezervasyon - Menü");
   };
@@ -150,10 +149,13 @@ export default function RestaurantDetailScreen() {
     );
   }
 
+  // footer yüksekliği + güvenli alan kadar boşluk bırak
+  const scrollPadBottom = insets.bottom + 100;
+
   return (
     <View style={styles.screen}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
-        {/* ÜSTTE: Başlık Kartı (adı + chip'ler + puan + adres) */}
+      <ScrollView contentContainerStyle={{ paddingBottom: scrollPadBottom }}>
+        {/* ÜSTTE: Başlık Kartı */}
         <View style={styles.headerCard}>
           <View style={styles.headerRow}>
             <Text style={styles.title}>{r.name}</Text>
@@ -175,7 +177,7 @@ export default function RestaurantDetailScreen() {
           {!!r.address && <Text style={styles.addressText}>{r.address}</Text>}
         </View>
 
-        {/* ALTTA: Galeri */}
+        {/* Galeri */}
         <View style={styles.galleryWrap}>
           {photos.length > 0 ? (
             <>
@@ -189,7 +191,6 @@ export default function RestaurantDetailScreen() {
                 keyExtractor={(u, i) => `${u}-${i}`}
                 renderItem={({ item }) => <Image source={{ uri: item }} style={styles.photoFull} />}
               />
-              {/* hafif alt gradient + dots (fotoğraf okunabilirliği, overlay yok) */}
               <View style={styles.gradBottom} />
               <View style={styles.dots}>
                 {photos.map((_, i) => (
@@ -206,7 +207,6 @@ export default function RestaurantDetailScreen() {
           )}
         </View>
 
-        {/* Açıklama */}
         {!!r.description && (
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Hakkında</Text>
@@ -244,7 +244,6 @@ export default function RestaurantDetailScreen() {
           <Text style={styles.sectionTitle}>Uygun Saat Bul</Text>
 
           <View style={styles.controlsRow}>
-            {/* Tarih kontrolleri (sol) */}
             <View style={styles.dateControls}>
               <TouchableOpacity
                 onPress={() => setDate(dayjs(date).subtract(1, "day").format("YYYY-MM-DD"))}
@@ -254,12 +253,8 @@ export default function RestaurantDetailScreen() {
                 <Text style={styles.iconText}>{"<"}</Text>
               </TouchableOpacity>
 
-              <Text
-                style={styles.dateText}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {dayjs(date).format("DD Eyl YYYY ddd")} {/* örnek; senin formatını koru */}
+              <Text style={styles.dateText} numberOfLines={1} ellipsizeMode="tail">
+                {dayjs(date).format("DD MMM YYYY ddd")}
               </Text>
 
               <TouchableOpacity
@@ -270,7 +265,6 @@ export default function RestaurantDetailScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Kişi kontrolleri (sağ) */}
             <View style={styles.partyControls}>
               <TouchableOpacity
                 onPress={() => setPartySize((p) => Math.max(1, p - 1))}
@@ -328,8 +322,14 @@ export default function RestaurantDetailScreen() {
         </View>
       </ScrollView>
 
-      {/* Sticky CTA bar — geniş buton, solda sadece tarih&saat + kişi */}
-      <View style={styles.ctaBar}>
+      {/* Sticky CTA bar */}
+      <View
+        pointerEvents="box-none"
+        style={[
+          styles.ctaBar,
+          { paddingBottom: 12 + insets.bottom },
+        ]}
+      >
         <View style={{ flex: 1 }}>
           <Text style={styles.ctaTitle}>
             {selectedSlot ? `${dayLabel}, ${selectedSlot.label}` : "Tarih & Saat seç"}
@@ -370,7 +370,6 @@ const styles = StyleSheet.create({
   },
   emptyText: { color: lightTheme.colors.textSecondary },
 
-  // Üst başlık kartı
   headerCard: {
     marginTop: 12,
     marginHorizontal: H_PADDING,
@@ -414,7 +413,6 @@ const styles = StyleSheet.create({
   },
   ratingText: { color: "#fff", fontWeight: "800" },
 
-  // Galeri
   galleryWrap: {
     position: "relative",
     backgroundColor: lightTheme.colors.surface,
@@ -450,7 +448,6 @@ const styles = StyleSheet.create({
   },
   dotActive: { backgroundColor: "#fff", width: 26 },
 
-  // Genel kart
   card: {
     marginTop: 12,
     marginHorizontal: H_PADDING,
@@ -468,7 +465,6 @@ const styles = StyleSheet.create({
   },
   description: { color: lightTheme.colors.textSecondary, lineHeight: 22 },
 
-  // Menü kartları
   menuCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -492,7 +488,6 @@ const styles = StyleSheet.create({
   menuPriceText: { color: "#fff", fontWeight: "800" },
   menuPriceSub: { color: "#fff", opacity: 0.9, fontSize: 12 },
 
-  // Uygun saatler
   controlsRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -560,7 +555,6 @@ const styles = StyleSheet.create({
   contactText: { marginBottom: 2, color: lightTheme.colors.textSecondary, lineHeight: 20 },
   muted: { color: lightTheme.colors.textSecondary, paddingHorizontal: 4 },
 
-  // Sticky CTA bar
   ctaBar: {
     position: "absolute",
     left: 0,
@@ -568,7 +562,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     paddingHorizontal: H_PADDING,
     paddingTop: 10,
-    paddingBottom: 12,
     backgroundColor: "rgba(255,255,255,0.98)",
     borderTopWidth: 1,
     borderTopColor: "rgba(0,0,0,0.06)",
@@ -580,7 +573,6 @@ const styles = StyleSheet.create({
   ctaTitle: { fontWeight: "800", color: lightTheme.colors.text },
   ctaSub: { color: lightTheme.colors.textSecondary },
 
-  // Geniş & dengeli CTA butonu
   ctaBtn: {
     paddingHorizontal: 24,
     paddingVertical: 12,
@@ -593,7 +585,6 @@ const styles = StyleSheet.create({
   ctaBtnDisabled: { opacity: 0.5 },
   ctaBtnText: { color: "#fff", fontWeight: "800" },
 
-  // Fotoğraf yoksa
   photoPlaceholder: {
     height: PHOTO_H,
     borderRadius: 12,
