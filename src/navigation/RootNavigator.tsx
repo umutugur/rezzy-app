@@ -1,8 +1,10 @@
 import React from "react";
+import { View, Text } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import LoginScreen from "../screens/LoginScreen";
 import HomeScreen from "../screens/HomeScreen";
@@ -13,18 +15,57 @@ import ReservationStep3Screen from "../screens/ReservationStep3Screen";
 import ReservationDetailScreen from "../screens/ReservationDetailScreen";
 import BookingsScreen from "../screens/BookingsScreen";
 import ProfileScreen from "../screens/ProfileScreen";
-import { useAuth } from "../store/useAuth";
 import RestaurantPanelScreen from "../screens/RestaurantPanelScreen";
 import AdminPanelScreen from "../screens/AdminPanelScreen";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import NotificationsScreen from "../screens/NotificationsScreen";
+
+import { useAuth } from "../store/useAuth";
+import { useNotifications } from "../store/useNotifications";
 
 const Stack = createNativeStackNavigator();
 const Tabs = createBottomTabNavigator();
 
-function TabsNav() {
+// ---- BELL (bildirim ikonu + rozet)
+function Bell({ onPress }: { onPress: () => void }) {
+  const unread = useNotifications((s) => s.unreadCount);
+
+  return (
+    <View style={{ paddingRight: 4 }}>
+      <Ionicons
+        name="notifications-outline"
+        size={24}
+        color="#111827"
+        onPress={onPress}
+      />
+      {unread > 0 && (
+        <View
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            right: -6,
+            top: -4,
+            backgroundColor: "#DC2626",
+            minWidth: 18,
+            height: 18,
+            borderRadius: 9,
+            alignItems: "center",
+            justifyContent: "center",
+            paddingHorizontal: 4,
+          }}
+        >
+          <Text style={{ color: "#fff", fontSize: 11, fontWeight: "700" }}>
+            {unread > 99 ? "99+" : unread}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+function TabsNav({ navigation }: any) {
   const insets = useSafeAreaInsets();
-  const bottomPad = Math.max(insets.bottom, 8); // en az 8 px
-  const barHeight = 56 + bottomPad;             // tab yüksekliği + güvenli alan
+  const bottomPad = Math.max(insets.bottom, 8);
+  const barHeight = 56 + bottomPad;
 
   return (
     <Tabs.Navigator
@@ -32,14 +73,14 @@ function TabsNav() {
         headerTitleAlign: "left",
         tabBarActiveTintColor: "#7B2C2C",
         tabBarInactiveTintColor: "#8A8A8A",
-        tabBarHideOnKeyboard: true, // klavye açılınca gizle
+        tabBarHideOnKeyboard: true,
         tabBarStyle: {
           height: barHeight,
           paddingBottom: bottomPad,
           paddingTop: 8,
           borderTopWidth: 0.5,
           backgroundColor: "#fff",
-          elevation: 8, // Android gölge
+          elevation: 8,
         },
         tabBarIcon: ({ color, size }) => {
           const nameMap: Record<string, any> = {
@@ -49,6 +90,11 @@ function TabsNav() {
           };
           return <Ionicons name={nameMap[route.name]} size={size} color={color} />;
         },
+        headerRight: () => (
+          <View style={{ flexDirection: "row", alignItems: "center", paddingRight: 8 }}>
+            <Bell onPress={() => navigation.navigate("Bildirimler")} />
+          </View>
+        ),
       })}
     >
       <Tabs.Screen name="Keşfet" component={HomeScreen} />
@@ -60,14 +106,29 @@ function TabsNav() {
 
 export default function RootNavigator() {
   const token = useAuth((s) => s.token);
+  const fetchUnreadCount = useNotifications((s) => s.fetchUnreadCount);
+
+  React.useEffect(() => {
+    if (token) fetchUnreadCount();
+  }, [token, fetchUnreadCount]);
+
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: true }}>
         {!token ? (
-          <Stack.Screen name="Giriş" component={LoginScreen} options={{ headerShown: false }} />
+          <Stack.Screen
+            name="Giriş"
+            component={LoginScreen}
+            options={{ headerShown: false }}
+          />
         ) : (
           <>
-            <Stack.Screen name="Tabs" component={TabsNav} options={{ headerShown: false }} />
+            <Stack.Screen
+              name="Tabs"
+              component={TabsNav}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen name="Bildirimler" component={NotificationsScreen} />
             <Stack.Screen name="Restoran" component={RestaurantDetailScreen} />
             <Stack.Screen name="Rezervasyon - Tarih" component={ReservationStep1Screen} />
             <Stack.Screen name="Rezervasyon - Menü" component={ReservationStep2Screen} />
