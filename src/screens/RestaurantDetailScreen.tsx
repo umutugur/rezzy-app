@@ -1,3 +1,4 @@
+// src/screens/RestaurantDetailScreen.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
@@ -13,6 +14,7 @@ import {
   NativeScrollEvent,
   Dimensions,
   Platform,
+  Pressable,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -25,6 +27,16 @@ import {
   type Restaurant as ApiRestaurant,
   type AvailabilitySlot,
 } from "../api/restaurants";
+
+// ✅ Favori API'leri
+import {
+  listFavorites,
+  addFavorite,
+  removeFavorite,
+  isFavorited,
+  type FavoriteRestaurant,
+} from "../api/favorites";
+
 import { useReservation } from "../store/useReservation";
 
 dayjs.locale("tr");
@@ -33,6 +45,7 @@ const { width: SCREEN_W } = Dimensions.get("window");
 const H_PADDING = 16;
 const PHOTO_W = SCREEN_W;
 const PHOTO_H = Math.round((SCREEN_W * 9) / 16);
+
 type FixMenu = {
   _id?: string;
   title: string;
@@ -51,6 +64,7 @@ export default function RestaurantDetailScreen() {
   const setRestaurant = useReservation?.((s: any) => s.setRestaurant) ?? (() => {});
   const setDateTime = useReservation?.((s: any) => s.setDateTime) ?? (() => {});
   const setParty = useReservation?.((s: any) => s.setParty) ?? (() => {});
+
   const [loading, setLoading] = useState(true);
   const [r, setR] = useState<Restaurant | null>(null);
   const [date, setDate] = useState(dayjs().format("YYYY-MM-DD"));
@@ -62,6 +76,10 @@ export default function RestaurantDetailScreen() {
   const [activePhoto, setActivePhoto] = useState(0);
   const photosListRef = useRef<FlatList<string>>(null);
   const dayLabel = dayjs(date).format("DD MMM");
+
+  // ✅ Favoriler state
+  const [favLoading, setFavLoading] = useState<boolean>(false);
+  const [favs, setFavs] = useState<FavoriteRestaurant[]>([]);
 
   useEffect(() => {
     let alive = true;
@@ -76,8 +94,26 @@ export default function RestaurantDetailScreen() {
         if (alive) setLoading(false);
       }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [restaurantId]);
+
+  // ✅ İlk açılışta favorilerimi çek
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const list = await listFavorites();
+        if (mounted) setFavs(list || []);
+      } catch {
+        // sessiz geç
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -94,7 +130,9 @@ export default function RestaurantDetailScreen() {
         if (alive) setFetchingSlots(false);
       }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [restaurantId, date, partySize]);
 
   const photos = useMemo(() => (r?.photos || []).filter(Boolean), [r]);
@@ -103,6 +141,8 @@ export default function RestaurantDetailScreen() {
     () => (menus.length ? Math.min(...menus.map((m) => m.pricePerPerson)) : undefined),
     [menus]
   );
+
+  const fav = useMemo(() => isFavorited(favs, restaurantId), [favs, restaurantId]);
 
   const onSelectSlot = (s: AvailabilitySlot) => {
     if (!s.isAvailable) return;
@@ -130,6 +170,41 @@ export default function RestaurantDetailScreen() {
     setActivePhoto(Math.max(0, Math.min(idx, photos.length - 1)));
   };
 
+  // ✅ Favori toggle
+  const toggleFavorite = async () => {
+    if (!restaurantId || favLoading) return;
+    setFavLoading(true);
+    try {
+      if (fav) {
+        await removeFavorite(restaurantId);
+        setFavs((prev) => prev.filter((f) => f._id !== restaurantId));
+      } else {
+        await addFavorite(restaurantId);
+        // Optimistic olarak minimal alanlarla ekleyelim
+        setFavs((prev) =>
+          prev.some((f) => f._id === restaurantId)
+            ? prev
+            : [
+                ...prev,
+                {
+                  _id: restaurantId,
+                  name: r?.name || "",
+                  city: r?.city,
+                  address: r?.address,
+                  photos: r?.photos,
+                  priceRange: r?.priceRange,
+                  rating: (r as any)?.rating ?? null,
+                },
+              ]
+        );
+      }
+    } catch (e: any) {
+      Alert.alert("Hata", e?.response?.data?.message || e?.message || "Favori işlemi başarısız");
+    } finally {
+      setFavLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -149,7 +224,7 @@ export default function RestaurantDetailScreen() {
     );
   }
 
-  // footer yüksekliği + güvenli alan kadar boşluk bırak
+  // footer yüksekliği + güvenli alan kadar boşluk
   const scrollPadBottom = insets.bottom + 100;
 
   return (
@@ -159,11 +234,23 @@ export default function RestaurantDetailScreen() {
         <View style={styles.headerCard}>
           <View style={styles.headerRow}>
             <Text style={styles.title}>{r.name}</Text>
-            <View style={styles.ratingBadge}>
-              <Text style={styles.ratingText}>
-                {Number.isFinite(r.rating) ? Number(r.rating).toFixed(1) : "—"}
+
+            {/* ❤️ Favori butonu (başlık yanında) */}
+            <Pressable
+              onPress={toggleFavorite}
+              style={{
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 999,
+                borderWidth: 1,
+                borderColor: lightTheme.colors.border,
+                backgroundColor: "#fff",
+              }}
+            >
+              <Text style={{ fontWeight: "800", color: fav ? "#DC2626" : lightTheme.colors.text }}>
+                {fav ? "♥ Favori" : "♡ Favori"}
               </Text>
-            </View>
+            </Pressable>
           </View>
           <View style={styles.metaRow}>
             {!!r.city && <Text style={styles.metaChip}>{r.city}</Text>}
@@ -191,6 +278,27 @@ export default function RestaurantDetailScreen() {
                 keyExtractor={(u, i) => `${u}-${i}`}
                 renderItem={({ item }) => <Image source={{ uri: item }} style={styles.photoFull} />}
               />
+
+              {/* ❤️ Foto üstü kalp (kısayol) */}
+              <Pressable
+                onPress={toggleFavorite}
+                style={{
+                  position: "absolute",
+                  right: 14,
+                  top: 14,
+                  backgroundColor: "rgba(255,255,255,0.95)",
+                  borderRadius: 999,
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  borderWidth: 1,
+                  borderColor: lightTheme.colors.border,
+                }}
+              >
+                <Text style={{ fontWeight: "900", color: fav ? "#DC2626" : lightTheme.colors.text }}>
+                  {fav ? "♥" : "♡"}
+                </Text>
+              </Pressable>
+
               <View style={styles.gradBottom} />
               <View style={styles.dots}>
                 {photos.map((_, i) => (
@@ -401,17 +509,6 @@ const styles = StyleSheet.create({
     borderColor: lightTheme.colors.primary,
   },
   addressText: { marginTop: 8, color: lightTheme.colors.textSecondary, lineHeight: 20 },
-
-  ratingBadge: {
-    backgroundColor: lightTheme.colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    minWidth: 54,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  ratingText: { color: "#fff", fontWeight: "800" },
 
   galleryWrap: {
     position: "relative",

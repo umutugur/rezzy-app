@@ -20,6 +20,13 @@ import { getMyReservations } from "../api/reservations";
 import { getMe, patchMe, uploadAvatarRN, changePassword } from "../api/user";
 import { checkinByQR, checkinManual } from "../api/restaurantTools";
 import { useNavigation } from "@react-navigation/native";
+// ✅ Favori API'leri
+import {
+  listFavorites,
+  removeFavorite,
+  type FavoriteRestaurant,
+} from "../api/favorites";
+
 /** para formatı */
 const Money = ({ n }: { n?: number }) => (
   <Text style={{ fontWeight: "800", color: T.colors.text }}>
@@ -46,7 +53,7 @@ const statusMeta = (s: string) => {
 };
 
 export default function ProfileScreen() {
-  const navigation =useNavigation<any>();
+  const navigation = useNavigation<any>();
   const { user, updateUser, clear } = useAuth();
   const [name, setName] = useState(user?.name || "");
   const [email, setEmail] = useState(user?.email || "");
@@ -61,6 +68,10 @@ export default function ProfileScreen() {
   const [resv, setResv] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // ✅ Favoriler
+  const [favs, setFavs] = useState<FavoriteRestaurant[]>([]);
+  const [favBusyId, setFavBusyId] = useState<string | null>(null);
+
   // şifre alanları
   const [pwOpen, setPwOpen] = useState(true);
   const [curPw, setCurPw] = useState("");
@@ -71,9 +82,14 @@ export default function ProfileScreen() {
   const [showNew2, setShowNew2] = useState(false);
   const [pwLoading, setPwLoading] = useState(false);
 
-  // QR modal
+  // QR modal (kamera)
   const [qrOpen, setQrOpen] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
+
+  // QR sonrası arrived modalı (zorunlu)
+  const [qrArrivedOpen, setQrArrivedOpen] = useState(false);
+  const [qrPayload, setQrPayload] = useState<any>(null);
+  const [qrArrivedInput, setQrArrivedInput] = useState("");
 
   // Manuel check-in modal
   const [manualOpen, setManualOpen] = useState(false);
@@ -100,7 +116,15 @@ export default function ProfileScreen() {
         const list = await getMyReservations();
         setResv(list);
       } catch {}
+      // ✅ Favoriler
+      try {
+        if (user?.role === "customer") {
+          const fl = await listFavorites();
+          setFavs(fl || []);
+        }
+      } catch {}
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function onSave() {
@@ -203,6 +227,57 @@ export default function ProfileScreen() {
         <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
           <Text style={{ color: T.colors.textSecondary }}>Toplam</Text>
           <Money n={it.totalPrice} />
+        </View>
+      </View>
+    );
+  }
+
+  // ✅ Favori satırı
+  function FavoriteRow({ it }: { it: FavoriteRestaurant }) {
+    const thumb = it.photos?.[0];
+    const busy = favBusyId === it._id;
+    return (
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 12,
+          paddingVertical: 10,
+          borderTopWidth: 1,
+          borderColor: T.colors.border,
+        }}
+      >
+        <Image
+          source={thumb ? { uri: thumb } : require("../assets/restaurant-placeholder.png")}
+          style={{ width: 72, height: 72, borderRadius: 8, backgroundColor: T.colors.muted }}
+        />
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: T.colors.text, fontWeight: "800" }}>{it.name}</Text>
+          <Text style={{ color: T.colors.textSecondary }}>{[it.city, it.priceRange].filter(Boolean).join(" • ")}</Text>
+        </View>
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          <SecondaryButton
+            title={busy ? "…" : "Kaldır"}
+            onPress={async () => {
+              if (busy) return;
+              try {
+                setFavBusyId(it._id);
+                // optimistic
+                setFavs((prev) => prev.filter((f) => f._id !== it._id));
+                await removeFavorite(it._id);
+              } catch (e: any) {
+                // geri al
+                setFavs((prev) => (prev.some((f) => f._id === it._id) ? prev : [it, ...prev]));
+                Alert.alert("Hata", e?.response?.data?.message || e?.message || "Kaldırılamadı");
+              } finally {
+                setFavBusyId(null);
+              }
+            }}
+          />
+          <PrimaryButton
+            title="Git"
+            onPress={() => navigation.navigate("Restoran", { id: it._id })}
+          />
         </View>
       </View>
     );
@@ -400,48 +475,24 @@ export default function ProfileScreen() {
         </Section>
       )}
 
-      {/* Restoran kısa yolları */}
-      {/* Restoran & Admin kısa yolları */}
-{(user?.role === "restaurant" || user?.role === "admin") && (
-  <Section title="Yönetim Kısayolları">
-    <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap" }}>
-      {user?.role === "restaurant" && (
-        <PrimaryButton
-          title="Restoran Paneli"
-          onPress={() => navigation.navigate("RestaurantPanel", { restaurantId: user?.restaurantId })}
-        />
+      {/* ✅ Favorilerim (müşteri) */}
+      {user?.role === "customer" && (
+        <Section title="Favorilerim">
+          {favs?.length ? (
+            <>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
+                <Text style={{ color: T.colors.textSecondary }}>Toplam</Text>
+                <Text style={{ fontWeight: "700", color: T.colors.text }}>{favs.length}</Text>
+              </View>
+              {favs.map((it) => (
+                <FavoriteRow key={it._id} it={it} />
+              ))}
+            </>
+          ) : (
+            <Text style={{ color: T.colors.textSecondary }}>Henüz favori eklemediniz.</Text>
+          )}
+        </Section>
       )}
-      {user?.role === "admin" && (
-        <PrimaryButton
-          title="Admin Paneli"
-          onPress={() => navigation.navigate("AdminPanel")}
-        />
-      )}
-
-      {/* Ortak kısa yollar (restoran için QR / manuel check-in) */}
-      {user?.role === "restaurant" && (
-        <>
-          <PrimaryButton
-            title="QR Tara"
-            onPress={async () => {
-              await ensureCam();
-              setQrOpen(true);
-            }}
-          />
-          <SecondaryButton
-            title="Manuel Check-in"
-            onPress={() => {
-              setManualRid("");
-              setManualArrived("");
-              setManualOpen(true);
-            }}
-          />
-        </>
-      )}
-    </View>
-  </Section>
-)}
-
 
       {/* Rezervasyonlar (müşteri) */}
       {user?.role === "customer" && (
@@ -466,12 +517,53 @@ export default function ProfileScreen() {
         </Section>
       )}
 
+      {/* Restoran & Admin kısa yolları */}
+      {(user?.role === "restaurant" || user?.role === "admin") && (
+        <Section title="Yönetim Kısayolları">
+          <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap" }}>
+            {user?.role === "restaurant" && (
+              <PrimaryButton
+                title="Restoran Paneli"
+                onPress={() => navigation.navigate("RestaurantPanel", { restaurantId: user?.restaurantId })}
+              />
+            )}
+            {user?.role === "admin" && (
+              <PrimaryButton
+                title="Admin Paneli"
+                onPress={() => navigation.navigate("AdminPanel")}
+              />
+            )}
+
+            {/* Ortak kısa yollar (restoran için QR / manuel check-in) */}
+            {user?.role === "restaurant" && (
+              <>
+                <PrimaryButton
+                  title="QR Tara"
+                  onPress={async () => {
+                    await ensureCam();
+                    setQrOpen(true);
+                  }}
+                />
+                <SecondaryButton
+                  title="Manuel Check-in"
+                  onPress={() => {
+                    setManualRid("");
+                    setManualArrived("");
+                    setManualOpen(true);
+                  }}
+                />
+              </>
+            )}
+          </View>
+        </Section>
+      )}
+
       {/* Alt kısım Çıkış */}
       <View style={{ paddingHorizontal: 16, marginTop: 8, marginBottom: 20 }}>
         <SecondaryButton title="Çıkış yap" onPress={logout} />
       </View>
 
-      {/* QR Modal */}
+      {/* QR Kamera Modalı */}
       <Modal visible={qrOpen} animationType="slide" onRequestClose={() => setQrOpen(false)}>
         <View style={{ flex: 1, backgroundColor: "#000" }}>
           <CameraView
@@ -479,10 +571,12 @@ export default function ProfileScreen() {
             barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
             onBarcodeScanned={async (ev: any) => {
               try {
-                setQrOpen(false);
                 const data = ev?.data || "";
-                await checkinByQR(data);
-                Alert.alert("OK", "Check-in yapıldı.");
+                setQrOpen(false);
+                // Kişi sayısı zorunlu: önce payload’ı saklayıp modal aç
+                setQrPayload(data);
+                setQrArrivedInput("");
+                setQrArrivedOpen(true);
               } catch (e: any) {
                 Alert.alert("Hata", e?.response?.data?.message || e?.message || "QR geçersiz");
               }
@@ -494,7 +588,67 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
-      {/* Manuel Check-in Modal */}
+      {/* QR sonrası Gelen Kişi Sayısı Modalı (zorunlu) */}
+      <Modal visible={qrArrivedOpen} transparent animationType="fade" onRequestClose={() => setQrArrivedOpen(false)}>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.6)",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 20,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: 14,
+              width: "100%",
+              padding: 16,
+              borderWidth: 1,
+              borderColor: T.colors.border,
+            }}
+          >
+            <Text style={{ fontSize: 18, fontWeight: "800", color: T.colors.text, marginBottom: 10 }}>
+              Gelen Kişi Sayısı
+            </Text>
+            <Text style={{ color: T.colors.textSecondary, marginBottom: 6 }}>
+              QR okundu. Lütfen gelen kişi sayısını girin (zorunlu).
+            </Text>
+            <TextInput
+              value={qrArrivedInput}
+              onChangeText={setQrArrivedInput}
+              placeholder="Örn: 5"
+              keyboardType={Platform.select({ ios: "number-pad", android: "numeric" }) as any}
+              style={inputStyle}
+            />
+            <View style={{ flexDirection: "row", gap: 10, marginTop: 8 }}>
+              <SecondaryButton title="Vazgeç" onPress={() => setQrArrivedOpen(false)} />
+              <PrimaryButton
+                title="Onayla"
+                onPress={async () => {
+                  const n = Number(qrArrivedInput.trim());
+                  if (!Number.isFinite(n) || n < 0) {
+                    Alert.alert("Uyarı", "Geçerli bir sayı girin (0 veya daha büyük).");
+                    return;
+                  }
+                  try {
+                    await checkinByQR(qrPayload, n);
+                    setQrArrivedOpen(false);
+                    setQrPayload(null);
+                    setQrArrivedInput("");
+                    Alert.alert("OK", "Check-in yapıldı.");
+                  } catch (e: any) {
+                    Alert.alert("Hata", e?.response?.data?.message || e?.message || "Check-in başarısız");
+                  }
+                }}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Manuel Check-in Modal (arrived zorunlu) */}
       <Modal visible={manualOpen} transparent animationType="fade" onRequestClose={() => setManualOpen(false)}>
         <View
           style={{
@@ -526,11 +680,11 @@ export default function ProfileScreen() {
               autoCapitalize="none"
               style={inputStyle}
             />
-            <Label>Gelen kişi sayısı (opsiyonel)</Label>
+            <Label>Gelen kişi sayısı (zorunlu)</Label>
             <TextInput
               value={manualArrived}
               onChangeText={setManualArrived}
-              placeholder="boş bırakılırsa tümü"
+              placeholder="Örn: 4"
               keyboardType={Platform.select({ ios: "number-pad", android: "numeric" }) as any}
               style={inputStyle}
             />
@@ -544,9 +698,13 @@ export default function ProfileScreen() {
                     Alert.alert("Uyarı", "Rezervasyon ID gerekli.");
                     return;
                   }
+                  const n = Number(manualArrived.trim());
+                  if (!Number.isFinite(n) || n < 0) {
+                    Alert.alert("Uyarı", "Geçerli bir sayı girin (0 veya daha büyük).");
+                    return;
+                  }
                   try {
-                    const n = manualArrived.trim() ? Number(manualArrived.trim()) : undefined;
-                    await checkinManual(String(manualRid.trim()), Number.isFinite(n!) ? n : undefined);
+                    await checkinManual(String(manualRid.trim()), n);
                     setManualOpen(false);
                     Alert.alert("OK", "Check-in tamam.");
                   } catch (e: any) {

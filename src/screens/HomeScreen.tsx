@@ -7,6 +7,7 @@ import {
   Pressable,
   RefreshControl,
   ActivityIndicator,
+  TextInput,
 } from "react-native";
 import { Screen, Text } from "../components/Themed";
 import Card from "../components/Card";
@@ -17,19 +18,39 @@ const CITIES = ["Hepsi", "Girne", "Lefkoşa", "Gazimağusa"];
 
 export default function HomeScreen() {
   const nav = useNavigation<any>();
+
+  // filtreler
   const [city, setCity] = React.useState<string>("Hepsi");
+  const [query, setQuery] = React.useState<string>("");
+
+  // data state
   const [data, setData] = React.useState<Restaurant[]>([]);
   const [loading, setLoading] = React.useState<boolean>(true);
   const [refreshing, setRefreshing] = React.useState<boolean>(false);
   const [error, setError] = React.useState<string | undefined>();
 
-  const load = React.useCallback(async (selected?: string) => {
+  // debounce için ara state
+  const [qDebounced, setQDebounced] = React.useState<string>("");
+
+  // query debounce (350ms)
+  React.useEffect(() => {
+    const t = setTimeout(() => setQDebounced(query.trim()), 350);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const load = React.useCallback(async (selectedCity?: string, searched?: string) => {
     try {
       setError(undefined);
       setLoading(true);
-      const cityParam = selected && selected !== "Hepsi" ? selected : undefined;
-      // ⬇️ API “{ city?: string } | undefined” bekliyor
-      const list = await listRestaurants(cityParam ? { city: cityParam } : undefined);
+
+      const cityParam = selectedCity && selectedCity !== "Hepsi" ? selectedCity : undefined;
+      const queryParam = searched && searched.length ? searched : undefined;
+
+      const list = await listRestaurants({
+        city: cityParam,
+        query: queryParam, // ⬅️ arama
+      });
+
       setData(list);
     } catch (e: any) {
       const msg = e?.response?.data?.message || e?.message || "Bağlantı hatası";
@@ -46,16 +67,17 @@ export default function HomeScreen() {
     }
   }, []);
 
-  React.useEffect(() => { load(city); }, [city, load]);
+  // şehir değiştiğinde veya debounce edilmiş query değiştiğinde yükle
+  React.useEffect(() => { load(city, qDebounced); }, [city, qDebounced, load]);
 
   const onRefresh = React.useCallback(async () => {
     try {
       setRefreshing(true);
-      await load(city);
+      await load(city, qDebounced);
     } finally {
       setRefreshing(false);
     }
-  }, [city, load]);
+  }, [city, qDebounced, load]);
 
   // ---- City chips ----
   const CHIP_H = 36;
@@ -93,8 +115,51 @@ export default function HomeScreen() {
     </ScrollView>
   );
 
+  // ---- Search bar ----
+  const SearchBar = (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        borderWidth: 1,
+        borderColor: "#E6E6E6",
+        borderRadius: 12,
+        backgroundColor: "#fff",
+        paddingHorizontal: 12,
+        marginHorizontal: 8,
+        marginBottom: 10,
+        height: 44,
+      }}
+    >
+      <TextInput
+        value={query}
+        onChangeText={setQuery}
+        placeholder="Mekan ara (isim)"
+        style={{ flex: 1, color: "#111" }}
+        returnKeyType="search"
+        onSubmitEditing={() => load(city, query.trim())}
+        autoCorrect={false}
+      />
+      {query.length > 0 && (
+        <Pressable
+          onPress={() => setQuery("")}
+          style={{
+            marginLeft: 8,
+            paddingHorizontal: 8,
+            paddingVertical: 6,
+            borderRadius: 8,
+            backgroundColor: "#F3F4F6",
+          }}
+        >
+          <Text secondary>Temizle</Text>
+        </Pressable>
+      )}
+    </View>
+  );
+
   return (
     <Screen>
+      {SearchBar}
       {CityChips}
 
       {loading ? (
@@ -121,8 +186,8 @@ export default function HomeScreen() {
             />
           )}
           ListEmptyComponent={
-            <View style={{ marginTop: 24 }}>
-              <Text>Bu şehirde sonuç bulunamadı.</Text>
+            <View style={{ marginTop: 24, paddingHorizontal: 8 }}>
+              <Text>Sonuç bulunamadı. Filtreleri temizleyip tekrar deneyin.</Text>
             </View>
           }
         />

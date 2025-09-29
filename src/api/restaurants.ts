@@ -13,6 +13,12 @@ export type OpeningHour = {
   close: string;
   isClosed: boolean;
 };
+export type ListRestaurantsParams = {
+  city?: string;
+  query?: string;   // ⬅️ yeni: isim/arama metni
+  limit?: number;
+  cursor?: string;
+};
 
 // Restoran tipi. Panelde kullanılan alanları içerir.
 export interface Restaurant {
@@ -87,9 +93,8 @@ export type AvailabilityResponse = {
 
 // ---------- REST çağrıları ----------
 
-// Tüm restoranları listele. İsteğe bağlı olarak şehir filtresi
-// uygulanabilir. `params` objesi axios'un `params` özelliğine aktarılır.
-export async function listRestaurants(params: { city?: string } = {}): Promise<Restaurant[]> {
+// Tüm restoranları listele (şehir + arama desteği)
+export async function listRestaurants(params: ListRestaurantsParams = {}): Promise<Restaurant[]> {
   return unwrap(api.get<Restaurant[]>("/restaurants", { params }));
 }
 

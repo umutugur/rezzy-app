@@ -11,6 +11,8 @@ export interface Reservation {
   restaurantId?: any;
   userId?: any;
   receiptUrl?: string;
+  arrivedCount?: number;                 // check-in’de girilen gerçek gelen kişi
+  underattended?: boolean;               // eşik altı katılım var mı
   [key: string]: any;
 }
 
