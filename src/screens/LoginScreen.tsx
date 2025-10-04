@@ -134,8 +134,8 @@ export default function LoginScreen() {
       <Text style={{ fontSize: 28, fontWeight: "700", marginBottom: 16 }}>Rezzy</Text>
 
       <Input label="E-posta" value={email} onChangeText={setEmail} placeholder="you@example.com" />
-      <Input label="Şifre" value={password} onChangeText={setPassword} secureTextEntry placeholder="******" />
-
+<Input label="Şifre" value={password} onChangeText={setPassword}
+       secureTextEntry placeholder="******" />
       <Button title="Giriş Yap" onPress={onLogin} loading={loading} />
 
       <View style={{ height: 24 }} />
