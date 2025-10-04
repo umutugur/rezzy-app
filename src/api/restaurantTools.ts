@@ -6,10 +6,10 @@ type QrPayload = { rid: string; mid: string; ts: string; sig: string };
 function parseQrPayload(raw: string | Record<string, any>): QrPayload {
   // Zaten obje geldiyse:
   if (raw && typeof raw === "object") {
-    const rid = String(raw.rid ?? "");
-    const mid = String(raw.mid ?? "");
-    const ts  = String(raw.ts  ?? "");
-    const sig = String(raw.sig ?? "");
+    const rid = String((raw as any).rid ?? "");
+    const mid = String((raw as any).mid ?? "");
+    const ts  = String((raw as any).ts  ?? "");
+    const sig = String((raw as any).sig ?? "");
     return { rid, mid, ts, sig };
   }
 
@@ -51,30 +51,32 @@ function parseQrPayload(raw: string | Record<string, any>): QrPayload {
   throw new Error("QR verisi beklenen formatta değil (rid/mid/ts/sig yok).");
 }
 
-/** ✅ QR ile check-in — arrivedCount varsa backend’e gönderilir */
+/** ✅ QR ile check-in — arrivedCount ZORUNLU (backend validator: required) */
 export async function checkinByQR(
   scanned: string | Record<string, any>,
-  arrivedCount?: number
+  arrivedCount: number
 ) {
+  if (arrivedCount == null || Number.isNaN(Number(arrivedCount))) {
+    throw new Error("arrivedCount gerekli ve sayı olmalı.");
+  }
   const { rid, mid, ts, sig } = parseQrPayload(scanned);
-  const body: any = { rid, mid, ts, sig };
-  if (arrivedCount != null) body.arrivedCount = String(arrivedCount);
+  const body = { rid, mid, ts, sig, arrivedCount: Number(arrivedCount) };
   const { data } = await api.post("/reservations/checkin", body);
-  return data; // { ok:true, arrivedCount, lateMinutes }
+  return data as { ok: boolean; arrivedCount: number; lateMinutes: number; underattended?: boolean };
 }
 
-/** ✅ Manuel check-in — arrivedCount opsiyonel */
+/** ✅ Manuel check-in — arrivedCount opsiyonel (backend’de validation yok) */
 export async function checkinManual(rid: string, arrivedCount?: number) {
-  const { data } = await api.post(`/reservations/${rid}/checkin-manual`, {
-    arrivedCount: arrivedCount != null ? String(arrivedCount) : undefined,
-  });
-  return data; // { ok:true, arrivedCount, lateMinutes }
+  const payload: any = {};
+  if (arrivedCount != null) payload.arrivedCount = Number(arrivedCount);
+  const { data } = await api.post(`/reservations/${rid}/checkin-manual`, payload);
+  return data as { ok: boolean; arrivedCount: number; lateMinutes: number; underattended?: boolean };
 }
 
-/** ✅ Check-in sonrası gelen kişi sayısını düzelt */
+/** ✅ Check-in sonrası gelen kişi sayısını düzelt (number gönder) */
 export async function updateArrivedCount(rid: string, arrivedCount: number) {
   const { data } = await api.patch(`/reservations/${rid}/arrived-count`, {
-    arrivedCount: String(arrivedCount),
+    arrivedCount: Number(arrivedCount),
   });
-  return data; // { ok:true, arrivedCount, ... }
+  return data as { ok: boolean; arrivedCount: number; underattended?: boolean };
 }
