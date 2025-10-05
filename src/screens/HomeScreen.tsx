@@ -1,4 +1,3 @@
-// src/screens/HomeScreen.tsx
 import React from "react";
 import {
   FlatList,
@@ -17,27 +16,30 @@ import { useNavigation } from "@react-navigation/native";
 
 const CITIES = ["Hepsi", "Girne", "Lefkoşa", "Gazimağusa"];
 
-// Layout sabitleri
-const HEADER_VSPACE = 10;
+// Layout
+const HEADER_VSPACE = 0; // header ile arama arası boşluk yok
 const SECTION_GAP = 4;
 const CHIP_H = 36;
 
 export default function HomeScreen() {
   const nav = useNavigation<any>();
 
-  // filtreler
   const [city, setCity] = React.useState<string>("Hepsi");
   const [query, setQuery] = React.useState<string>("");
 
-  // data state
   const [data, setData] = React.useState<Restaurant[]>([]);
   const [initialLoading, setInitialLoading] = React.useState<boolean>(true);
   const [fetching, setFetching] = React.useState<boolean>(false);
   const [refreshing, setRefreshing] = React.useState<boolean>(false);
   const [error, setError] = React.useState<string | undefined>();
 
-  // input ref (fokus koruma)
+  // ---- TextInput odak koruması
   const inputRef = React.useRef<TextInput>(null);
+  const keepFocus = React.useCallback(() => {
+    requestAnimationFrame(() => {
+      if (!inputRef.current?.isFocused()) inputRef.current?.focus();
+    });
+  }, []);
 
   // debounce
   const [qDebounced, setQDebounced] = React.useState<string>("");
@@ -46,7 +48,6 @@ export default function HomeScreen() {
     return () => clearTimeout(t);
   }, [query]);
 
-  // veri çekici
   const load = React.useCallback(
     async (selectedCity?: string, searched?: string, mode: "initial" | "update" = "update") => {
       try {
@@ -54,8 +55,7 @@ export default function HomeScreen() {
         if (mode === "initial") setInitialLoading(true);
         else setFetching(true);
 
-        const cityParam =
-          selectedCity && selectedCity !== "Hepsi" ? selectedCity : undefined;
+        const cityParam = selectedCity && selectedCity !== "Hepsi" ? selectedCity : undefined;
         const queryParam = searched && searched.length ? searched : undefined;
 
         const list = await listRestaurants({ city: cityParam, query: queryParam });
@@ -67,9 +67,10 @@ export default function HomeScreen() {
       } finally {
         if (mode === "initial") setInitialLoading(false);
         setFetching(false);
+        keepFocus(); // yükleme bitince de odak koru
       }
     },
-    []
+    [keepFocus]
   );
 
   // ilk yükleme
@@ -78,7 +79,7 @@ export default function HomeScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // filtre/debounce değişince (ilk yükleme bittikten sonra) getir
+  // filtre/debounce değişince
   React.useEffect(() => {
     if (!initialLoading) load(city, qDebounced, "update");
   }, [city, qDebounced, initialLoading, load]);
@@ -92,16 +93,9 @@ export default function HomeScreen() {
     }
   }, [city, qDebounced, load]);
 
-  // ---- Header (Search + City chips) ----
   function Header() {
     return (
-      <View
-        style={{
-          paddingHorizontal: 12,
-          paddingTop: HEADER_VSPACE,
-          paddingBottom: SECTION_GAP,
-        }}
-      >
+      <View style={{ paddingHorizontal: 12, paddingTop: HEADER_VSPACE, paddingBottom: SECTION_GAP }}>
         {/* Search bar */}
         <View
           style={{
@@ -119,7 +113,10 @@ export default function HomeScreen() {
           <TextInput
             ref={inputRef}
             value={query}
-            onChangeText={setQuery}
+            onChangeText={(t) => {
+              setQuery(t);
+              keepFocus(); // her harfte odak garantisi
+            }}
             placeholder="Mekan ara (isim)"
             placeholderTextColor="#9CA3AF"
             selectionColor="#7B2C2C"
@@ -130,16 +127,13 @@ export default function HomeScreen() {
             blurOnSubmit={false}
           />
 
-          {fetching && (
-            <ActivityIndicator size="small" style={{ marginLeft: 6 }} />
-          )}
+          {fetching && <ActivityIndicator size="small" style={{ marginLeft: 6 }} />}
 
           {query.length > 0 && (
             <Pressable
               onPress={() => {
                 setQuery("");
-                // temizle sonrası fokus kaybolmasın
-                setTimeout(() => inputRef.current?.focus(), 0);
+                keepFocus();
               }}
               style={{
                 marginLeft: 8,
@@ -155,11 +149,7 @@ export default function HomeScreen() {
         </View>
 
         {/* City chips */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingRight: 12 }}
-        >
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 12 }}>
           <View style={{ flexDirection: "row", gap: 8 }}>
             {CITIES.map((c) => {
               const active = c === city;
@@ -177,14 +167,7 @@ export default function HomeScreen() {
                     borderColor: active ? "#7B2C2C" : "#E6E6E6",
                   }}
                 >
-                  <Text
-                    style={{
-                      color: active ? "#fff" : "#1A1A1A",
-                      fontWeight: "600",
-                    }}
-                  >
-                    {c}
-                  </Text>
+                  <Text style={{ color: active ? "#fff" : "#1A1A1A", fontWeight: "600" }}>{c}</Text>
                 </Pressable>
               );
             })}
@@ -195,7 +178,8 @@ export default function HomeScreen() {
   }
 
   return (
-    <Screen>
+    // 👇 üst boşluk artık sadece safe-area kadar
+    <Screen topPadding="none">
       <Header />
 
       {initialLoading ? (
@@ -234,9 +218,7 @@ export default function HomeScreen() {
             keyboardDismissMode="none"
             keyboardShouldPersistTaps="always"
             removeClippedSubviews={false}
-            contentContainerStyle={{
-              paddingBottom: Platform.select({ ios: 8, android: 12 }),
-            }}
+            contentContainerStyle={{ paddingBottom: Platform.select({ ios: 8, android: 12 }) }}
           />
         </>
       )}
