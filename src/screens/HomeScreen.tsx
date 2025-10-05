@@ -2,24 +2,17 @@ import React from "react";
 import {
   FlatList,
   View,
-  Pressable,
   RefreshControl,
   ActivityIndicator,
-  TextInput,
   Platform,
-  ScrollView,
 } from "react-native";
 import { Screen, Text } from "../components/Themed";
 import Card from "../components/Card";
 import { listRestaurants, type Restaurant } from "../api/restaurants";
 import { useNavigation } from "@react-navigation/native";
+import HomeHeader from "./_HomeHeader"; // 👈 yeni, aşağıda
 
 const CITIES = ["Hepsi", "Girne", "Lefkoşa", "Gazimağusa"];
-
-// Layout
-const HEADER_VSPACE = 0; // header ile arama arası boşluk yok
-const SECTION_GAP = 4;
-const CHIP_H = 36;
 
 export default function HomeScreen() {
   const nav = useNavigation<any>();
@@ -33,12 +26,10 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = React.useState<boolean>(false);
   const [error, setError] = React.useState<string | undefined>();
 
-  // ---- TextInput odak koruması
-  const inputRef = React.useRef<TextInput>(null);
+  // input referansı (odak koruma için prop ile alt komponente geçiyoruz)
+  const inputRef = React.useRef<any>(null);
   const keepFocus = React.useCallback(() => {
-    requestAnimationFrame(() => {
-      if (!inputRef.current?.isFocused()) inputRef.current?.focus();
-    });
+    requestAnimationFrame(() => inputRef.current?.focus?.());
   }, []);
 
   // debounce
@@ -48,6 +39,7 @@ export default function HomeScreen() {
     return () => clearTimeout(t);
   }, [query]);
 
+  // veri çek
   const load = React.useCallback(
     async (selectedCity?: string, searched?: string, mode: "initial" | "update" = "update") => {
       try {
@@ -55,7 +47,7 @@ export default function HomeScreen() {
         if (mode === "initial") setInitialLoading(true);
         else setFetching(true);
 
-        const cityParam = selectedCity && selectedCity !== "Hepsi" ? selectedCity : undefined;
+        const cityParam  = selectedCity && selectedCity !== "Hepsi" ? selectedCity : undefined;
         const queryParam = searched && searched.length ? searched : undefined;
 
         const list = await listRestaurants({ city: cityParam, query: queryParam });
@@ -63,11 +55,10 @@ export default function HomeScreen() {
       } catch (e: any) {
         const msg = e?.response?.data?.message || e?.message || "Bağlantı hatası";
         setError(msg);
-        console.warn("listRestaurants error:", msg);
       } finally {
         if (mode === "initial") setInitialLoading(false);
         setFetching(false);
-        keepFocus(); // yükleme bitince de odak koru
+        keepFocus(); // yükleme bitince de odak kalsın
       }
     },
     [keepFocus]
@@ -93,94 +84,23 @@ export default function HomeScreen() {
     }
   }, [city, qDebounced, load]);
 
-  function Header() {
-    return (
-      <View style={{ paddingHorizontal: 12, paddingTop: HEADER_VSPACE, paddingBottom: SECTION_GAP }}>
-        {/* Search bar */}
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            borderWidth: 1,
-            borderColor: "#E6E6E6",
-            borderRadius: 12,
-            backgroundColor: "#fff",
-            paddingHorizontal: 12,
-            height: 44,
-            marginBottom: 8,
-          }}
-        >
-          <TextInput
-            ref={inputRef}
-            value={query}
-            onChangeText={(t) => {
-              setQuery(t);
-              keepFocus(); // her harfte odak garantisi
-            }}
-            placeholder="Mekan ara (isim)"
-            placeholderTextColor="#9CA3AF"
-            selectionColor="#7B2C2C"
-            style={{ flex: 1, color: "#111" }}
-            returnKeyType="search"
-            onSubmitEditing={() => load(city, query.trim(), "update")}
-            autoCorrect={false}
-            blurOnSubmit={false}
-          />
-
-          {fetching && <ActivityIndicator size="small" style={{ marginLeft: 6 }} />}
-
-          {query.length > 0 && (
-            <Pressable
-              onPress={() => {
-                setQuery("");
-                keepFocus();
-              }}
-              style={{
-                marginLeft: 8,
-                paddingHorizontal: 8,
-                paddingVertical: 6,
-                borderRadius: 8,
-                backgroundColor: "#F3F4F6",
-              }}
-            >
-              <Text secondary>Temizle</Text>
-            </Pressable>
-          )}
-        </View>
-
-        {/* City chips */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 12 }}>
-          <View style={{ flexDirection: "row", gap: 8 }}>
-            {CITIES.map((c) => {
-              const active = c === city;
-              return (
-                <Pressable
-                  key={c}
-                  onPress={() => setCity(c)}
-                  style={{
-                    height: CHIP_H,
-                    paddingHorizontal: 12,
-                    borderRadius: CHIP_H / 2,
-                    borderWidth: 1,
-                    justifyContent: "center",
-                    backgroundColor: active ? "#7B2C2C" : "#FFFFFF",
-                    borderColor: active ? "#7B2C2C" : "#E6E6E6",
-                  }}
-                >
-                  <Text style={{ color: active ? "#fff" : "#1A1A1A", fontWeight: "600" }}>{c}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </ScrollView>
-      </View>
-    );
-  }
-
   return (
-    // 👇 üst boşluk artık sadece safe-area kadar
     <Screen topPadding="none">
-      <Header />
+      {/* 👇 Header artık ayrı, tip kimliği stabil → unmount olmaz → klavye kapanmaz */}
+      <HomeHeader
+        inputRef={inputRef}
+        cities={CITIES}
+        city={city}
+        setCity={setCity}
+        query={query}
+        setQuery={setQuery}
+        fetching={fetching}
+        onSubmit={() => load(city, query.trim(), "update")}
+        onClear={() => {
+          setQuery("");
+          keepFocus();
+        }}
+      />
 
       {initialLoading ? (
         <View style={{ alignItems: "center", marginTop: 12 }}>
@@ -225,3 +145,7 @@ export default function HomeScreen() {
     </Screen>
   );
 }
+
+/* ===========================
+   Ayrı, memo’lu Header
+   =========================== */
