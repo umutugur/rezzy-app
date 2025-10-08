@@ -1,18 +1,12 @@
 import React from "react";
-import {
-  FlatList,
-  View,
-  RefreshControl,
-  ActivityIndicator,
-  Platform,
-} from "react-native";
+import { FlatList, View, RefreshControl, ActivityIndicator, Platform, TextInput } from "react-native";
 import { Screen, Text } from "../components/Themed";
 import Card from "../components/Card";
 import { listRestaurants, type Restaurant } from "../api/restaurants";
 import { useNavigation } from "@react-navigation/native";
-import HomeHeader from "./_HomeHeader"; // 👈 yeni, aşağıda
+import HomeHeader from "./_HomeHeader"; // 👈 default import
 
-const CITIES = ["Hepsi", "Girne", "Lefkoşa", "Gazimağusa"];
+const CITIES = ["Hepsi", "Girne", "Lefkoşa", "Gazimağusa","Güzelyurt","İskele","Lefke"];
 
 export default function HomeScreen() {
   const nav = useNavigation<any>();
@@ -26,11 +20,8 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = React.useState<boolean>(false);
   const [error, setError] = React.useState<string | undefined>();
 
-  // input referansı (odak koruma için prop ile alt komponente geçiyoruz)
-  const inputRef = React.useRef<any>(null);
-  const keepFocus = React.useCallback(() => {
-    requestAnimationFrame(() => inputRef.current?.focus?.());
-  }, []);
+  const inputRef = React.useRef<TextInput | null>(null);
+  const keepFocus = React.useCallback(() => requestAnimationFrame(() => inputRef.current?.focus?.()), []);
 
   // debounce
   const [qDebounced, setQDebounced] = React.useState<string>("");
@@ -39,7 +30,6 @@ export default function HomeScreen() {
     return () => clearTimeout(t);
   }, [query]);
 
-  // veri çek
   const load = React.useCallback(
     async (selectedCity?: string, searched?: string, mode: "initial" | "update" = "update") => {
       try {
@@ -58,35 +48,24 @@ export default function HomeScreen() {
       } finally {
         if (mode === "initial") setInitialLoading(false);
         setFetching(false);
-        keepFocus(); // yükleme bitince de odak kalsın
+        keepFocus();
       }
     },
     [keepFocus]
   );
 
-  // ilk yükleme
-  React.useEffect(() => {
-    load(city, qDebounced, "initial");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  React.useEffect(() => { load(city, qDebounced, "initial"); }, []); // first load
 
-  // filtre/debounce değişince
-  React.useEffect(() => {
-    if (!initialLoading) load(city, qDebounced, "update");
-  }, [city, qDebounced, initialLoading, load]);
+  React.useEffect(() => { if (!initialLoading) load(city, qDebounced, "update"); },
+    [city, qDebounced, initialLoading, load]);
 
   const onRefresh = React.useCallback(async () => {
-    try {
-      setRefreshing(true);
-      await load(city, qDebounced, "update");
-    } finally {
-      setRefreshing(false);
-    }
+    try { setRefreshing(true); await load(city, qDebounced, "update"); }
+    finally { setRefreshing(false); }
   }, [city, qDebounced, load]);
 
   return (
     <Screen topPadding="none">
-      {/* 👇 Header artık ayrı, tip kimliği stabil → unmount olmaz → klavye kapanmaz */}
       <HomeHeader
         inputRef={inputRef}
         cities={CITIES}
@@ -96,10 +75,7 @@ export default function HomeScreen() {
         setQuery={setQuery}
         fetching={fetching}
         onSubmit={() => load(city, query.trim(), "update")}
-        onClear={() => {
-          setQuery("");
-          keepFocus();
-        }}
+        onClear={() => { setQuery(""); keepFocus(); }}
       />
 
       {initialLoading ? (
@@ -145,7 +121,3 @@ export default function HomeScreen() {
     </Screen>
   );
 }
-
-/* ===========================
-   Ayrı, memo’lu Header
-   =========================== */

@@ -1,7 +1,7 @@
-import * as React from "react";
-import { View as RNView, Text as RNText, TextProps, ViewProps } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import React from "react";
+import { Text as RNText, View as RNView, TextProps, ViewProps } from "react-native";
 import { lightTheme } from "../theme/theme";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export const Text = (p: TextProps & { secondary?: boolean }) => (
   <RNText
@@ -16,20 +16,11 @@ export const Text = (p: TextProps & { secondary?: boolean }) => (
   />
 );
 
-/**
- * Screen:
- *  - Varsayılan olarak sadece safe-area kadar üst padding verir.
- *  - İstersen topPadding ile ekstra ekleyebilirsin: "none" | "sm" | "lg"
- *  - Sol/sağ/bottom padding'i buradan kaldırdık (sayfalar kendi içinde versin).
- */
-export const Screen = ({
-  children,
-  style,
-  topPadding = "none",
-  ...rest
-}: ViewProps & { topPadding?: "none" | "sm" | "lg" }) => {
+type ScreenProps = ViewProps & { topPadding?: "base" | "none" };
+
+export const Screen = ({ children, style, topPadding = "base", ...rest }: ScreenProps) => {
   const insets = useSafeAreaInsets();
-  const extraTop = topPadding === "lg" ? 16 : topPadding === "sm" ? 8 : 0;
+  const base = 16;
 
   return (
     <RNView
@@ -38,8 +29,10 @@ export const Screen = ({
         {
           flex: 1,
           backgroundColor: lightTheme.colors.background,
-          paddingTop: insets.top + extraTop,
-          // alt/sol/sağ padding yok
+          paddingTop: (topPadding === "none" ? 0 : base) + insets.top,
+          paddingBottom: base + insets.bottom,
+          paddingLeft: base + insets.left,
+          paddingRight: base + insets.right,
         },
         style,
       ]}
