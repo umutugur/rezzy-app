@@ -1,14 +1,20 @@
 import React from "react";
-import { View, TextInput, Pressable, ActivityIndicator, ScrollView } from "react-native";
+import {
+  View,
+  TextInput,
+  Pressable,
+  ActivityIndicator,
+  ScrollView,
+  Keyboard,
+} from "react-native";
 import { Text } from "../components/Themed";
 
-const HEADER_VSPACE = 0;
+const HEADER_VSPACE = 8;
 const SECTION_GAP = 4;
 const CHIP_H = 36;
 
-// ... imports ...
 type Props = {
-  inputRef: React.RefObject<TextInput | null>; // 👈 burada güncelledik
+  inputRef: React.RefObject<TextInput | null>;
   cities: string[];
   city: string;
   setCity: (c: string) => void;
@@ -18,7 +24,6 @@ type Props = {
   onSubmit: () => void;
   onClear: () => void;
 };
-
 
 function HomeHeaderImpl({
   inputRef,
@@ -32,7 +37,13 @@ function HomeHeaderImpl({
   onClear,
 }: Props) {
   return (
-    <View style={{ paddingHorizontal: 12, paddingTop: HEADER_VSPACE, paddingBottom: SECTION_GAP }}>
+    <View
+      style={{
+        paddingHorizontal: 12,
+        paddingTop: HEADER_VSPACE,
+        paddingBottom: SECTION_GAP,
+      }}
+    >
       {/* Search */}
       <View
         style={{
@@ -56,7 +67,11 @@ function HomeHeaderImpl({
           selectionColor="#7B2C2C"
           style={{ flex: 1, color: "#111" }}
           returnKeyType="search"
-          onSubmitEditing={onSubmit}
+          onSubmitEditing={() => {
+            Keyboard.dismiss();
+            inputRef.current?.blur();
+            onSubmit();
+          }}
           autoCorrect={false}
           blurOnSubmit={false}
         />
@@ -65,7 +80,11 @@ function HomeHeaderImpl({
 
         {query.length > 0 && (
           <Pressable
-            onPress={onClear}
+            onPress={() => {
+              onClear();
+              inputRef.current?.blur();
+              Keyboard.dismiss();
+            }}
             style={{
               marginLeft: 8,
               paddingHorizontal: 8,
@@ -80,14 +99,23 @@ function HomeHeaderImpl({
       </View>
 
       {/* City chips */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 12 }}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingRight: 12 }}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={{ flexDirection: "row", gap: 8 }}>
           {cities.map((c) => {
             const active = c === city;
             return (
               <Pressable
                 key={c}
-                onPress={() => setCity(c)}
+                onPress={() => {
+                  inputRef.current?.blur();
+                  Keyboard.dismiss();
+                  setCity(c);
+                }}
                 style={{
                   height: CHIP_H,
                   paddingHorizontal: 12,
@@ -98,7 +126,14 @@ function HomeHeaderImpl({
                   borderColor: active ? "#7B2C2C" : "#E6E6E6",
                 }}
               >
-                <Text style={{ color: active ? "#fff" : "#1A1A1A", fontWeight: "600" }}>{c}</Text>
+                <Text
+                  style={{
+                    color: active ? "#fff" : "#1A1A1A",
+                    fontWeight: "600",
+                  }}
+                >
+                  {c}
+                </Text>
               </Pressable>
             );
           })}
