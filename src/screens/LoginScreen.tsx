@@ -1,9 +1,8 @@
 import React from "react";
-import { View, Alert, Platform } from "react-native";
+import { View, Alert, Platform, Pressable, ActivityIndicator, Text as RNText } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Screen, Text } from "../components/Themed";
 import Input from "../components/Input";
-import Button from "../components/Button";
 import { login, googleSignIn, appleSignIn } from "../api/auth";
 import { useAuth } from "../store/useAuth";
 
@@ -12,6 +11,7 @@ import * as Google from "expo-auth-session/providers/google";
 import * as WebBrowser from "expo-web-browser";
 import { makeRedirectUri } from "expo-auth-session";
 import { registerPushToken } from "../hooks/usePushToken";
+import { AntDesign, Ionicons } from "@expo/vector-icons";
 import {
   GOOGLE_ANDROID_CLIENT_ID,
   GOOGLE_IOS_CLIENT_ID,
@@ -47,23 +47,19 @@ export default function LoginScreen() {
   // --- GOOGLE (ID Token flow, web fallback güvenceye alındı)
   const redirectUri = makeRedirectUri({
     native: "com.rezzy.app:/oauthredirect",
-    // web fallback'te Expo proxy kullan: GCP'de redirect olarak zaten ekledin
     // useProxy: true,
   });
 
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-  androidClientId: GOOGLE_ANDROID_CLIENT_ID || undefined,
-  iosClientId: GOOGLE_IOS_CLIENT_ID || undefined,
-  clientId: GOOGLE_WEB_CLIENT_ID || undefined,
-  redirectUri,
-  scopes: ["openid", "profile", "email"],
-});
+    androidClientId: GOOGLE_ANDROID_CLIENT_ID || undefined,
+    iosClientId: GOOGLE_IOS_CLIENT_ID || undefined,
+    clientId: GOOGLE_WEB_CLIENT_ID || undefined,
+    redirectUri,
+    scopes: ["openid", "profile", "email"],
+  });
 
   React.useEffect(() => {
     if (!response) return;
-
-    // DEBUG: Gerekirse aç
-    // console.log("Google response:", JSON.stringify(response, null, 2));
 
     if (response.type === "success") {
       const anyResp = response as any;
@@ -96,7 +92,6 @@ export default function LoginScreen() {
   const onGoogle = async () => {
     try {
       setGLoading(true);
-      // web fallback'te proxy kullanılacak, native'de normal akış
       await promptAsync();
     } catch (e: any) {
       setGLoading(false);
@@ -106,7 +101,7 @@ export default function LoginScreen() {
 
   const onApple = async () => {
     try {
-      if (Platform.OS !== "ios") return;
+      if (Platform.OS !== "ios" || aLoading) return; // guard
       setALoading(true);
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
@@ -116,6 +111,7 @@ export default function LoginScreen() {
       });
       const identityToken = credential.identityToken;
       if (!identityToken) throw new Error("Apple identityToken alınamadı.");
+
       const { token, user } = await appleSignIn(identityToken);
       setAuth(token, user);
       try { await registerPushToken(); } catch {}
@@ -134,29 +130,148 @@ export default function LoginScreen() {
       <Text style={{ fontSize: 28, fontWeight: "700", marginBottom: 16 }}>Rezzy</Text>
 
       <Input label="E-posta" value={email} onChangeText={setEmail} placeholder="you@example.com" />
-<Input label="Şifre" value={password} onChangeText={setPassword}
-       secureTextEntry placeholder="******" />
-      <Button title="Giriş Yap" onPress={onLogin} loading={loading} />
+      <Input
+        label="Şifre"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        placeholder="******"
+      />
+
+      {/* Normal giriş */}
+      <BrandButton
+        title="Giriş Yap"
+        onPress={onLogin}
+        loading={loading}
+        variant="primary"
+        iconLeft={<Ionicons name="log-in-outline" size={18} color="#fff" />}
+      />
 
       <View style={{ height: 24 }} />
 
-      <Button
+      {/* Google ile devam et */}
+      <GoogleBrandButton
         title="Google ile devam et"
         onPress={onGoogle}
         loading={gLoading}
-        variant="outline"
         disabled={!request}
       />
 
+      {/* Apple ile devam et — disabled prop'u YOK, guard + opacity ile kontrol */}
       {Platform.OS === "ios" ? (
         <>
           <View style={{ height: 12 }} />
-          <Button title="Apple ile devam et" onPress={onApple} loading={aLoading} variant="outline" />
+          <View style={{ width: "100%", opacity: aLoading ? 0.7 : 1 }}>
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+              cornerRadius={8}
+              style={{ width: "100%", height: 50 }}
+              onPress={() => { if (!aLoading) onApple(); }}
+            />
+          </View>
+          {aLoading ? (
+            <View style={{ position: "absolute", alignSelf: "center", marginTop: 12 }}>
+              <ActivityIndicator color="#000" />
+            </View>
+          ) : null}
         </>
       ) : null}
 
       <View style={{ height: 12 }} />
       <Text secondary>Demo giriş: new-owner@rezzy.app / 123456</Text>
     </Screen>
+  );
+}
+
+/* -------------------- Özel Butonlar -------------------- */
+
+type BrandButtonProps = {
+  title: string;
+  onPress: () => void;
+  loading?: boolean;
+  disabled?: boolean;
+  variant?: "primary" | "outline";
+  iconLeft?: React.ReactNode;
+};
+
+function BrandButton({
+  title,
+  onPress,
+  loading,
+  disabled,
+  variant = "primary",
+  iconLeft,
+}: BrandButtonProps) {
+  const isPrimary = variant === "primary";
+  const bg = isPrimary ? "#7B2C2C" : "#FFFFFF";
+  const fg = isPrimary ? "#FFFFFF" : "#111827";
+  const borderColor = isPrimary ? "transparent" : "#E5E7EB";
+
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled || loading}
+      style={({ pressed }) => ({
+        opacity: disabled || loading ? 0.6 : pressed ? 0.9 : 1,
+        backgroundColor: bg,
+        borderWidth: 1,
+        borderColor,
+        height: 50,
+        borderRadius: 8,
+        alignItems: "center",
+        justifyContent: "center",
+        flexDirection: "row",
+        gap: 8,
+        width: "100%",
+      })}
+    >
+      {loading ? (
+        <ActivityIndicator color={fg} />
+      ) : (
+        <>
+          {iconLeft}
+          <RNText style={{ color: fg, fontWeight: "700", fontSize: 16 }}>{title}</RNText>
+        </>
+      )}
+    </Pressable>
+  );
+}
+
+type GoogleButtonProps = {
+  title: string;
+  onPress: () => void;
+  loading?: boolean;
+  disabled?: boolean;
+};
+
+function GoogleBrandButton({ title, onPress, loading, disabled }: GoogleButtonProps) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled || loading}
+      style={({ pressed }) => ({
+        opacity: disabled || loading ? 0.6 : pressed ? 0.95 : 1,
+        backgroundColor: "#FFFFFF",
+        borderWidth: 1,
+        borderColor: "#E5E7EB",
+        height: 50,
+        borderRadius: 8,
+        alignItems: "center",
+        justifyContent: "center",
+        flexDirection: "row",
+        gap: 10,
+        width: "100%",
+      })}
+    >
+      {loading ? (
+        <ActivityIndicator color="#111827" />
+      ) : (
+        <>
+          <AntDesign name="google" size={18} color="#1F1F1F" />
+          <RNText style={{ color: "#1F1F1F", fontWeight: "700", fontSize: 16 }}>{title}</RNText>
+        </>
+      )}
+    </Pressable>
   );
 }

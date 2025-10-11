@@ -1,3 +1,4 @@
+// navigation/RootNavigator.tsx
 import React from "react";
 import { View, Text } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
@@ -19,24 +20,25 @@ import RestaurantPanelScreen from "../screens/RestaurantPanelScreen";
 import AdminPanelScreen from "../screens/AdminPanelScreen";
 import NotificationsScreen from "../screens/NotificationsScreen";
 
+import TermsScreen from "../screens/TermsScreen";
+import PrivacyPolicyScreen from "../screens/PrivacyPolicyScreen";
+import HelpSupportScreen from "../screens/HelpSupportScreen";
+import ContactScreen from "../screens/ContactScreen";
+import AboutScreen from "../screens/AboutScreen";
+import LicensesScreen from "../screens/LicensesScreen";
+import DeleteAccountScreen from "../screens/DeleteAccountScreen";
+
 import { useAuth } from "../store/useAuth";
 import { useNotifications } from "../store/useNotifications";
 
 const Stack = createNativeStackNavigator();
 const Tabs = createBottomTabNavigator();
 
-// ---- BELL (bildirim ikonu + rozet)
 function Bell({ onPress }: { onPress: () => void }) {
   const unread = useNotifications((s) => s.unreadCount);
-
   return (
     <View style={{ paddingRight: 4 }}>
-      <Ionicons
-        name="notifications-outline"
-        size={24}
-        color="#111827"
-        onPress={onPress}
-      />
+      <Ionicons name="notifications-outline" size={24} color="#111827" onPress={onPress} />
       {unread > 0 && (
         <View
           pointerEvents="none"
@@ -50,7 +52,7 @@ function Bell({ onPress }: { onPress: () => void }) {
             borderRadius: 9,
             alignItems: "center",
             justifyContent: "center",
-            paddingHorizontal: 4,
+            paddingHorizontal: 4
           }}
         >
           <Text style={{ color: "#fff", fontSize: 11, fontWeight: "700" }}>
@@ -80,13 +82,13 @@ function TabsNav({ navigation }: any) {
           paddingTop: 8,
           borderTopWidth: 0.5,
           backgroundColor: "#fff",
-          elevation: 8,
+          elevation: 8
         },
         tabBarIcon: ({ color, size }) => {
           const nameMap: Record<string, any> = {
             "Keşfet": "compass-outline",
             "Rezervasyonlar": "calendar-outline",
-            "Profil": "person-circle-outline",
+            "Profil": "person-circle-outline"
           };
           return <Ionicons name={nameMap[route.name]} size={size} color={color} />;
         },
@@ -94,7 +96,7 @@ function TabsNav({ navigation }: any) {
           <View style={{ flexDirection: "row", alignItems: "center", paddingRight: 8 }}>
             <Bell onPress={() => navigation.navigate("Bildirimler")} />
           </View>
-        ),
+        )
       })}
     >
       <Tabs.Screen name="Keşfet" component={HomeScreen} />
@@ -116,18 +118,10 @@ export default function RootNavigator() {
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: true }}>
         {!token ? (
-          <Stack.Screen
-            name="Giriş"
-            component={LoginScreen}
-            options={{ headerShown: false }}
-          />
+          <Stack.Screen name="Giriş" component={LoginScreen} options={{ headerShown: false }} />
         ) : (
           <>
-            <Stack.Screen
-              name="Tabs"
-              component={TabsNav}
-              options={{ headerShown: false }}
-            />
+            <Stack.Screen name="Tabs" component={TabsNav} options={{ headerShown: false }} />
             <Stack.Screen name="Bildirimler" component={NotificationsScreen} />
             <Stack.Screen name="Restoran" component={RestaurantDetailScreen} />
             <Stack.Screen name="Rezervasyon - Tarih" component={ReservationStep1Screen} />
@@ -136,6 +130,15 @@ export default function RootNavigator() {
             <Stack.Screen name="Rezervasyon Detayı" component={ReservationDetailScreen} />
             <Stack.Screen name="RestaurantPanel" component={RestaurantPanelScreen} />
             <Stack.Screen name="AdminPanel" component={AdminPanelScreen} />
+
+            {/* Yeni yasal & destek ekranları */}
+            <Stack.Screen name="Terms" component={TermsScreen} options={{ title: "Kullanım Koşulları" }} />
+            <Stack.Screen name="Privacy" component={PrivacyPolicyScreen} options={{ title: "Gizlilik Politikası" }} />
+            <Stack.Screen name="Help" component={HelpSupportScreen} options={{ title: "Yardım & Destek" }} />
+            <Stack.Screen name="Contact" component={ContactScreen} options={{ title: "İletişim" }} />
+            <Stack.Screen name="About" component={AboutScreen} options={{ title: "Hakkında" }} />
+            <Stack.Screen name="Licenses" component={LicensesScreen} options={{ title: "Lisanslar" }} />
+            <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} options={{ title: "Hesabı Sil" }} />
           </>
         )}
       </Stack.Navigator>

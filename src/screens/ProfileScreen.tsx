@@ -557,7 +557,18 @@ export default function ProfileScreen() {
           </View>
         </Section>
       )}
-
+      {/* --- Yasal & Destek --- */}
+<Section title="Yasal ve Destek">
+  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+    <PrimaryButton title="Kullanım Koşulları" onPress={() => navigation.navigate("Terms")} />
+    <PrimaryButton title="Gizlilik Politikası" onPress={() => navigation.navigate("Privacy")} />
+    <SecondaryButton title="Yardım & Destek" onPress={() => navigation.navigate("Help")} />
+    <SecondaryButton title="İletişim" onPress={() => navigation.navigate("Contact")} />
+    <SecondaryButton title="Lisanslar" onPress={() => navigation.navigate("Licenses")} />
+    <SecondaryButton title="Hakkında" onPress={() => navigation.navigate("About")} />
+    <SecondaryButton title="Hesabı Sil" onPress={() => navigation.navigate("DeleteAccount")} />
+  </View>
+</Section>
       {/* Alt kısım Çıkış */}
       <View style={{ paddingHorizontal: 16, marginTop: 8, marginBottom: 20 }}>
         <SecondaryButton title="Çıkış yap" onPress={logout} />

@@ -1,10 +1,9 @@
 import { api } from "./client";
 import type { User } from "../store/useAuth";
 
-// Profilimi getir
+/** Profilimi getir */
 export async function getMe(): Promise<User> {
   const { data } = await api.get("/auth/me");
-  // backend toClientUser şekli
   return {
     id: data.id ?? data._id ?? data.user?.id,
     name: data.name,
@@ -20,7 +19,7 @@ export async function getMe(): Promise<User> {
   } as User;
 }
 
-// Profilimi güncelle
+/** Profilimi güncelle */
 export async function patchMe(patch: {
   name?: string;
   phone?: string;
@@ -44,13 +43,13 @@ export async function patchMe(patch: {
   } as User;
 }
 
-// Şifre değiştir
+/** Şifre değiştir */
 export async function changePassword(currentPassword: string, newPassword: string) {
   const { data } = await api.post("/auth/change-password", { currentPassword, newPassword });
   return data?.ok === true;
 }
 
-// Avatar yükle: /uploads’a at, sonra /auth/me ile profile yaz
+/** Avatar yükle → URL döner ve profili günceller */
 export async function uploadAvatarRN(file: { uri: string; name?: string; type?: string }): Promise<string> {
   const form = new FormData();
   form.append("file", {
@@ -66,8 +65,12 @@ export async function uploadAvatarRN(file: { uri: string; name?: string; type?: 
   const url = data?.url || data?.secure_url || data?.Location || data?.data?.url;
   if (!url) throw new Error("Yükleme başarısız: URL alınamadı.");
 
-  // Profiline yaz
   await patchMe({ avatarUrl: String(url) });
-
   return String(url);
+}
+
+/** 🔴 Hesabı sil (Apple gereksinimi) */
+export async function deleteAccount(): Promise<{ ok: boolean; message?: string }> {
+  const { data } = await api.delete("/users/me");
+  return data;
 }
