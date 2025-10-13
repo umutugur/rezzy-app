@@ -85,7 +85,7 @@
 	<string>Light</string>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-	<key>privacy - camera Usage Description (NSCameraUsageDescription)</key>
+	<key>NSCameraUsageDescription</key>
 	<string>QR kodu okutarak check-in ve rezervasyon doğrulama için kameraya ihtiyaç duyar.</string>
 </dict>
 </plist>
