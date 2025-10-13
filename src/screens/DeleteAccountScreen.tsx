@@ -13,7 +13,7 @@ export default function DeleteAccountScreen() {
   const onDelete = async () => {
     try {
       setLoading(true);
-      await deleteAccount(String(user?._id));
+      await deleteAccount();
       await clear();
       Alert.alert("Hesap Silindi", "Hesabınız kalıcı olarak silindi.");
     } catch (e: any) {

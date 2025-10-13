@@ -13,6 +13,7 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Ionicons } from "@expo/vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import dayjs from "dayjs";
 import { lightTheme as T } from "../theme/theme";
 import { useAuth } from "../store/useAuth";
@@ -305,6 +306,15 @@ export default function ProfileScreen() {
     ]);
   }
 
+  // --- Yasal & Destek navigasyon kısayolları ---
+  const goTerms    = () => navigation.navigate("Terms");
+  const goPrivacy  = () => navigation.navigate("Privacy");
+  const goSupport  = () => navigation.navigate("Help");
+  const goContact  = () => navigation.navigate("Contact");
+  const goLicenses = () => navigation.navigate("Licenses");
+  const goAbout    = () => navigation.navigate("About");
+  const goDelete   = () => navigation.navigate("DeleteAccount");
+
   return (
     <ScrollView contentContainerStyle={{ paddingBottom: 28 }} style={{ flex: 1, backgroundColor: T.colors.background }}>
       {/* Kapak */}
@@ -557,18 +567,26 @@ export default function ProfileScreen() {
           </View>
         </Section>
       )}
-      {/* --- Yasal & Destek --- */}
-<Section title="Yasal ve Destek">
-  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-    <PrimaryButton title="Kullanım Koşulları" onPress={() => navigation.navigate("Terms")} />
-    <PrimaryButton title="Gizlilik Politikası" onPress={() => navigation.navigate("Privacy")} />
-    <SecondaryButton title="Yardım & Destek" onPress={() => navigation.navigate("Help")} />
-    <SecondaryButton title="İletişim" onPress={() => navigation.navigate("Contact")} />
-    <SecondaryButton title="Lisanslar" onPress={() => navigation.navigate("Licenses")} />
-    <SecondaryButton title="Hakkında" onPress={() => navigation.navigate("About")} />
-    <SecondaryButton title="Hesabı Sil" onPress={() => navigation.navigate("DeleteAccount")} />
-  </View>
-</Section>
+
+      {/* --- Yasal & Destek (liste kartı) --- */}
+      <Section title="Yasal ve Destek">
+        <ListCard>
+          <ListRow icon="file-document-outline" label="Kullanım Koşulları" onPress={goTerms} />
+          <Divider />
+          <ListRow icon="shield-lock-outline" label="Gizlilik Politikası" onPress={goPrivacy} />
+          <Divider />
+          <ListRow icon="lifebuoy" label="Yardım & Destek" onPress={goSupport} />
+          <Divider />
+          <ListRow icon="email-outline" label="İletişim" onPress={goContact} />
+          <Divider />
+          <ListRow icon="certificate-outline" label="Lisanslar" onPress={goLicenses} />
+          <Divider />
+          <ListRow icon="information-outline" label="Hakkında" onPress={goAbout} />
+          <Divider />
+          <ListRow icon="trash-can-outline" label="Hesabı Sil" destructive onPress={goDelete} />
+        </ListCard>
+      </Section>
+
       {/* Alt kısım Çıkış */}
       <View style={{ paddingHorizontal: 16, marginTop: 8, marginBottom: 20 }}>
         <SecondaryButton title="Çıkış yap" onPress={logout} />
@@ -839,3 +857,73 @@ const inputStyle = {
   backgroundColor: "#fff",
   color: T.colors.text,
 } as const;
+
+/** ---- Liste kartı bileşenleri ---- */
+function ListCard({ children }: { children: React.ReactNode }) {
+  return (
+    <View
+      style={{
+        backgroundColor: "#fff",
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: T.colors.border,
+        overflow: "hidden",
+        shadowColor: "#000",
+        shadowOpacity: 0.06,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 4 },
+        elevation: 2,
+      }}
+    >
+      {children}
+    </View>
+  );
+}
+
+function Divider() {
+  return <View style={{ height: 1, backgroundColor: "#EFEFEF" }} />;
+}
+
+function ListRow({
+  icon,
+  label,
+  destructive,
+  onPress,
+}: {
+  icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"];
+  label: string;
+  destructive?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          paddingHorizontal: 14,
+          paddingVertical: 14,
+          gap: 12,
+          backgroundColor: "#fff",
+        }}
+      >
+        <MaterialCommunityIcons
+          name={icon}
+          size={22}
+          color={destructive ? "#C0392B" : "#6B7280"}
+          style={{ width: 24 }}
+        />
+        <Text
+          style={{
+            flex: 1,
+            color: destructive ? "#C0392B" : T.colors.text,
+            fontWeight: destructive ? "800" : "600",
+          }}
+        >
+          {label}
+        </Text>
+        <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+      </View>
+    </TouchableOpacity>
+  );
+}

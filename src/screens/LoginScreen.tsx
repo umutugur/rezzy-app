@@ -1,5 +1,12 @@
 import React from "react";
-import { View, Alert, Platform, Pressable, ActivityIndicator, Text as RNText } from "react-native";
+import {
+  View,
+  Alert,
+  Platform,
+  Pressable,
+  ActivityIndicator,
+  Text as RNText,
+} from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Screen, Text } from "../components/Themed";
 import Input from "../components/Input";
@@ -35,7 +42,9 @@ export default function LoginScreen() {
       setLoading(true);
       const { token, user } = await login(email, password);
       setAuth(token, user);
-      try { await registerPushToken(); } catch {}
+      try {
+        await registerPushToken();
+      } catch {}
       navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
     } catch (e: any) {
       Alert.alert("Giriş Hatası", e?.response?.data?.message || "Giriş başarısız");
@@ -44,10 +53,10 @@ export default function LoginScreen() {
     }
   };
 
-  // --- GOOGLE (ID Token flow, web fallback güvenceye alındı)
+  // --- GOOGLE ID Token flow ---
   const redirectUri = makeRedirectUri({
     native: "com.rezzy.app:/oauthredirect",
-    // useProxy: true,
+    // useProxy: true, // gerekirse açarsın
   });
 
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
@@ -73,7 +82,9 @@ export default function LoginScreen() {
           if (!idToken) throw new Error("Google id_token alınamadı.");
           const { token, user } = await googleSignIn(idToken);
           setAuth(token, user);
-          try { await registerPushToken(); } catch {}
+          try {
+            await registerPushToken();
+          } catch {}
           navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
         } catch (err: any) {
           Alert.alert("Google Girişi Hatası", err?.response?.data?.message || err?.message);
@@ -101,7 +112,7 @@ export default function LoginScreen() {
 
   const onApple = async () => {
     try {
-      if (Platform.OS !== "ios" || aLoading) return; // guard
+      if (Platform.OS !== "ios" || aLoading) return;
       setALoading(true);
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
@@ -114,7 +125,9 @@ export default function LoginScreen() {
 
       const { token, user } = await appleSignIn(identityToken);
       setAuth(token, user);
-      try { await registerPushToken(); } catch {}
+      try {
+        await registerPushToken();
+      } catch {}
       navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
     } catch (e: any) {
       if (e?.code !== "ERR_CANCELED") {
@@ -130,13 +143,7 @@ export default function LoginScreen() {
       <Text style={{ fontSize: 28, fontWeight: "700", marginBottom: 16 }}>Rezzy</Text>
 
       <Input label="E-posta" value={email} onChangeText={setEmail} placeholder="you@example.com" />
-      <Input
-        label="Şifre"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        placeholder="******"
-      />
+      <Input label="Şifre" value={password} onChangeText={setPassword} secureTextEntry placeholder="******" />
 
       {/* Normal giriş */}
       <BrandButton
@@ -147,38 +154,44 @@ export default function LoginScreen() {
         iconLeft={<Ionicons name="log-in-outline" size={18} color="#fff" />}
       />
 
-      <View style={{ height: 24 }} />
+      <View style={{ height: 20 }} />
 
-      {/* Google ile devam et */}
-      <GoogleBrandButton
-        title="Google ile devam et"
-        onPress={onGoogle}
-        loading={gLoading}
-        disabled={!request}
-      />
+      {/* Google ile devam et (brand guideline: beyaz buton, logo solda) */}
+      <GoogleBrandButton title="Google ile devam et" onPress={onGoogle} loading={gLoading} disabled={!request} />
 
-      {/* Apple ile devam et — disabled prop'u YOK, guard + opacity ile kontrol */}
+      {/* Apple ile devam et — Apple’ın native butonu */}
       {Platform.OS === "ios" ? (
         <>
           <View style={{ height: 12 }} />
-          <View style={{ width: "100%", opacity: aLoading ? 0.7 : 1 }}>
+          <View
+            style={{
+              width: "100%",
+              opacity: aLoading ? 0.7 : 1,
+              shadowColor: "#000",
+              shadowOpacity: 0.08,
+              shadowRadius: 8,
+              shadowOffset: { width: 0, height: 4 },
+            }}
+          >
             <AppleAuthentication.AppleAuthenticationButton
               buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
               buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-              cornerRadius={8}
-              style={{ width: "100%", height: 50 }}
-              onPress={() => { if (!aLoading) onApple(); }}
+              cornerRadius={10}
+              style={{ width: "100%", height: 50, borderRadius: 10 }}
+              onPress={() => {
+                if (!aLoading) onApple();
+              }}
             />
           </View>
           {aLoading ? (
-            <View style={{ position: "absolute", alignSelf: "center", marginTop: 12 }}>
+            <View style={{ marginTop: 10, alignSelf: "center" }}>
               <ActivityIndicator color="#000" />
             </View>
           ) : null}
         </>
       ) : null}
 
-      <View style={{ height: 12 }} />
+      <View style={{ height: 14 }} />
       <Text secondary>Demo giriş: new-owner@rezzy.app / 123456</Text>
     </Screen>
   );
@@ -195,14 +208,7 @@ type BrandButtonProps = {
   iconLeft?: React.ReactNode;
 };
 
-function BrandButton({
-  title,
-  onPress,
-  loading,
-  disabled,
-  variant = "primary",
-  iconLeft,
-}: BrandButtonProps) {
+function BrandButton({ title, onPress, loading, disabled, variant = "primary", iconLeft }: BrandButtonProps) {
   const isPrimary = variant === "primary";
   const bg = isPrimary ? "#7B2C2C" : "#FFFFFF";
   const fg = isPrimary ? "#FFFFFF" : "#111827";
@@ -213,17 +219,21 @@ function BrandButton({
       onPress={onPress}
       disabled={disabled || loading}
       style={({ pressed }) => ({
-        opacity: disabled || loading ? 0.6 : pressed ? 0.9 : 1,
+        opacity: disabled || loading ? 0.6 : pressed ? 0.95 : 1,
         backgroundColor: bg,
         borderWidth: 1,
         borderColor,
         height: 50,
-        borderRadius: 8,
+        borderRadius: 10,
         alignItems: "center",
         justifyContent: "center",
         flexDirection: "row",
         gap: 8,
         width: "100%",
+        shadowColor: isPrimary ? "#7B2C2C" : "#000",
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 4 },
       })}
     >
       {loading ? (
@@ -251,17 +261,21 @@ function GoogleBrandButton({ title, onPress, loading, disabled }: GoogleButtonPr
       onPress={onPress}
       disabled={disabled || loading}
       style={({ pressed }) => ({
-        opacity: disabled || loading ? 0.6 : pressed ? 0.95 : 1,
+        opacity: disabled || loading ? 0.6 : pressed ? 0.97 : 1,
         backgroundColor: "#FFFFFF",
         borderWidth: 1,
         borderColor: "#E5E7EB",
         height: 50,
-        borderRadius: 8,
+        borderRadius: 10,
         alignItems: "center",
         justifyContent: "center",
         flexDirection: "row",
         gap: 10,
         width: "100%",
+        shadowColor: "#000",
+        shadowOpacity: 0.06,
+        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 3 },
       })}
     >
       {loading ? (

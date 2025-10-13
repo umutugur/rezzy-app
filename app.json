@@ -28,20 +28,25 @@
     "android": {
       "package": "com.rezzy.app",
       "googleServicesFile": "./google-services.json",
-      "permissions": ["NOTIFICATIONS","CAMERA"],
-      "adaptiveIcon": { "foregroundImage": "./src/assets/adaptive-icon.png", "backgroundColor": "#ffffff" },
+      "permissions": ["NOTIFICATIONS", "CAMERA"],
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
       "edgeToEdgeEnabled": true,
-      "intentFilters": [{
-        "action": "VIEW",
-        "category": ["BROWSABLE","DEFAULT"],
-        "data": [{ "scheme": "com.rezzy.app" }]
-      }]
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "category": ["BROWSABLE", "DEFAULT"],
+          "data": [{ "scheme": "com.rezzy.app" }]
+        }
+      ]
     },
     "web": { "favicon": "./src/assets/favicon.png" },
-    "plugins": ["expo-apple-authentication","expo-notifications","expo-secure-store"],
+    "plugins": ["expo-apple-authentication", "expo-notifications", "expo-secure-store"],
     "extra": {
       "googleClientIdAndroid": "323726747494-vdkp19mnbd5u77pb45snhnr6o1ud56pi.apps.googleusercontent.com",
-      "googleClientIdIos": "YOUR-IOS-CLIENT-ID.apps.googleusercontent.com",
+      "googleClientIdIos": "323726747494-t73o6ohon3t92ehph4hid5tls2t2dsv6.apps.googleusercontent.com",
       "googleClientIdWeb": "323726747494-2cklvj30io6vikju83jpvg9uho4md4tq.apps.googleusercontent.com",
       "eas": { "projectId": "49189fbc-e9bb-4507-a5c7-713e5c73b3f6" }
     }
