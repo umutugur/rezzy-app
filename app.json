@@ -15,7 +15,7 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "bundleIdentifier": "com.rezzy.app",
+      "bundleIdentifier": "com.umutugur.rezzy",
       "supportsTablet": true,
       "usesAppleSignIn": true,
       "infoPlist": {

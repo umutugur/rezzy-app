@@ -8,21 +8,14 @@ import {
   TextInput,
   Keyboard,
 } from "react-native";
-import { Screen, Text } from "../components/Themed";
+import { Text } from "../components/Themed";
 import Card from "../components/Card";
 import { listRestaurants, type Restaurant } from "../api/restaurants";
 import { useNavigation } from "@react-navigation/native";
 import HomeHeader from "./_HomeHeader";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
-const CITIES = [
-  "Hepsi",
-  "Girne",
-  "Lefkoşa",
-  "Gazimağusa",
-  "Güzelyurt",
-  "İskele",
-  "Lefke",
-];
+const CITIES = ["Hepsi","Girne","Lefkoşa","Gazimağusa","Güzelyurt","İskele","Lefke"];
 
 export default function HomeScreen() {
   const nav = useNavigation<any>();
@@ -36,7 +29,10 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = React.useState<boolean>(false);
   const [error, setError] = React.useState<string | undefined>();
 
-  // input ref (sadece blur/dismiss için kullanıyoruz; auto-focus vermiyoruz)
+  // 🔎 arama aç/kapa
+  const [searchOpen, setSearchOpen] = React.useState(false);
+
+  // input ref
   const inputRef = React.useRef<TextInput | null>(null);
 
   // debounce
@@ -47,31 +43,23 @@ export default function HomeScreen() {
   }, [query]);
 
   const load = React.useCallback(
-    async (
-      selectedCity?: string,
-      searched?: string,
-      mode: "initial" | "update" = "update"
-    ) => {
+    async (selectedCity?: string, searched?: string, mode: "initial" | "update" = "update") => {
       try {
         setError(undefined);
         if (mode === "initial") setInitialLoading(true);
         else setFetching(true);
 
-        const cityParam =
-          selectedCity && selectedCity !== "Hepsi" ? selectedCity : undefined;
-        const queryParam =
-          searched && searched.length ? searched : undefined;
+        const cityParam = selectedCity && selectedCity !== "Hepsi" ? selectedCity : undefined;
+        const queryParam = searched && searched.length ? searched : undefined;
 
         const list = await listRestaurants({ city: cityParam, query: queryParam });
         setData(list);
       } catch (e: any) {
-        const msg =
-          e?.response?.data?.message || e?.message || "Bağlantı hatası";
+        const msg = e?.response?.data?.message || e?.message || "Bağlantı hatası";
         setError(msg);
       } finally {
         if (mode === "initial") setInitialLoading(false);
         setFetching(false);
-        // kesin: veri geldikten sonra klavyeyi açma!
       }
     },
     []
@@ -83,7 +71,7 @@ export default function HomeScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // filtre/debounce değişince (ilk yük sonrası) veri getir
+  // filtre/debounce değişince (ilk yük sonrası)
   React.useEffect(() => {
     if (!initialLoading) load(city, qDebounced, "update");
   }, [city, qDebounced, initialLoading, load]);
@@ -97,14 +85,45 @@ export default function HomeScreen() {
     }
   }, [city, qDebounced, load]);
 
+  // 🔔 + 🔎 ikonları
+  React.useLayoutEffect(() => {
+    nav.setOptions({
+      headerTitle: "Keşfet",
+      headerShadowVisible: false,
+      headerRight: () => (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginRight:15 }}>
+          <Ionicons
+            name="notifications-outline"
+            size={22}
+            color="#3a302c"
+            onPress={() => nav.navigate("Bildirimler")}
+          />
+          <Ionicons
+            name={searchOpen ? "close" : "search"}
+            size={22}
+            color="#3a302c"
+            onPress={() => {
+              if (searchOpen) {
+                inputRef.current?.blur();
+                Keyboard.dismiss();
+              }
+              setSearchOpen((s) => !s);
+            }}
+          />
+        </View>
+      ),
+    });
+  }, [nav, searchOpen]);
+
   return (
-    <Screen>
+    // Screen yerine düz View (çifte safe area boşluğunu önlemek için)
+    <View style={{ flex: 1, backgroundColor: "#fff" }}>
       <HomeHeader
+        searchOpen={searchOpen}
         inputRef={inputRef}
         cities={CITIES}
         city={city}
         setCity={(c) => {
-          // güvene almak için burada da kapatıyoruz
           inputRef.current?.blur();
           Keyboard.dismiss();
           setCity(c);
@@ -121,15 +140,14 @@ export default function HomeScreen() {
           setQuery("");
           inputRef.current?.blur();
           Keyboard.dismiss();
+          load(city, "", "update");
         }}
       />
 
       {initialLoading ? (
-        <View style={{ alignItems: "center", marginTop: 12 }}>
+        <View style={{ alignItems: "center", marginTop: 8 }}>
           <ActivityIndicator />
-          <Text secondary style={{ marginTop: 8 }}>
-            Yükleniyor…
-          </Text>
+          <Text secondary style={{ marginTop: 8 }}>Yükleniyor…</Text>
         </View>
       ) : (
         <>
@@ -143,9 +161,7 @@ export default function HomeScreen() {
           <FlatList
             data={data}
             keyExtractor={(i) => i._id}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-            }
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
             renderItem={({ item }) => (
               <View style={{ paddingHorizontal: 12, marginBottom: 12 }}>
                 <Card
@@ -157,20 +173,22 @@ export default function HomeScreen() {
               </View>
             )}
             ListEmptyComponent={
-              <View style={{ paddingHorizontal: 12, paddingVertical: 16 }}>
+              <View style={{ paddingHorizontal: 12, paddingVertical: 12 }}>
                 <Text>Sonuç bulunamadı. Filtreleri temizleyip tekrar deneyin.</Text>
               </View>
             }
+            // 🔧 iOS otomatik insetleri kapat: üst/alt boşluk şişmesin
+            contentInsetAdjustmentBehavior="never"
+            automaticallyAdjustContentInsets={false}
             // klavye davranışı
             keyboardDismissMode="none"
             keyboardShouldPersistTaps="always"
             removeClippedSubviews={false}
-            contentContainerStyle={{
-              paddingBottom: Platform.select({ ios: 8, android: 12 }),
-            }}
+            // 🔧 Alt padding’i minimumda tut (tab bar zaten boşluk veriyor)
+            contentContainerStyle={{ paddingBottom: Platform.select({ ios: 0, android: 0 }) }}
           />
         </>
       )}
-    </Screen>
+    </View>
   );
 }

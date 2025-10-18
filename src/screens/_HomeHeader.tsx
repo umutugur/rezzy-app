@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   View,
   TextInput,
@@ -9,11 +9,12 @@ import {
 } from "react-native";
 import { Text } from "../components/Themed";
 
-const HEADER_VSPACE = 8;
+const HEADER_VSPACE = 4;    // daha küçük
 const SECTION_GAP = 4;
 const CHIP_H = 36;
 
 type Props = {
+  searchOpen: boolean;
   inputRef: React.RefObject<TextInput | null>;
   cities: string[];
   city: string;
@@ -25,7 +26,8 @@ type Props = {
   onClear: () => void;
 };
 
-function HomeHeaderImpl({
+export default function HomeHeader({
+  searchOpen,
   inputRef,
   cities,
   city,
@@ -36,6 +38,16 @@ function HomeHeaderImpl({
   onSubmit,
   onClear,
 }: Props) {
+  useEffect(() => {
+    if (searchOpen) {
+      const t = setTimeout(() => inputRef.current?.focus(), 50);
+      return () => clearTimeout(t);
+    } else {
+      inputRef.current?.blur?.();
+      Keyboard.dismiss();
+    }
+  }, [searchOpen, inputRef]);
+
   return (
     <View
       style={{
@@ -45,58 +57,60 @@ function HomeHeaderImpl({
       }}
     >
       {/* Search */}
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          borderWidth: 1,
-          borderColor: "#E6E6E6",
-          borderRadius: 12,
-          backgroundColor: "#fff",
-          paddingHorizontal: 12,
-          height: 44,
-          marginBottom: 8,
-        }}
-      >
-        <TextInput
-          ref={inputRef}
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Mekan ara (isim)"
-          placeholderTextColor="#9CA3AF"
-          selectionColor="#7B2C2C"
-          style={{ flex: 1, color: "#111" }}
-          returnKeyType="search"
-          onSubmitEditing={() => {
-            Keyboard.dismiss();
-            inputRef.current?.blur();
-            onSubmit();
+      {searchOpen && (
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            borderWidth: 1,
+            borderColor: "#E6E6E6",
+            borderRadius: 12,
+            backgroundColor: "#fff",
+            paddingHorizontal: 12,
+            height: 44,
+            marginBottom: 6, // ufak
           }}
-          autoCorrect={false}
-          blurOnSubmit={false}
-        />
-
-        {fetching && <ActivityIndicator size="small" style={{ marginLeft: 6 }} />}
-
-        {query.length > 0 && (
-          <Pressable
-            onPress={() => {
-              onClear();
-              inputRef.current?.blur();
+        >
+          <TextInput
+            ref={inputRef}
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Mekan ara (isim)"
+            placeholderTextColor="#9CA3AF"
+            selectionColor="#7B2C2C"
+            style={{ flex: 1, color: "#111" }}
+            returnKeyType="search"
+            onSubmitEditing={() => {
               Keyboard.dismiss();
+              inputRef.current?.blur();
+              onSubmit();
             }}
-            style={{
-              marginLeft: 8,
-              paddingHorizontal: 8,
-              paddingVertical: 6,
-              borderRadius: 8,
-              backgroundColor: "#F3F4F6",
-            }}
-          >
-            <Text secondary>Temizle</Text>
-          </Pressable>
-        )}
-      </View>
+            autoCorrect={false}
+            blurOnSubmit={false}
+          />
+
+          {fetching && <ActivityIndicator size="small" style={{ marginLeft: 6 }} />}
+
+          {query.length > 0 && (
+            <Pressable
+              onPress={() => {
+                onClear();
+                inputRef.current?.blur();
+                Keyboard.dismiss();
+              }}
+              style={{
+                marginLeft: 8,
+                paddingHorizontal: 8,
+                paddingVertical: 6,
+                borderRadius: 8,
+                backgroundColor: "#F3F4F6",
+              }}
+            >
+              <Text secondary>Temizle</Text>
+            </Pressable>
+          )}
+        </View>
+      )}
 
       {/* City chips */}
       <ScrollView
@@ -112,7 +126,7 @@ function HomeHeaderImpl({
               <Pressable
                 key={c}
                 onPress={() => {
-                  inputRef.current?.blur();
+                  inputRef.current?.blur?.();
                   Keyboard.dismiss();
                   setCity(c);
                 }}
@@ -142,5 +156,3 @@ function HomeHeaderImpl({
     </View>
   );
 }
-
-export default React.memo(HomeHeaderImpl);
