@@ -15,8 +15,8 @@
       "android": { "buildType": "apk" }
     },
     "production": {
-      "android": { "buildType": "app-bundle" },
-      "ios": {}
+      "android": { "autoIncrement": "versionCode" }, 
+      "ios": { "autoIncrement": "buildNumber" }
     }
   },
   "submit": {
