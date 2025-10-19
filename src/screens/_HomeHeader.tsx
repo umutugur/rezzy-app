@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { Text } from "../components/Themed";
 
-const HEADER_VSPACE = 4;    // daha küçük
+const HEADER_VSPACE = 4;
 const SECTION_GAP = 4;
 const CHIP_H = 36;
 
@@ -68,7 +68,7 @@ export default function HomeHeader({
             backgroundColor: "#fff",
             paddingHorizontal: 12,
             height: 44,
-            marginBottom: 6, // ufak
+            marginBottom: 6,
           }}
         >
           <TextInput

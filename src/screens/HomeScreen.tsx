@@ -86,34 +86,34 @@ export default function HomeScreen() {
   }, [city, qDebounced, load]);
 
   // 🔔 + 🔎 ikonları
-  React.useLayoutEffect(() => {
-    nav.setOptions({
-      headerTitle: "Keşfet",
-      headerShadowVisible: false,
-      headerRight: () => (
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginRight:15 }}>
-          <Ionicons
-            name="notifications-outline"
-            size={22}
-            color="#3a302c"
-            onPress={() => nav.navigate("Bildirimler")}
-          />
-          <Ionicons
-            name={searchOpen ? "close" : "search"}
-            size={22}
-            color="#3a302c"
-            onPress={() => {
-              if (searchOpen) {
-                inputRef.current?.blur();
-                Keyboard.dismiss();
-              }
-              setSearchOpen((s) => !s);
-            }}
-          />
-        </View>
-      ),
-    });
-  }, [nav, searchOpen]);
+ React.useLayoutEffect(() => {
+  nav.setOptions({
+    // headerTitle: "Keşfet", // ❌ KALDIR
+    headerShadowVisible: false,
+    headerRight: () => (
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginRight: 15 }}>
+        <Ionicons
+          name="notifications-outline"
+          size={22}
+          color="#3a302c"
+          onPress={() => nav.navigate("Bildirimler")}
+        />
+        <Ionicons
+          name={searchOpen ? "close" : "search"}
+          size={22}
+          color="#3a302c"
+          onPress={() => {
+            if (searchOpen) {
+              inputRef.current?.blur();
+              Keyboard.dismiss();
+            }
+            setSearchOpen((s) => !s);
+          }}
+        />
+      </View>
+    ),
+  });
+}, [nav, searchOpen]);
 
   return (
     // Screen yerine düz View (çifte safe area boşluğunu önlemek için)
