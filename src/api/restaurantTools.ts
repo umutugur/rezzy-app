@@ -41,15 +41,16 @@ function parseQrPayload(raw: string | Record<string, any>): QrPayload {
   }
 
   // JSON formatı
-  try {
-    const j = JSON.parse(text);
-    const rid = decodeField(j?.rid);
-    const mid = decodeField(j?.mid);
-    const ts  = decodeField(j?.ts);
-    const sig = decodeField(j?.sig);
-    if (rid && mid && ts && sig) return { rid, mid, ts, sig };
-  } catch {
-    // JSON değil
+   // JSON formatı -> yalnızca metin { veya [ ile başlıyorsa dene
+  if (text.startsWith("{") || text.startsWith("[")) {
+    try {
+      const j = JSON.parse(text);
+      const rid = decodeField(j?.rid);
+      const mid = decodeField(j?.mid);
+      const ts  = decodeField(j?.ts);
+      const sig = decodeField(j?.sig);
+      if (rid && mid && ts && sig) return { rid, mid, ts, sig };
+    } catch { /* JSON değilmiş */ }
   }
 
   // Slash ile ayrılmış format: rid/mid/ts/sig

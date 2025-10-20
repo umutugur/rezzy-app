@@ -41,11 +41,9 @@ import {
 } from "../api/reservations";
 import * as ImagePicker from "expo-image-picker";
 import { CameraView, useCameraPermissions } from "expo-camera";
-// YENİ
 import { checkinByQR, checkinManual } from "../api/restaurantTools";
-import { api } from "../api/client"; // <-- ham axios yanıtını/logları görmek için
+import { api } from "../api/client"; // ham axios yanıtını/logları görmek için
 const DEBUG_RES = true;
-
 
 dayjs.locale("tr");
 
@@ -113,6 +111,11 @@ export default function RestaurantPanelScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scannerVisible, setScannerVisible] = useState<boolean>(false);
 
+  // QR akışı için ek state (ProfileScreen ile aynı mantık)
+  const [qrPayload, setQrPayload] = useState<string | null>(null);
+  const [arrivedModalOpen, setArrivedModalOpen] = useState<boolean>(false);
+  const [arrivedInput, setArrivedInput] = useState<string>("");
+
   // Sekme kontrolü
   const [activeTab, setActiveTab] = useState<string>("general");
 
@@ -147,72 +150,53 @@ export default function RestaurantPanelScreen() {
     }
     if (restaurantId) loadRestaurant();
   }, [restaurantId]);
-    
-  // Rezervasyonları yükle
-  // useEffect(() => {
-  //   async function loadReservations() {
-  //     if (!restaurantId || activeTab !== "reservations") return;
-  //     try {
-  //       setResLoading(true);
-  //       const data: any = await fetchReservationsByRestaurant(restaurantId);
-  //       // API iki şekilde dönebilir: [] veya {items:[]}
-  //       const list: Reservation[] = Array.isArray(data) ? data : (data?.items ?? []);
-  //       setReservations(list);
-  //     } catch (e: any) {
-  //       Alert.alert("Hata", e?.message || "Rezervasyonlar yüklenemedi");
-  //     } finally {
-  //       setResLoading(false);
-  //     }
-  //   }
-  //   loadReservations();
-  // }, [activeTab, restaurantId]);
-useEffect(() => {
-  async function loadReservations() {
-    if (!restaurantId || activeTab !== "reservations") return;
-    try {
-      setResLoading(true);
 
-      const url = `/restaurants/${restaurantId}/reservations?_cb=${Date.now()}`;
-      if (DEBUG_RES) console.log("[RP] GET", url);
-
-      // Ham axios yanıtını alıyoruz ki header + raw body görebilelim
-      const res = await api.get(url, {
-        transformResponse: v => v,      // string olarak kalsın
-        validateStatus: () => true,     // 304 vs hepsini loglamak için
-        headers: {
-          "Cache-Control": "no-cache",
-          Pragma: "no-cache",
-          "If-None-Match": "",          // ETag bypass
-        },
-      });
-
-      if (DEBUG_RES) {
-        console.log("[RP] status:", res.status);
-        console.log("[RP] headers:", res.headers);
-        console.log("[RP] raw data:", typeof res.data, res.data);
-      }
-
-      let parsed: any = null;
+  // Rezervasyonları yükle (ham yanıtı loglayarak)
+  useEffect(() => {
+    async function loadReservations() {
+      if (!restaurantId || activeTab !== "reservations") return;
       try {
-        parsed = typeof res.data === "string" && res.data ? JSON.parse(res.data) : res.data;
-      } catch (e) {
-        if (DEBUG_RES) console.log("[RP] JSON parse error:", (e as any)?.message);
+        setResLoading(true);
+
+        const url = `/restaurants/${restaurantId}/reservations?_cb=${Date.now()}`;
+        if (DEBUG_RES) console.log("[RP] GET", url);
+
+        const res = await api.get(url, {
+          transformResponse: (v) => v,
+          validateStatus: () => true,
+          headers: {
+            "Cache-Control": "no-cache",
+            Pragma: "no-cache",
+            "If-None-Match": "",
+          },
+        });
+
+        if (DEBUG_RES) {
+          console.log("[RP] status:", res.status);
+          console.log("[RP] headers:", res.headers);
+          console.log("[RP] raw data:", typeof res.data, res.data);
+        }
+
+        let parsed: any = null;
+        try {
+          parsed = typeof res.data === "string" && res.data ? JSON.parse(res.data) : res.data;
+        } catch (e) {
+          if (DEBUG_RES) console.log("[RP] JSON parse error:", (e as any)?.message);
+        }
+
+        const list = Array.isArray(parsed) ? parsed : parsed?.items ?? [];
+        if (DEBUG_RES) console.log("[RP] parsed reservations length:", Array.isArray(list) ? list.length : "N/A");
+        setReservations(Array.isArray(list) ? list : []);
+      } catch (e: any) {
+        console.log("[RP] loadReservations error:", e?.response?.data || e?.message || e);
+        Alert.alert("Hata", e?.response?.data?.message || e?.message || "Rezervasyonlar yüklenemedi");
+      } finally {
+        setResLoading(false);
       }
-
-      const list = Array.isArray(parsed) ? parsed : (parsed?.items ?? []);
-      if (DEBUG_RES) console.log("[RP] parsed reservations length:", Array.isArray(list) ? list.length : "N/A");
-
-      setReservations(Array.isArray(list) ? list : []);
-    } catch (e: any) {
-      console.log("[RP] loadReservations error:", e?.response?.data || e?.message || e);
-      Alert.alert("Hata", e?.response?.data?.message || e?.message || "Rezervasyonlar yüklenemedi");
-    } finally {
-      setResLoading(false);
     }
-  }
 
-  loadReservations();
-}, [activeTab, restaurantId]);
+    loadReservations();
+  }, [activeTab, restaurantId]);
 
   // Kaydet fonksiyonları
   const saveGeneral = async () => {
@@ -331,22 +315,17 @@ useEffect(() => {
     }
   };
 
-  // QR kod tarayıcı callback'i: backend doğrulamasına uygun
+  // QR kod tarayıcı callback'i: ProfileScreen ile aynı akış
   const handleBarCodeScanned = async ({ data }: { data: string }) => {
     try {
-      const obj = JSON.parse(data);
-      const rid = obj.rid || obj._id || obj.id;
-      const mid = obj.mid || obj.restaurantId || obj.rid2;
-      const ts = obj.ts;
-      const sig = obj.sig;
-      if (!rid || !mid || !ts || !sig) throw new Error("Geçersiz QR");
-      await checkinByQR({ rid: String(rid), mid: String(mid), ts: String(ts), sig: String(sig) });
-      setReservations((prev) => prev.map((rv) => (String(rv._id) === String(rid) ? { ...rv, status: "arrived" } : rv)));
-      Alert.alert("Başarılı", "Müşteri check-in yapıldı.");
-    } catch (err: any) {
-      Alert.alert("Hata", err?.message || "QR kod okunamadı.");
-    } finally {
+      // JSON varsayımı yok — ham metni sakla, kişi sayısı modalını aç
       setScannerVisible(false);
+      setQrPayload(String(data || ""));
+      setArrivedInput("");
+      setArrivedModalOpen(true);
+    } catch (err: any) {
+      setScannerVisible(false);
+      Alert.alert("Hata", err?.message || "QR kod okunamadı.");
     }
   };
 
@@ -654,16 +633,39 @@ useEffect(() => {
     <ScrollView style={styles.tabContainer}>
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Rezervasyonlar</Text>
+
         {DEBUG_RES && (
-  <View style={{ backgroundColor: "#FFF7ED", borderWidth: 1, borderColor: "#FDBA74", padding: 8, borderRadius: 8, marginBottom: 8 }}>
-    <Text style={{ color: "#9A3412", fontWeight: "700" }}>DEBUG</Text>
-    <Text style={{ color: "#9A3412" }}>restaurantId: {String(restaurantId)}</Text>
-    <Text style={{ color: "#9A3412" }}>reservations.length: {reservations.length}</Text>
-  </View>
-)}
+          <View
+            style={{
+              backgroundColor: "#FFF7ED",
+              borderWidth: 1,
+              borderColor: "#FDBA74",
+              padding: 8,
+              borderRadius: 8,
+              marginBottom: 8,
+            }}
+          >
+            <Text style={{ color: "#9A3412", fontWeight: "700" }}>DEBUG</Text>
+            <Text style={{ color: "#9A3412" }}>restaurantId: {String(restaurantId)}</Text>
+            <Text style={{ color: "#9A3412" }}>reservations.length: {reservations.length}</Text>
+          </View>
+        )}
 
         {/* QR check-in butonu */}
-        <TouchableOpacity style={[styles.primaryBtn, { marginBottom: 8 }]} onPress={() => setScannerVisible(true)}>
+        <TouchableOpacity
+          style={[styles.primaryBtn, { marginBottom: 8 }]}
+          onPress={async () => {
+            // kamera izni yoksa iste
+            if (!permission?.granted) {
+              const { granted } = await requestPermission();
+              if (!granted) {
+                Alert.alert("İzin gerekli", "QR okumak için kamera izni gerekiyor.");
+                return;
+              }
+            }
+            setScannerVisible(true);
+          }}
+        >
           <Text style={styles.primaryBtnText}>QR Okut ve Check-in</Text>
         </TouchableOpacity>
 
@@ -693,10 +695,7 @@ useEffect(() => {
                       <Text style={{ marginTop: 6, color: lightTheme.colors.primary }}>Tam görüntüyü aç</Text>
                     </TouchableOpacity>
                   ) : (
-                    <TouchableOpacity
-                      onPress={() => Linking.openURL(String(rv.receiptUrl))}
-                      style={[styles.secondaryBtn, { marginTop: 0 }]}
-                    >
+                    <TouchableOpacity onPress={() => Linking.openURL(String(rv.receiptUrl))} style={[styles.secondaryBtn, { marginTop: 0 }]}>
                       <Text style={styles.secondaryBtnText}>
                         {String(rv.receiptUrl).toLowerCase().endsWith(".pdf") ? "PDF Dekontu Aç" : "Dekontu Aç"}
                       </Text>
@@ -750,7 +749,6 @@ useEffect(() => {
       {scannerVisible && (
         <Modal visible={scannerVisible} transparent animationType="fade" onRequestClose={() => setScannerVisible(false)}>
           <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.8)", justifyContent: "center", alignItems: "center" }}>
-            {/* Kamera izni henüz alınmamışsa göstergeler */}
             {permission === null && <ActivityIndicator size="large" color="#fff" />}
             {permission && !permission.granted && (
               <TouchableOpacity onPress={requestPermission} style={{ padding: 16, backgroundColor: "#1F2937", borderRadius: 8 }}>
@@ -759,7 +757,11 @@ useEffect(() => {
             )}
             {permission && permission.granted && (
               <View style={{ width: "90%", height: "70%" }}>
-                <CameraView style={{ flex: 1 }} onBarcodeScanned={handleBarCodeScanned} barcodeScannerSettings={{ barcodeTypes: ["qr"] }} />
+                <CameraView
+                  style={{ flex: 1 }}
+                  onBarcodeScanned={handleBarCodeScanned}
+                  barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+                />
                 <TouchableOpacity
                   onPress={() => setScannerVisible(false)}
                   style={{ position: "absolute", bottom: 10, alignSelf: "center", padding: 12, backgroundColor: "#1F2937", borderRadius: 8 }}
@@ -771,6 +773,77 @@ useEffect(() => {
           </View>
         </Modal>
       )}
+
+      {/* QR sonrası kişi sayısı modalı */}
+      <Modal
+        visible={arrivedModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setArrivedModalOpen(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center", padding: 20 }}>
+          <View
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: 14,
+              width: "100%",
+              padding: 16,
+              borderWidth: 1,
+              borderColor: lightTheme.colors.border,
+            }}
+          >
+            <Text style={{ fontSize: 18, fontWeight: "800", color: lightTheme.colors.text, marginBottom: 10 }}>
+              Gelen Kişi Sayısı
+            </Text>
+            <Text style={{ color: lightTheme.colors.textSecondary, marginBottom: 6 }}>
+              QR okundu. Lütfen gelen kişi sayısını girin (zorunlu).
+            </Text>
+            <TextInput
+              value={arrivedInput}
+              onChangeText={setArrivedInput}
+              placeholder="Örn: 5"
+              keyboardType="numeric"
+              style={styles.input}
+            />
+            <View style={{ flexDirection: "row", gap: 10, marginTop: 8 }}>
+              <TouchableOpacity
+                style={styles.secondaryBtn}
+                onPress={() => {
+                  setArrivedModalOpen(false);
+                  setQrPayload(null);
+                  setArrivedInput("");
+                }}
+              >
+                <Text style={styles.secondaryBtnText}>Vazgeç</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.primaryBtn}
+                onPress={async () => {
+                  const n = Number(arrivedInput.trim());
+                  if (!Number.isFinite(n) || n < 0) {
+                    Alert.alert("Uyarı", "Geçerli bir sayı girin (0 veya daha büyük).");
+                    return;
+                  }
+                  try {
+                    if (!qrPayload) throw new Error("QR verisi yok.");
+                    await checkinByQR(qrPayload, n);
+                    setArrivedModalOpen(false);
+                    setQrPayload(null);
+                    setArrivedInput("");
+                    Alert.alert("Başarılı", "Müşteri check-in yapıldı.");
+                    // isteğe bağlı: listedeki statüyü güncelle
+                    // (rid bilgisini modal dönüşünde kullanmak istersen backend'den döndürmüyoruz; list yeniden yüklenebilir)
+                  } catch (e: any) {
+                    Alert.alert("Hata", e?.response?.data?.message || e?.message || "Check-in başarısız");
+                  }
+                }}
+              >
+                <Text style={styles.primaryBtnText}>Onayla</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -806,6 +879,7 @@ const styles = StyleSheet.create({
     borderRadius: lightTheme.radius.sm,
     marginBottom: 8,
     color: lightTheme.colors.text,
+    backgroundColor: "#fff",
   },
   primaryBtn: {
     backgroundColor: lightTheme.colors.primary,
