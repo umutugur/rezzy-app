@@ -1,3 +1,4 @@
+// src/components/InAppToast.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import { Animated, Easing, Platform, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";

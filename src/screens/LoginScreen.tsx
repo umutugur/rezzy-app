@@ -1,3 +1,4 @@
+// src/screens/LoginScreen.tsx
 import React from "react";
 import {
   View,
@@ -30,6 +31,7 @@ WebBrowser.maybeCompleteAuthSession();
 export default function LoginScreen() {
   const navigation = useNavigation<any>();
   const setAuth = useAuth((s) => s.setAuth);
+  const consumeIntended = useAuth((s) => s.consumeIntended);
 
   const [email, setEmail] = React.useState("new-owner@rezzy.app");
   const [password, setPassword] = React.useState("123456");
@@ -37,15 +39,49 @@ export default function LoginScreen() {
   const [gLoading, setGLoading] = React.useState(false);
   const [aLoading, setALoading] = React.useState(false);
 
+  /** Login/SSO sonrası yönlendirme */
+  const afterAuthNavigate = React.useCallback(async () => {
+    try {
+      await registerPushToken(); // cihazı kullanıcıyla ilişkilendir
+    } catch {}
+
+    const intended = await consumeIntended();
+
+    // Tabs içindeki ekran adları
+    const TAB_SCREENS = new Set(["Keşfet", "Rezervasyonlar", "Profil"]);
+
+    if (intended?.name) {
+      // 1) Hedef bir TAB ise nested reset
+      if (TAB_SCREENS.has(intended.name)) {
+        navigation.reset({
+          index: 0,
+          routes: [
+            {
+              name: "Tabs",
+              params: { screen: intended.name, params: intended.params },
+            },
+          ],
+        });
+        return;
+      }
+
+      // 2) Hedef, tab dışı bir stack ekranıysa:
+      navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
+      navigation.navigate(intended.name as never, intended.params as never);
+      return;
+    }
+
+    // niyet yoksa ana sekmeler
+    navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
+  }, [consumeIntended, navigation]);
+
+  /** Normal e-posta/şifre girişi */
   const onLogin = async () => {
     try {
       setLoading(true);
-      const { token, user } = await login(email, password);
-      setAuth(token, user);
-      try {
-        await registerPushToken();
-      } catch {}
-      navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
+      const { token, user } = await login(email.trim(), password);
+      await setAuth(token, user);
+      await afterAuthNavigate();
     } catch (e: any) {
       Alert.alert("Giriş Hatası", e?.response?.data?.message || "Giriş başarısız");
     } finally {
@@ -56,7 +92,6 @@ export default function LoginScreen() {
   // --- GOOGLE ID Token flow ---
   const redirectUri = makeRedirectUri({
     native: "com.rezzy.app:/oauthredirect",
-    // useProxy: true, // gerekirse açarsın
   });
 
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
@@ -81,11 +116,8 @@ export default function LoginScreen() {
         try {
           if (!idToken) throw new Error("Google id_token alınamadı.");
           const { token, user } = await googleSignIn(idToken);
-          setAuth(token, user);
-          try {
-            await registerPushToken();
-          } catch {}
-          navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
+          await setAuth(token, user);
+          await afterAuthNavigate();
         } catch (err: any) {
           Alert.alert("Google Girişi Hatası", err?.response?.data?.message || err?.message);
         } finally {
@@ -98,7 +130,7 @@ export default function LoginScreen() {
     } else if (response.type === "dismiss") {
       setGLoading(false);
     }
-  }, [response]);
+  }, [response, setAuth, afterAuthNavigate]);
 
   const onGoogle = async () => {
     try {
@@ -110,6 +142,7 @@ export default function LoginScreen() {
     }
   };
 
+  /** Apple Sign-In */
   const onApple = async () => {
     try {
       if (Platform.OS !== "ios" || aLoading) return;
@@ -124,11 +157,8 @@ export default function LoginScreen() {
       if (!identityToken) throw new Error("Apple identityToken alınamadı.");
 
       const { token, user } = await appleSignIn(identityToken);
-      setAuth(token, user);
-      try {
-        await registerPushToken();
-      } catch {}
-      navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
+      await setAuth(token, user);
+      await afterAuthNavigate();
     } catch (e: any) {
       if (e?.code !== "ERR_CANCELED") {
         Alert.alert("Apple Girişi", e?.message || "Giriş başarısız.");
@@ -138,12 +168,29 @@ export default function LoginScreen() {
     }
   };
 
+  /** Misafir devam — sadece Tabs’a döner (guard’lar giriş gerektiren yerlerde yakalar) */
+  const onGuest = () => {
+    navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
+  };
+
   return (
     <Screen>
       <Text style={{ fontSize: 28, fontWeight: "700", marginBottom: 16 }}>Rezzy</Text>
 
-      <Input label="E-posta" value={email} onChangeText={setEmail} placeholder="you@example.com" />
-      <Input label="Şifre" value={password} onChangeText={setPassword} secureTextEntry placeholder="******" />
+      <Input
+        label="E-posta"
+        value={email}
+        onChangeText={setEmail}
+        placeholder="you@example.com"
+        autoCapitalize="none"
+      />
+      <Input
+        label="Şifre"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        placeholder="******"
+      />
 
       {/* Normal giriş */}
       <BrandButton
@@ -154,12 +201,26 @@ export default function LoginScreen() {
         iconLeft={<Ionicons name="log-in-outline" size={18} color="#fff" />}
       />
 
+      <View style={{ height: 14 }} />
+      {/* Misafir */}
+      <BrandButton
+        title="Üye olmadan devam et"
+        onPress={onGuest}
+        variant="outline"
+        iconLeft={<Ionicons name="navigate-outline" size={18} color="#111827" />}
+      />
+
       <View style={{ height: 20 }} />
 
-      {/* Google ile devam et (brand guideline: beyaz buton, logo solda) */}
-      <GoogleBrandButton title="Google ile devam et" onPress={onGoogle} loading={gLoading} disabled={!request} />
+      {/* Google ile devam */}
+      <GoogleBrandButton
+        title="Google ile devam et"
+        onPress={onGoogle}
+        loading={gLoading}
+        disabled={!request}
+      />
 
-      {/* Apple ile devam et — Apple’ın native butonu */}
+      {/* Apple ile devam — iOS */}
       {Platform.OS === "ios" ? (
         <>
           <View style={{ height: 12 }} />
@@ -198,7 +259,6 @@ export default function LoginScreen() {
 }
 
 /* -------------------- Özel Butonlar -------------------- */
-
 type BrandButtonProps = {
   title: string;
   onPress: () => void;
@@ -208,7 +268,14 @@ type BrandButtonProps = {
   iconLeft?: React.ReactNode;
 };
 
-function BrandButton({ title, onPress, loading, disabled, variant = "primary", iconLeft }: BrandButtonProps) {
+function BrandButton({
+  title,
+  onPress,
+  loading,
+  disabled,
+  variant = "primary",
+  iconLeft,
+}: BrandButtonProps) {
   const isPrimary = variant === "primary";
   const bg = isPrimary ? "#7B2C2C" : "#FFFFFF";
   const fg = isPrimary ? "#FFFFFF" : "#111827";
@@ -283,7 +350,9 @@ function GoogleBrandButton({ title, onPress, loading, disabled }: GoogleButtonPr
       ) : (
         <>
           <AntDesign name="google" size={18} color="#1F1F1F" />
-          <RNText style={{ color: "#1F1F1F", fontWeight: "700", fontSize: 16 }}>{title}</RNText>
+          <RNText style={{ color: "#1F1F1F", fontWeight: "700", fontSize: 16 }}>
+            {title}
+          </RNText>
         </>
       )}
     </Pressable>

@@ -28,7 +28,7 @@ import {
   type AvailabilitySlot,
 } from "../api/restaurants";
 
-// ✅ Favori API'leri
+// ✅ Favori API'leri (auth gerektirir)
 import {
   listFavorites,
   addFavorite,
@@ -38,6 +38,7 @@ import {
 } from "../api/favorites";
 
 import { useReservation } from "../store/useReservation";
+import { useAuth } from "../store/useAuth";
 
 dayjs.locale("tr");
 
@@ -61,6 +62,12 @@ export default function RestaurantDetailScreen() {
   const nav = useNavigation<any>();
   const restaurantId: string = route.params?.id ?? route.params?.restaurantId ?? "";
 
+  // 🔐 Auth (guest desteği + intendedRoute)
+  const token = useAuth((s) => s.token);
+  const user = useAuth((s) => s.user);
+  const setIntended = useAuth((s) => s.setIntended);
+
+  // Rezervasyon store
   const setRestaurant = useReservation?.((s: any) => s.setRestaurant) ?? (() => {});
   const setDateTime = useReservation?.((s: any) => s.setDateTime) ?? (() => {});
   const setParty = useReservation?.((s: any) => s.setParty) ?? (() => {});
@@ -77,10 +84,11 @@ export default function RestaurantDetailScreen() {
   const photosListRef = useRef<FlatList<string>>(null);
   const dayLabel = dayjs(date).format("DD MMM");
 
-  // ✅ Favoriler state
+  // ✅ Favoriler state (sadece girişliyse çekeriz)
   const [favLoading, setFavLoading] = useState<boolean>(false);
   const [favs, setFavs] = useState<FavoriteRestaurant[]>([]);
 
+  // Restoran detayını çek
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -99,13 +107,17 @@ export default function RestaurantDetailScreen() {
     };
   }, [restaurantId]);
 
-  // ✅ İlk açılışta favorilerimi çek
+  // 🔐 Girişliyse favorilerimi çek
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const list = await listFavorites();
-        if (mounted) setFavs(list || []);
+        if (token && user?.role === "customer") {
+          const list = await listFavorites();
+          if (mounted) setFavs(list || []);
+        } else {
+          if (mounted) setFavs([]);
+        }
       } catch {
         // sessiz geç
       }
@@ -113,8 +125,9 @@ export default function RestaurantDetailScreen() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [token, user?.role]);
 
+  // Slotları çek
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -149,7 +162,8 @@ export default function RestaurantDetailScreen() {
     setSelectedSlot(s);
   };
 
-  const onContinue = () => {
+  // 🔐 Devam et — giriş yoksa login'e yönlendir + intendedRoute kaydet
+  const onContinue = async () => {
     if (!selectedSlot || !r) return;
 
     const [h, m] = selectedSlot.label.split(":");
@@ -158,6 +172,13 @@ export default function RestaurantDetailScreen() {
       .minute(Number(m))
       .second(0)
       .toISOString();
+
+    if (!token) {
+      Alert.alert("Giriş gerekli", "Rezervasyon oluşturmak için giriş yapmalısın.");
+      await setIntended({ name: "Restoran", params: { id: restaurantId } });
+      nav.navigate("Giriş");
+      return;
+    }
 
     setRestaurant(r._id);
     setDateTime(localDateTime);
@@ -170,9 +191,16 @@ export default function RestaurantDetailScreen() {
     setActivePhoto(Math.max(0, Math.min(idx, photos.length - 1)));
   };
 
-  // ✅ Favori toggle
+  // ✅ Favori toggle (giriş yoksa önce login)
   const toggleFavorite = async () => {
     if (!restaurantId || favLoading) return;
+    if (!token || user?.role !== "customer") {
+      Alert.alert("Giriş gerekli", "Favorilere eklemek için giriş yapmalısın.");
+      await setIntended({ name: "Restoran", params: { id: restaurantId } });
+      nav.navigate("Giriş");
+      return;
+    }
+
     setFavLoading(true);
     try {
       if (fav) {

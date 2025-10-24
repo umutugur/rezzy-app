@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, Platform } from "react-native";
+import { Platform, View, Text, TouchableOpacity } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
@@ -37,7 +37,7 @@ const Tabs = createBottomTabNavigator();
 function Bell({ onPress }: { onPress: () => void }) {
   const unread = useNotifications((s) => s.unreadCount);
   return (
-    <View style={{ paddingRight: 6 /* ikonları biraz sola al */ }}>
+    <View style={{ paddingRight: 6 }}>
       <Ionicons name="notifications-outline" size={24} color="#111827" onPress={onPress} />
       {unread > 0 && (
         <View
@@ -64,7 +64,7 @@ function Bell({ onPress }: { onPress: () => void }) {
   );
 }
 
-function TabsNav({ navigation }: any) {
+function AppTabs({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const bottomPad = Math.max(insets.bottom, 8);
   const barHeight = 56 + bottomPad;
@@ -108,6 +108,62 @@ function TabsNav({ navigation }: any) {
   );
 }
 
+/**
+ * Misafir sekmeleri:
+ * - Keşfet: serbest
+ * - Rezervasyonlar: ekran misafir modunu algılayıp CTA gösterecek (BookingsScreen içinde)
+ * - Profil: doğrudan LoginScreen (üstte header kapalı)
+ */
+function GuestTabs() {
+  const insets = useSafeAreaInsets();
+  const bottomPad = Math.max(insets.bottom, 8);
+  const barHeight = 56 + bottomPad;
+
+  return (
+    <Tabs.Navigator
+      screenOptions={({ route, navigation }) => ({
+        headerTitle: () => <AppHeaderTitle />,
+        headerTitleAlign: "left",
+        headerStyle: { backgroundColor: "#fff" },
+        tabBarActiveTintColor: "#7B2C2C",
+        tabBarInactiveTintColor: "#8A8A8A",
+        tabBarHideOnKeyboard: true,
+        tabBarStyle: {
+          height: barHeight,
+          paddingBottom: bottomPad,
+          paddingTop: 8,
+          borderTopWidth: 0.5,
+          backgroundColor: "#fff",
+          elevation: 8,
+        },
+        tabBarIcon: ({ color, size }) => {
+          const nameMap: Record<string, any> = {
+            Keşfet: "compass-outline",
+            Rezervasyonlar: "calendar-outline",
+            Profil: "person-circle-outline",
+          };
+          return <Ionicons name={nameMap[route.name]} size={size} color={color} />;
+        },
+        headerRight: () => (
+          <View style={{ flexDirection: "row", alignItems: "center", paddingRight: 6 }}>
+            {/* Misafir kullanıcı bildirimlere bastığında Login'e gitsin */}
+            <Bell onPress={() => navigation.navigate("Giriş")} />
+          </View>
+        ),
+      })}
+    >
+      <Tabs.Screen name="Keşfet" component={HomeScreen} />
+      <Tabs.Screen name="Rezervasyonlar" component={BookingsScreen} />
+      {/* Misafir "Profil" sekmesi: login ekranını aç */}
+      <Tabs.Screen
+        name="Profil"
+        component={LoginScreen}
+        options={{ headerShown: false, title: "Giriş" }}
+      />
+    </Tabs.Navigator>
+  );
+}
+
 export default function RootNavigator() {
   const token = useAuth((s) => s.token);
   const fetchUnreadCount = useNotifications((s) => s.fetchUnreadCount);
@@ -124,15 +180,33 @@ export default function RootNavigator() {
           headerTitle: () => <AppHeaderTitle />,
           headerTitleAlign: "left",
           headerStyle: { backgroundColor: "#fff" },
-          // iOS’ta içerik-header arası boşluğu minimal tut
           contentStyle: { backgroundColor: "#fff", paddingTop: Platform.OS === "ios" ? 0 : 0 },
         }}
       >
         {!token ? (
-          <Stack.Screen name="Giriş" component={LoginScreen} options={{ headerShown: false }} />
+          <>
+            {/* Misafir ana gezinim */}
+            <Stack.Screen name="TabsGuest" component={GuestTabs} options={{ headerShown: false }} />
+            <Stack.Screen name="Giriş" component={LoginScreen} options={{ headerShown: false }} />
+
+            {/* Keşfet akışı (misafir de görebilir) */}
+            <Stack.Screen name="Restoran" component={RestaurantDetailScreen} />
+            <Stack.Screen name="Rezervasyon - Tarih" component={ReservationStep1Screen} />
+            <Stack.Screen name="Rezervasyon - Menü" component={ReservationStep2Screen} />
+            <Stack.Screen name="Rezervasyon - Özet" component={ReservationStep3Screen} />
+
+            {/* Yasal / Bilgi sayfaları */}
+            <Stack.Screen name="Terms" component={TermsScreen} options={{ title: "Kullanım Koşulları" }} />
+            <Stack.Screen name="Privacy" component={PrivacyPolicyScreen} options={{ title: "Gizlilik Politikası" }} />
+            <Stack.Screen name="Help" component={HelpSupportScreen} options={{ title: "Yardım & Destek" }} />
+            <Stack.Screen name="Contact" component={ContactScreen} options={{ title: "İletişim" }} />
+            <Stack.Screen name="About" component={AboutScreen} options={{ title: "Hakkında" }} />
+            <Stack.Screen name="Licenses" component={LicensesScreen} options={{ title: "Lisanslar" }} />
+          </>
         ) : (
           <>
-            <Stack.Screen name="Tabs" component={TabsNav} options={{ headerShown: false }} />
+            {/* Auth’lu ana gezinim */}
+            <Stack.Screen name="Tabs" component={AppTabs} options={{ headerShown: false }} />
             <Stack.Screen name="Bildirimler" component={NotificationsScreen} />
             <Stack.Screen name="Restoran" component={RestaurantDetailScreen} />
             <Stack.Screen name="Rezervasyon - Tarih" component={ReservationStep1Screen} />

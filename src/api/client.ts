@@ -1,3 +1,4 @@
+// src/api/client.ts
 import axios from "axios";
 import { useAuth } from "../store/useAuth";
 
@@ -5,7 +6,6 @@ export const api = axios.create({
   baseURL: "https://rezzy-backend.onrender.com/api",
   timeout: 30000,
 });
-
 
 api.interceptors.request.use((config) => {
   const token = useAuth.getState().token;
@@ -33,3 +33,18 @@ api.interceptors.request.use((config) => {
   console.log("Authorization header:", (config.headers as any)?.Authorization);
   return config;
 });
+
+// ✅ Basit response interceptor: 304 normalize
+api.interceptors.response.use(
+  (res) => {
+    // bazı CDN/proxy 304 dönüşlerini normalize et
+    if (res?.status === 304 && (res?.data == null || res?.data === "")) {
+      return { ...res, status: 200, data: {} };
+    }
+    return res;
+  },
+  (err) => {
+    // burada global logout/redirect yapmıyoruz; ekran bazında handle edeceğiz
+    return Promise.reject(err);
+  }
+);

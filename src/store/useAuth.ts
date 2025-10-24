@@ -16,22 +16,29 @@ export type User = {
   updatedAt?: string;
 };
 
+type IntendedRoute = { name: string; params?: any } | null;
+
 type AuthState = {
   token?: string | null;
   user?: User | null;
   hydrated: boolean; // açılışta storage'tan okundu mu?
 
-  // login/google/apple sonrası:
+  /** login/google/apple sonrası */
   setAuth: (t?: string, u?: User) => Promise<void>;
 
-  // profil güncelleme vb. için:
+  /** profil güncelleme vb. için */
   updateUser: (patch: Partial<User>) => void;
 
-  // uygulama açılışında çağrılır:
+  /** uygulama açılışında çağrılır */
   hydrate: () => Promise<void>;
 
-  // profil > oturumu kapat:
+  /** profil > oturumu kapat */
   clear: () => Promise<void>;
+
+  /** niyet edilen rota: login öncesi hatırlayıp, login sonrası oraya dön */
+  intendedRoute: IntendedRoute;
+  setIntended: (route: IntendedRoute) => Promise<void>;
+  consumeIntended: () => Promise<IntendedRoute>;
 };
 
 const KEY = "rezzy.auth.v1";
@@ -40,11 +47,17 @@ export const useAuth = create<AuthState>((set, get) => ({
   token: null,
   user: null,
   hydrated: false,
+  intendedRoute: null,
 
   setAuth: async (token, user) => {
     set({ token: token ?? null, user: user ?? null });
     try {
-      await SecureStore.setItemAsync(KEY, JSON.stringify({ token, user }));
+      const current = await SecureStore.getItemAsync(KEY);
+      const parsed = current ? JSON.parse(current) : {};
+      await SecureStore.setItemAsync(
+        KEY,
+        JSON.stringify({ ...(parsed || {}), token, user })
+      );
     } catch {
       // yut
     }
@@ -63,6 +76,7 @@ export const useAuth = create<AuthState>((set, get) => ({
         set({
           token: parsed?.token ?? null,
           user: parsed?.user ?? null,
+          intendedRoute: parsed?.intendedRoute ?? null,
           hydrated: true,
         });
       } else {
@@ -79,6 +93,36 @@ export const useAuth = create<AuthState>((set, get) => ({
     } catch {
       // yut
     }
-    set({ token: null, user: null });
+    set({ token: null, user: null, intendedRoute: null });
+  },
+
+  setIntended: async (route) => {
+    set({ intendedRoute: route });
+    try {
+      const current = await SecureStore.getItemAsync(KEY);
+      const parsed = current ? JSON.parse(current) : {};
+      await SecureStore.setItemAsync(
+        KEY,
+        JSON.stringify({ ...(parsed || {}), intendedRoute: route })
+      );
+    } catch {
+      // yut
+    }
+  },
+
+  consumeIntended: async () => {
+    const route = get().intendedRoute ?? null;
+    set({ intendedRoute: null });
+    try {
+      const current = await SecureStore.getItemAsync(KEY);
+      const parsed = current ? JSON.parse(current) : {};
+      await SecureStore.setItemAsync(
+        KEY,
+        JSON.stringify({ ...(parsed || {}), intendedRoute: null })
+      );
+    } catch {
+      // yut
+    }
+    return route;
   },
 }));
