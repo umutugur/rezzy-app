@@ -1,50 +1,94 @@
-// src/api/client.ts
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { useAuth } from "../store/useAuth";
 
+// === SENİN BASE_URL'İN DEĞİŞMEDİ ===
+const BASE_URL = "https://rezzy-backend.onrender.com/api";
+if (__DEV__) console.log("[api] BASE_URL =", BASE_URL);
+
 export const api = axios.create({
-  baseURL: "https://rezzy-backend.onrender.com/api",
-  timeout: 30000,
+  baseURL: BASE_URL,
+  timeout: 15000,
 });
 
+// === Request Interceptor ===
 api.interceptors.request.use((config) => {
-  const token = useAuth.getState().token;
+  const { token } = useAuth.getState();
 
-  // Header'lar
-  config.headers = (config.headers as any) ?? {};
   if (token) {
+    config.headers = config.headers || {};
     (config.headers as any).Authorization = `Bearer ${token}`;
-  }
-  // 304'ü tetikleyen önbelleği devre dışı bırak
-  (config.headers as any)["Cache-Control"] = "no-cache";
-  (config.headers as any)["Pragma"] = "no-cache";
-  // Bazı ortamlarda otomatik gelen ETag başlığını kesin sök
-  if ((config.headers as any)["If-None-Match"]) {
-    delete (config.headers as any)["If-None-Match"];
+    if (__DEV__) console.log("[api] attaching token ✅", config.url);
+  } else {
+    if (__DEV__) console.log("[api] no token ⚠️", config.url);
   }
 
-  // Cache-buster query param
-  config.params = {
-    ...(config.params || {}),
-    _cb: Date.now(),
-  };
-
-  // DEBUG
-  console.log("Authorization header:", (config.headers as any)?.Authorization);
+  const hasQuery = (config.url || "").includes("?");
+  const sep = hasQuery ? "&" : "?";
+  config.url = `${config.url}${sep}_cb=${Date.now()}`;
   return config;
 });
 
-// ✅ Basit response interceptor: 304 normalize
+// === Response Interceptor (401 -> refresh -> retry) ===
+let refreshingPromise: Promise<void> | null = null;
+
+async function doRefresh() {
+  const { refreshToken } = useAuth.getState();
+  if (__DEV__) console.log("[auth] trying refresh… hasRT=", !!refreshToken);
+
+  if (!refreshToken) throw new Error("No refresh token");
+
+  const resp = await axios.post(`${BASE_URL}/auth/refresh`, { refreshToken });
+  const { token, refreshToken: newRT } = resp.data || {};
+  await useAuth.getState().setAuth(token, undefined as any, newRT || refreshToken);
+
+  if (__DEV__) console.log("[auth] token refreshed ✅");
+}
+
 api.interceptors.response.use(
-  (res) => {
-    // bazı CDN/proxy 304 dönüşlerini normalize et
-    if (res?.status === 304 && (res?.data == null || res?.data === "")) {
-      return { ...res, status: 200, data: {} };
+  (r) => r,
+  async (error: AxiosError & { config?: any }) => {
+    const original = error?.config as any;
+    const status = error?.response?.status;
+
+    if (__DEV__) {
+      console.log("[api] response error", status, original?.url);
     }
-    return res;
-  },
-  (err) => {
-    // burada global logout/redirect yapmıyoruz; ekran bazında handle edeceğiz
-    return Promise.reject(err);
+
+    // Network veya backend erişim hatası
+    if (!error.response && __DEV__) {
+      console.warn("[api] Network error:", error.message);
+    }
+
+    // Sadece 401 durumunda refresh dener
+    if (status === 401 && original && !original._retry) {
+      original._retry = true;
+
+      if (!refreshingPromise) {
+        refreshingPromise = doRefresh()
+          .catch(async (e) => {
+            console.log(
+              "[auth] refresh failed ❌",
+              (e as any)?.response?.data || (e as any)?.message || e
+            );
+            await useAuth.getState().clear();
+            throw e;
+          })
+          .finally(() => {
+            refreshingPromise = null;
+          });
+      }
+
+      await refreshingPromise;
+
+      const { token } = useAuth.getState();
+      original.headers = original.headers || {};
+      if (token) {
+        (original.headers as any).Authorization = `Bearer ${token}`;
+        if (__DEV__) console.log("[api] retrying request with new token 🔁", original.url);
+      }
+      return api(original);
+    }
+
+    return Promise.reject(error);
   }
 );

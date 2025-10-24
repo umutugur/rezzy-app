@@ -1,3 +1,4 @@
+// src/screens/ProfileScreen.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
@@ -22,11 +23,7 @@ import { getMe, patchMe, uploadAvatarRN, changePassword } from "../api/user";
 import { checkinByQR, checkinManual } from "../api/restaurantTools";
 import { useNavigation } from "@react-navigation/native";
 // ✅ Favori API'leri
-import {
-  listFavorites,
-  removeFavorite,
-  type FavoriteRestaurant,
-} from "../api/favorites";
+import { listFavorites, removeFavorite, type FavoriteRestaurant } from "../api/favorites";
 
 /** para formatı */
 const Money = ({ n }: { n?: number }) => (
@@ -39,15 +36,15 @@ const Money = ({ n }: { n?: number }) => (
 const statusMeta = (s: string) => {
   switch (String(s)) {
     case "pending":
-      return { label: "Beklemede", bg: "#FEF3C7", fg: "#92400E" }; // amber
+      return { label: "Beklemede", bg: "#FEF3C7", fg: "#92400E" };
     case "confirmed":
-      return { label: "Onaylı", bg: "#DCFCE7", fg: "#166534" }; // green
+      return { label: "Onaylı", bg: "#DCFCE7", fg: "#166534" };
     case "arrived":
-      return { label: "Giriş Yapıldı", bg: "#DBEAFE", fg: "#1E40AF" }; // blue
+      return { label: "Giriş Yapıldı", bg: "#DBEAFE", fg: "#1E40AF" };
     case "no_show":
-      return { label: "Gelmedi", bg: "#FEE2E2", fg: "#991B1B" }; // red
+      return { label: "Gelmedi", bg: "#FEE2E2", fg: "#991B1B" };
     case "cancelled":
-      return { label: "İptal", bg: "#F3F4F6", fg: "#374151" }; // gray
+      return { label: "İptal", bg: "#F3F4F6", fg: "#374151" };
     default:
       return { label: s, bg: "#EEE", fg: "#111" };
   }
@@ -56,10 +53,11 @@ const statusMeta = (s: string) => {
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
   const { user, updateUser, clear } = useAuth();
+
   const [name, setName] = useState(user?.name || "");
   const [email, setEmail] = useState(user?.email || "");
   const [phone, setPhone] = useState(user?.phone || "");
-  const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.avatarUrl ?? null);
   const [prefs, setPrefs] = useState({
     push: user?.notificationPrefs?.push ?? true,
     sms: user?.notificationPrefs?.sms ?? false,
@@ -74,7 +72,6 @@ export default function ProfileScreen() {
   const [favBusyId, setFavBusyId] = useState<string | null>(null);
 
   // şifre alanları
-  const [pwOpen, setPwOpen] = useState(true);
   const [curPw, setCurPw] = useState("");
   const [newPw, setNewPw] = useState("");
   const [newPw2, setNewPw2] = useState("");
@@ -87,7 +84,7 @@ export default function ProfileScreen() {
   const [qrOpen, setQrOpen] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
 
-  // QR sonrası arrived modalı (zorunlu)
+  // QR sonrası arrived modalı
   const [qrArrivedOpen, setQrArrivedOpen] = useState(false);
   const [qrPayload, setQrPayload] = useState<any>(null);
   const [qrArrivedInput, setQrArrivedInput] = useState("");
@@ -199,32 +196,16 @@ export default function ProfileScreen() {
   function ReservationMini({ it }: { it: any }) {
     const m = statusMeta(it.status);
     return (
-      <View
-        style={{
-          paddingVertical: 12,
-          borderTopWidth: 1,
-          borderColor: T.colors.border,
-          gap: 6,
-        }}
-      >
+      <View style={{ paddingVertical: 12, borderTopWidth: 1, borderColor: T.colors.border, gap: 6 }}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
           <Text style={{ fontWeight: "800", color: T.colors.text }}>
             {dayjs(it.dateTimeUTC).format("DD MMM YYYY HH:mm")} • {it.partySize} kişi
           </Text>
-          <View
-            style={{
-              paddingHorizontal: 10,
-              paddingVertical: 4,
-              borderRadius: 999,
-              backgroundColor: m.bg,
-            }}
-          >
+          <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: m.bg }}>
             <Text style={{ color: m.fg, fontWeight: "800", fontSize: 12 }}>{m.label}</Text>
           </View>
         </View>
-        <Text style={{ color: T.colors.textSecondary }}>
-          {String(it?.restaurantId?.name || "Restoran")}
-        </Text>
+        <Text style={{ color: T.colors.textSecondary }}>{String(it?.restaurantId?.name || "Restoran")}</Text>
         <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
           <Text style={{ color: T.colors.textSecondary }}>Toplam</Text>
           <Money n={it.totalPrice} />
@@ -254,7 +235,9 @@ export default function ProfileScreen() {
         />
         <View style={{ flex: 1 }}>
           <Text style={{ color: T.colors.text, fontWeight: "800" }}>{it.name}</Text>
-          <Text style={{ color: T.colors.textSecondary }}>{[it.city, it.priceRange].filter(Boolean).join(" • ")}</Text>
+          <Text style={{ color: T.colors.textSecondary }}>
+            {[it.city, it.priceRange].filter(Boolean).join(" • ")}
+          </Text>
         </View>
         <View style={{ flexDirection: "row", gap: 8 }}>
           <SecondaryButton
@@ -275,10 +258,7 @@ export default function ProfileScreen() {
               }
             }}
           />
-          <PrimaryButton
-            title="Git"
-            onPress={() => navigation.navigate("Restoran", { id: it._id })}
-          />
+          <PrimaryButton title="Git" onPress={() => navigation.navigate("Restoran", { id: it._id })} />
         </View>
       </View>
     );
@@ -286,7 +266,7 @@ export default function ProfileScreen() {
 
   const isRestaurant = user?.role === "restaurant";
 
-  // ---- Sayaçlar / küçük metrikler (müşteri) ----
+  // ---- Sayaçlar (müşteri) ----
   const counts = useMemo(() => {
     const c = { upcoming: 0, confirmed: 0, cancelled: 0, total: resv.length, spending: 0 };
     resv.forEach((r) => {
@@ -302,18 +282,26 @@ export default function ProfileScreen() {
   function logout() {
     Alert.alert("Çıkış yap", "Hesabından çıkmak istiyor musun?", [
       { text: "Vazgeç", style: "cancel" },
-      { text: "Evet", style: "destructive", onPress: () => clear() },
+      {
+        text: "Evet",
+        style: "destructive",
+        onPress: async () => {
+          await clear(); // store + storage temizlenir
+          // ❗️Stack'te olduğumuz ekranı da misafir root'una resetleyelim
+          navigation.reset({ index: 0, routes: [{ name: "TabsGuest" }] });
+        },
+      },
     ]);
   }
 
   // --- Yasal & Destek navigasyon kısayolları ---
-  const goTerms    = () => navigation.navigate("Terms");
-  const goPrivacy  = () => navigation.navigate("Privacy");
-  const goSupport  = () => navigation.navigate("Help");
-  const goContact  = () => navigation.navigate("Contact");
+  const goTerms = () => navigation.navigate("Terms");
+  const goPrivacy = () => navigation.navigate("Privacy");
+  const goSupport = () => navigation.navigate("Help");
+  const goContact = () => navigation.navigate("Contact");
   const goLicenses = () => navigation.navigate("Licenses");
-  const goAbout    = () => navigation.navigate("About");
-  const goDelete   = () => navigation.navigate("DeleteAccount");
+  const goAbout = () => navigation.navigate("About");
+  const goDelete = () => navigation.navigate("DeleteAccount");
 
   return (
     <ScrollView contentContainerStyle={{ paddingBottom: 28 }} style={{ flex: 1, backgroundColor: T.colors.background }}>
@@ -537,15 +525,10 @@ export default function ProfileScreen() {
                 onPress={() => navigation.navigate("RestaurantPanel", { restaurantId: user?.restaurantId })}
               />
             )}
-            {user?.role === "admin" && (
-              <PrimaryButton
-                title="Admin Paneli"
-                onPress={() => navigation.navigate("AdminPanel")}
-              />
-            )}
+            {user?.role === "admin" && <PrimaryButton title="Admin Paneli" onPress={() => navigation.navigate("AdminPanel")} />}
 
             {/* Ortak kısa yollar (restoran için QR / manuel check-in) */}
-            {user?.role === "restaurant" && (
+            {isRestaurant && (
               <>
                 <PrimaryButton
                   title="QR Tara"
@@ -602,7 +585,6 @@ export default function ProfileScreen() {
               try {
                 const data = ev?.data || "";
                 setQrOpen(false);
-                // Kişi sayısı zorunlu: önce payload’ı saklayıp modal aç
                 setQrPayload(data);
                 setQrArrivedInput("");
                 setQrArrivedOpen(true);
@@ -617,7 +599,7 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
-      {/* QR sonrası Gelen Kişi Sayısı Modalı (zorunlu) */}
+      {/* QR sonrası Gelen Kişi Sayısı Modalı */}
       <Modal visible={qrArrivedOpen} transparent animationType="fade" onRequestClose={() => setQrArrivedOpen(false)}>
         <View
           style={{
@@ -789,6 +771,7 @@ function PrimaryButton({ title, onPress }: { title: string; onPress: () => void 
     </TouchableOpacity>
   );
 }
+
 function SecondaryButton({ title, onPress }: { title: string; onPress: () => void }) {
   return (
     <TouchableOpacity

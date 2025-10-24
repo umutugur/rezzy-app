@@ -7,7 +7,6 @@ import { View, ActivityIndicator, Text, TextInput, Platform } from "react-native
 import * as Notifications from "expo-notifications";
 import { useAuth } from "./src/store/useAuth";
 import { registerPushToken, attachDeviceAfterLogin } from "./src/hooks/usePushToken";
-
 // 🔧 Global font ölçek sınırı
 if ((Text as any).defaultProps == null) (Text as any).defaultProps = {};
 if ((TextInput as any).defaultProps == null) (TextInput as any).defaultProps = {};

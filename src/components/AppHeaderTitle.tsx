@@ -1,15 +1,24 @@
 import React from "react";
-import { View, Image, Text } from "react-native";
+import { View, Image, Text, Platform } from "react-native";
 
 export default function AppHeaderTitle() {
+  const logoSize = Platform.select({ ios: 40, android: 38, default: 38 });
+
   return (
-    <View style={{ flexDirection: "row", alignItems: "center" }}>
+    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
       <Image
-        source={require("../assets/icon.png")} // gerekirse küçük bir logo ekleyip değiştir
-        style={{ width: 22, height: 22, borderRadius: 4, marginRight: 8 }}
+        source={require("../assets/icon.png")}
+        style={{ width: logoSize, height: logoSize, borderRadius: 8, marginRight: 10 }}
         resizeMode="contain"
       />
-      <Text style={{ fontSize: 18, fontWeight: "700", color: "#1A1A1A" }}>
+      <Text
+        style={{
+          fontSize: 28,
+          fontWeight: "800",
+          color: "#7B2C2C",
+          letterSpacing: 0.5,
+        }}
+      >
         Rezzy
       </Text>
     </View>

@@ -4,11 +4,13 @@ import type { User } from "../store/useAuth";
 
 export type LoginResp = {
   token: string;
+  refreshToken?: string | null;
   user: User;
 };
 
 export async function login(email: string, password: string): Promise<LoginResp> {
   const { data } = await api.post<LoginResp>("/auth/login", { email, password });
+    console.log("[auth] login resp:", data); // ✅ test log
   return data;
 }
 
