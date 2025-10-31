@@ -1,38 +1,82 @@
-// src/components/SearchBar.tsx
+// components/SearchBar.tsx
 import React from "react";
-import { View, TextInput } from "react-native";
+import { View, TextInput, StyleSheet, Pressable } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { Text } from "./Themed";
 
 export default function SearchBar({
   value,
   onChange,
-  placeholder = "Restoran ara…",
+  placeholder = "Restoran ara...",
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
 }) {
+  const [isFocused, setIsFocused] = React.useState(false);
+  const inputRef = React.useRef<TextInput>(null);
+
+  const handleClear = () => {
+    onChange("");
+    inputRef.current?.focus();
+  };
+
   return (
     <View
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 8,
-        backgroundColor: "#F3F4F6",
-        borderRadius: 12,
-        paddingHorizontal: 12,
-        paddingVertical: 10,
-        marginBottom: 12,
-      }}
+      style={[
+        styles.container,
+        isFocused && styles.containerFocused,
+      ]}
     >
-      <Text>🔎</Text>
+      <Ionicons
+        name="search"
+        size={20}
+        color={isFocused ? "#7B2C2C" : "#666666"}
+      />
       <TextInput
+        ref={inputRef}
         value={value}
         onChangeText={onChange}
         placeholder={placeholder}
-        style={{ flex: 1 }}
-        placeholderTextColor="#9CA3AF"
+        style={styles.input}
+        placeholderTextColor="#999999"
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
       />
+      {value.length > 0 && (
+        <Pressable onPress={handleClear} style={styles.clearButton}>
+          <Ionicons name="close-circle" size={18} color="#999999" />
+        </Pressable>
+      )}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#FAFAFA",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginHorizontal: 16,
+    borderWidth: 2,
+    borderColor: "#E6E6E6",
+  },
+  containerFocused: {
+    backgroundColor: "#FFF5F5",
+    borderColor: "#7B2C2C",
+  },
+  input: {
+    flex: 1,
+    fontSize: 15,
+    color: "#1A1A1A",
+    padding: 0,
+    margin: 0,
+  },
+  clearButton: {
+    padding: 2,
+  },
+});

@@ -10,7 +10,7 @@ import {
 import type { NativeStackNavigationOptions } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
+import RestaurantPanelNavigator from "../navigation/RestaurantPanelNavigator";
 import LoginScreen from "../screens/LoginScreen";
 import HomeScreen from "../screens/HomeScreen";
 import RestaurantDetailScreen from "../screens/RestaurantDetailScreen";
@@ -23,7 +23,6 @@ import ProfileScreen from "../screens/ProfileScreen";
 import RestaurantPanelScreen from "../screens/RestaurantPanelScreen";
 import AdminPanelScreen from "../screens/AdminPanelScreen";
 import NotificationsScreen from "../screens/NotificationsScreen";
-
 import TermsScreen from "../screens/TermsScreen";
 import PrivacyPolicyScreen from "../screens/PrivacyPolicyScreen";
 import HelpSupportScreen from "../screens/HelpSupportScreen";
@@ -163,7 +162,7 @@ export default function RootNavigator() {
             <Stack.Screen name="Rezervasyon - Menü" component={ReservationStep2Screen} />
             <Stack.Screen name="Rezervasyon - Özet" component={ReservationStep3Screen} />
             <Stack.Screen name="Rezervasyon Detayı" component={ReservationDetailScreen} />
-            <Stack.Screen name="RestaurantPanel" component={RestaurantPanelScreen} />
+            <Stack.Screen name="RestaurantPanel" component={RestaurantPanelNavigator} options={{ headerShown: false }}/>
             <Stack.Screen name="AdminPanel" component={AdminPanelScreen} />
             <Stack.Screen name="Terms" component={TermsScreen} options={{ title: "Kullanım Koşulları" }} />
             <Stack.Screen name="Privacy" component={PrivacyPolicyScreen} options={{ title: "Gizlilik Politikası" }} />

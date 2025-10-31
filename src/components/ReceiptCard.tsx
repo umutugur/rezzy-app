@@ -10,7 +10,7 @@ export default function ReceiptCard({
   url,
   onReplace,
   replacing = false,
-  canReplace = true, // onaylandıysa gizlemek için
+  canReplace = true,
 }: {
   url?: string;
   onReplace: (file: FileParam) => Promise<void> | void;
@@ -19,7 +19,6 @@ export default function ReceiptCard({
 }) {
   const [viewer, setViewer] = React.useState(false);
 
-  // YOKSA: tek satır chip + bilgi metni
   if (!url) {
     return (
       <View style={{ gap: 8 }}>
@@ -31,13 +30,12 @@ export default function ReceiptCard({
     );
   }
 
-  // VARSA: görsel + küçük chip aksiyonlar
   return (
     <View style={{ gap: 10 }}>
       <TouchableOpacity onPress={() => setViewer(true)} activeOpacity={0.9}>
         <Image
           source={{ uri: url }}
-          style={{ width: "100%", height: 220, borderRadius: 12 }}
+          style={{ width: "100%", height: 220, borderRadius: 12, backgroundColor: "#F3F4F6" }}
           resizeMode="cover"
         />
       </TouchableOpacity>
@@ -76,4 +74,3 @@ export default function ReceiptCard({
     </View>
   );
 }
-

@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   ScrollView,
   Keyboard,
+  Platform,
 } from "react-native";
 import { Text } from "../components/Themed";
 
@@ -87,6 +88,7 @@ export default function HomeHeader({
             }}
             autoCorrect={false}
             blurOnSubmit={false}
+            accessibilityLabel="Mekan arama"
           />
 
           {fetching && <ActivityIndicator size="small" style={{ marginLeft: 6 }} />}
@@ -98,6 +100,7 @@ export default function HomeHeader({
                 inputRef.current?.blur();
                 Keyboard.dismiss();
               }}
+              android_ripple={{ color: "#e5e7eb" }}
               style={{
                 marginLeft: 8,
                 paddingHorizontal: 8,
@@ -105,6 +108,9 @@ export default function HomeHeader({
                 borderRadius: 8,
                 backgroundColor: "#F3F4F6",
               }}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Aramayı temizle"
             >
               <Text secondary>Temizle</Text>
             </Pressable>
@@ -130,6 +136,7 @@ export default function HomeHeader({
                   Keyboard.dismiss();
                   setCity(c);
                 }}
+                android_ripple={{ color: active ? "rgba(255,255,255,0.2)" : "#f3f4f6" }}
                 style={{
                   height: CHIP_H,
                   paddingHorizontal: 12,
@@ -139,6 +146,10 @@ export default function HomeHeader({
                   backgroundColor: active ? "#7B2C2C" : "#FFFFFF",
                   borderColor: active ? "#7B2C2C" : "#E6E6E6",
                 }}
+                hitSlop={6}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={`Şehir filtresi: ${c}`}
               >
                 <Text
                   style={{

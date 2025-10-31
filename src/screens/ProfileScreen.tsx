@@ -522,7 +522,10 @@ export default function ProfileScreen() {
             {user?.role === "restaurant" && (
               <PrimaryButton
                 title="Restoran Paneli"
-                onPress={() => navigation.navigate("RestaurantPanel", { restaurantId: user?.restaurantId })}
+                onPress={() => navigation.navigate("RestaurantPanel", {
+  screen: "RestaurantHub",
+  params: { restaurantId: user?.restaurantId },
+})}
               />
             )}
             {user?.role === "admin" && <PrimaryButton title="Admin Paneli" onPress={() => navigation.navigate("AdminPanel")} />}

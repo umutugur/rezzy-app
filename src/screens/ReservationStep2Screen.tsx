@@ -1,11 +1,24 @@
 import React from "react";
-import { View, ScrollView, ActivityIndicator, TouchableOpacity } from "react-native";
+import { View, ScrollView, ActivityIndicator, TouchableOpacity, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { Screen, Text } from "../components/Themed";
 import Button from "../components/Button";
 import { getRestaurant } from "../api/restaurants";
 import { useReservation } from "../store/useReservation";
+import { Ionicons } from "@expo/vector-icons";
+
+/** ---- Renk Paleti (Rezzy ile uyumlu) ---- */
+const C = {
+  primary: "#7B2C2C",
+  primaryDark: "#6B2525",
+  bg: "#FAFAFA",
+  card: "#FFFFFF",
+  border: "#E6E6E6",
+  text: "#1A1A1A",
+  muted: "#666666",
+  soft: "#F9FAFB",
+};
 
 type MenuItem = { _id: string; name: string; price: number };
 
@@ -103,24 +116,30 @@ export default function ReservationStep2Screen() {
   const scrollPadBottom = insets.bottom + 88;
 
   return (
-    <Screen>
-      <View style={{ paddingBottom: 12 }}>
-        <Text style={{ fontWeight: "800", fontSize: 18 }}>Kişi & Menü Seçimi</Text>
-        <Text secondary style={{ marginTop: 4 }}>Her kişi için bir menü seçin.</Text>
+    <Screen topPadding="flat" style={{ backgroundColor: C.bg }}>
+      {/* Başlık Bloğu (Bookings/ReservationDetail ile uyumlu) */}
+      <View style={styles.header}>
+        <View style={styles.headerRow}>
+          <Ionicons name="restaurant" size={24} color={C.primary} />
+          <Text style={styles.headerTitle}>Kişi & Menü Seçimi</Text>
+        </View>
+        <Text secondary style={styles.headerSub}>Her kişi için bir menü seçin.</Text>
       </View>
 
       {loading ? (
-        <View style={{ alignItems: "center", marginTop: 24 }}>
-          <ActivityIndicator />
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={C.primary} />
           <Text secondary style={{ marginTop: 8 }}>Menüler yükleniyor…</Text>
         </View>
       ) : error ? (
-        <View style={{ alignItems: "center", marginTop: 24 }}>
-          <Text secondary>Hata: {error}</Text>
+        <View style={styles.center}>
+          <Ionicons name="alert-circle-outline" size={48} color="#E53935" />
+          <Text secondary style={{ marginTop: 8 }}>Hata: {error}</Text>
         </View>
       ) : menus.length === 0 ? (
-        <View style={{ alignItems: "center", marginTop: 24 }}>
-          <Text secondary>Bu restoran için menü tanımlı değil.</Text>
+        <View style={styles.center}>
+          <Ionicons name="fast-food-outline" size={48} color={C.muted} />
+          <Text secondary style={{ marginTop: 8 }}>Bu restoran için menü tanımlı değil.</Text>
         </View>
       ) : (
         <>
@@ -129,92 +148,54 @@ export default function ReservationStep2Screen() {
               const personIndex = i + 1;
               const selected = getSelectedFor(personIndex);
               return (
-                <View
-                  key={personIndex}
-                  style={{
-                    backgroundColor: "#fff",
-                    borderRadius: 16,
-                    padding: 14,
-                    marginBottom: 12,
-                    borderWidth: 1,
-                    borderColor: "#F3F4F6",
-                    shadowColor: "#000",
-                    shadowOpacity: 0.05,
-                    shadowRadius: 8,
-                    elevation: 2,
-                  }}
-                >
-                  <Text style={{ fontWeight: "700", marginBottom: 8 }}>
-                    Kişi {personIndex}
-                  </Text>
+                <View key={personIndex} style={styles.personCard}>
+                  <View style={styles.personHeader}>
+                    <View style={styles.personBadge}>
+                      <Ionicons name="person" size={14} color="#fff" />
+                      <Text style={styles.personBadgeText}>{personIndex}</Text>
+                    </View>
+                    <Text style={styles.personTitle}>Kişi {personIndex}</Text>
+                  </View>
 
-                  {menus.map((m) => {
-                    const isSelected = selected === m._id;
-                    return (
-                      <TouchableOpacity
-                        key={`${personIndex}-${m._id}`}
-                        onPress={() => onSelect(personIndex, m._id)}
-                        activeOpacity={0.9}
-                        style={{
-                          paddingVertical: 12,
-                          flexDirection: "row",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                        }}
-                      >
-                        <View style={{ flex: 1, paddingRight: 12 }}>
-                          <Text style={{ fontWeight: "700" }} numberOfLines={1}>
-                            {m.name}
-                          </Text>
-                          <Text secondary style={{ marginTop: 2 }}>
-                            {formatTL(m.price)}
-                          </Text>
-                        </View>
-
-                        <View
-                          style={{
-                            width: 24,
-                            height: 24,
-                            borderRadius: 999,
-                            borderWidth: 2,
-                            borderColor: isSelected ? "#7C2D12" : "#D1D5DB",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            backgroundColor: isSelected ? "#7C2D12" : "transparent",
-                          }}
+                  <View style={{ marginTop: 8 }}>
+                    {menus.map((m, idx) => {
+                      const isSelected = selected === m._id;
+                      return (
+                        <TouchableOpacity
+                          key={`${personIndex}-${m._id}`}
+                          onPress={() => onSelect(personIndex, m._id)}
+                          activeOpacity={0.9}
+                          style={[
+                            styles.menuRow,
+                            idx > 0 && styles.menuRowDivider,
+                            isSelected && styles.menuRowActive,
+                          ]}
                         >
-                          {isSelected ? (
-                            <View
-                              style={{
-                                width: 10,
-                                height: 10,
-                                borderRadius: 999,
-                                backgroundColor: "#fff",
-                              }}
-                            />
-                          ) : null}
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
+                          <View style={{ flex: 1, paddingRight: 12 }}>
+                            <Text style={styles.menuName} numberOfLines={1}>{m.name}</Text>
+                            <Text secondary style={styles.menuPrice}>{formatTL(m.price)}</Text>
+                          </View>
+
+                          {/* Radio */}
+                          <View style={[styles.radio, isSelected && styles.radioActive]}>
+                            {isSelected && <View style={styles.radioDot} />}
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
                 </View>
               );
             })}
           </ScrollView>
 
+          {/* CTA Bar (ReservationDetail ile aynı mantık) */}
           <View
             pointerEvents="box-none"
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              bottom: 0,
-              padding: 12,
-              paddingBottom: 12 + insets.bottom,
-              backgroundColor: "rgba(255,255,255,0.92)",
-              borderTopWidth: 1,
-              borderTopColor: "#E5E7EB",
-            }}
+            style={[
+              styles.ctaBar,
+              { paddingBottom: 12 + insets.bottom }
+            ]}
           >
             <Button
               title="Devam"
@@ -227,3 +208,104 @@ export default function ReservationStep2Screen() {
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 12,
+    backgroundColor: C.card,
+    borderBottomColor: C.border,
+    borderBottomWidth: 1,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: C.text,
+  },
+  headerSub: {
+    marginTop: 6,
+  },
+
+  center: { alignItems: "center", marginTop: 24 },
+
+  personCard: {
+    backgroundColor: C.card,
+    borderRadius: 16,
+    padding: 14,
+    marginHorizontal: 16,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: C.border,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  personHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
+  personBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: C.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  personBadgeText: { color: "#fff", fontWeight: "800", fontSize: 12 },
+  personTitle: { fontWeight: "800", color: C.text, fontSize: 16 },
+
+  menuRow: {
+    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  menuRowDivider: {
+    borderTopWidth: 1,
+    borderTopColor: C.border,
+  },
+  menuRowActive: {
+    backgroundColor: "#FFF8F8",
+    borderRadius: 12,
+    paddingHorizontal: 10,
+  },
+  menuName: { fontWeight: "700", color: C.text, fontSize: 15 },
+  menuPrice: { marginTop: 2 },
+
+  radio: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: "#D1D5DB",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "transparent",
+  },
+  radioActive: {
+    borderColor: C.primary,
+    backgroundColor: C.primary,
+  },
+  radioDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#fff",
+  },
+
+  ctaBar: {
+    position: "absolute",
+    left: 0, right: 0, bottom: 0,
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    backgroundColor: "rgba(255,255,255,0.95)",
+    borderTopWidth: 1,
+    borderTopColor: C.border,
+  },
+});

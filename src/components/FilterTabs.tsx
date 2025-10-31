@@ -1,15 +1,21 @@
 // components/FilterTabs.tsx
 import React from "react";
-import { View, Pressable, Text, Modal, FlatList } from "react-native";
+import { View, Pressable, Text, Modal, FlatList, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 export type FilterKey = "all" | "active" | "past";
 export type AdvancedStatus =
-  | "pending" | "confirmed" | "arrived" | "no_show" | "cancelled" | "rejected";
+  | "pending"
+  | "confirmed"
+  | "arrived"
+  | "no_show"
+  | "cancelled"
+  | "rejected";
 
 export default function FilterTabs({
   value,
   onChange,
-  onAdvancedChange,  // opsiyonel: gelişmiş durum seçimi geldiğinde
+  onAdvancedChange,
   showAdvanced = true,
 }: {
   value: FilterKey;
@@ -19,46 +25,39 @@ export default function FilterTabs({
 }) {
   const [open, setOpen] = React.useState(false);
 
-  const TABS: Array<{ key: FilterKey; label: string }> = [
-    { key: "all", label: "Tümü" },
-    { key: "active", label: "Aktif" },
-    { key: "past", label: "Geçmiş" },
+  const TABS: Array<{ key: FilterKey; label: string; icon: string }> = [
+    { key: "all", label: "Tümü", icon: "list-outline" },
+    { key: "active", label: "Aktif", icon: "time-outline" },
+    { key: "past", label: "Geçmiş", icon: "checkmark-done-outline" },
   ];
 
-  const ADVANCED: Array<{ key: AdvancedStatus; label: string }> = [
-    { key: "pending",   label: "Bekleyen" },
-    { key: "confirmed", label: "Onaylandı" },
-    { key: "arrived",   label: "Geldi" },
-    { key: "no_show",   label: "Gelmedi" },
-    { key: "cancelled", label: "İptal" },
-    { key: "rejected",  label: "Reddedildi" },
+  const ADVANCED: Array<{ key: AdvancedStatus; label: string; icon: string; color: string }> = [
+    { key: "pending", label: "Bekleyen", icon: "time", color: "#D4AF37" },
+    { key: "confirmed", label: "Onaylandı", icon: "checkmark-circle", color: "#16A085" },
+    { key: "arrived", label: "Geldi", icon: "enter", color: "#7B2C2C" },
+    { key: "no_show", label: "Gelmedi", icon: "close-circle", color: "#E53935" },
+    { key: "cancelled", label: "İptal", icon: "ban", color: "#666666" },
+    { key: "rejected", label: "Reddedildi", icon: "alert-circle", color: "#E53935" },
   ];
 
   return (
-    <View style={{ gap: 10 }}>
+    <View style={styles.container}>
       {/* Segmented control – 3 seçenek */}
-      <View style={{
-        flexDirection: "row",
-        backgroundColor: "#F3F4F6",
-        borderRadius: 12,
-        padding: 4,
-      }}>
-        {TABS.map(t => {
+      <View style={styles.segmentedControl}>
+        {TABS.map((t) => {
           const active = t.key === value;
           return (
             <Pressable
               key={t.key}
               onPress={() => onChange(t.key)}
-              style={{
-                flex: 1,
-                paddingVertical: 10,
-                borderRadius: 10,
-                backgroundColor: active ? "#0F172A" : "transparent",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
+              style={[styles.tab, active && styles.tabActive]}
             >
-              <Text style={{ color: active ? "#fff" : "#0F172A", fontWeight: "700" }}>
+              <Ionicons
+                name={t.icon as any}
+                size={18}
+                color={active ? "#fff" : "#1A1A1A"}
+              />
+              <Text style={[styles.tabText, active && styles.tabTextActive]}>
                 {t.label}
               </Text>
             </Pressable>
@@ -69,51 +68,83 @@ export default function FilterTabs({
       {/* Gelişmiş filtre (opsiyonel) */}
       {showAdvanced && (
         <>
-          <Pressable
-            onPress={() => setOpen(true)}
-            style={{
-              alignSelf: "flex-start",
-              paddingVertical: 6,
-              paddingHorizontal: 10,
-              borderRadius: 8,
-              backgroundColor: "#EEF2FF",
-            }}
-          >
-            <Text style={{ color: "#3730A3", fontWeight: "600" }}>Gelişmiş…</Text>
+          <Pressable onPress={() => setOpen(true)} style={styles.advancedButton}>
+            <Ionicons name="options-outline" size={16} color="#7B2C2C" />
+            <Text style={styles.advancedButtonText}>Gelişmiş Filtre</Text>
+            <Ionicons name="chevron-down" size={16} color="#7B2C2C" />
           </Pressable>
 
-          <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-            <Pressable style={{ flex:1, backgroundColor: "rgba(0,0,0,0.25)" }} onPress={() => setOpen(false)}>
-              <View
-                style={{
-                  position: "absolute",
-                  left: 16, right: 16, bottom: 24,
-                  backgroundColor: "#fff",
-                  borderRadius: 16,
-                  padding: 12,
-                  shadowColor: "#000", shadowOpacity: 0.15, shadowRadius: 12, elevation: 4,
-                }}
+          <Modal
+            visible={open}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setOpen(false)}
+          >
+            <Pressable
+              style={styles.modalOverlay}
+              onPress={() => setOpen(false)}
+            >
+              <Pressable
+                style={styles.modalContent}
+                onPress={(e) => e.stopPropagation()}
               >
-                <Text style={{ fontWeight: "800", fontSize: 16, marginBottom: 8 }}>Duruma göre filtrele</Text>
+                <View style={styles.modalHeader}>
+                  <View style={styles.modalTitleRow}>
+                    <Ionicons name="funnel" size={22} color="#1A1A1A" />
+                    <Text style={styles.modalTitle}>Duruma Göre Filtrele</Text>
+                  </View>
+                  <Pressable
+                    onPress={() => setOpen(false)}
+                    style={styles.closeButton}
+                  >
+                    <Ionicons name="close" size={24} color="#666666" />
+                  </Pressable>
+                </View>
+
                 <FlatList
                   data={ADVANCED}
                   keyExtractor={(item) => item.key}
                   renderItem={({ item }) => (
                     <Pressable
-                      onPress={() => { onAdvancedChange?.(item.key); setOpen(false); }}
-                      style={{
-                        paddingVertical: 10,
-                        paddingHorizontal: 8,
-                        borderRadius: 8,
-                        backgroundColor: "#F9FAFB",
-                        marginVertical: 4,
+                      onPress={() => {
+                        onAdvancedChange?.(item.key);
+                        setOpen(false);
                       }}
+                      style={({ pressed }) => [
+                        styles.advancedItem,
+                        pressed && styles.advancedItemPressed,
+                      ]}
                     >
-                      <Text style={{ fontWeight: "600" }}>{item.label}</Text>
+                      <View
+                        style={[
+                          styles.advancedIconContainer,
+                          { backgroundColor: item.color + "15" },
+                        ]}
+                      >
+                        <Ionicons
+                          name={item.icon as any}
+                          size={22}
+                          color={item.color}
+                        />
+                      </View>
+                      <Text style={styles.advancedItemText}>{item.label}</Text>
+                      <Ionicons
+                        name="chevron-forward"
+                        size={18}
+                        color="#666666"
+                      />
                     </Pressable>
                   )}
+                  showsVerticalScrollIndicator={false}
                 />
-              </View>
+
+                <Pressable
+                  onPress={() => setOpen(false)}
+                  style={styles.cancelButton}
+                >
+                  <Text style={styles.cancelButtonText}>İptal</Text>
+                </Pressable>
+              </Pressable>
             </Pressable>
           </Modal>
         </>
@@ -121,3 +152,135 @@ export default function FilterTabs({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    gap: 12,
+    paddingHorizontal: 16,
+    
+  },
+  segmentedControl: {
+    flexDirection: "row",
+    backgroundColor: "#FAFAFA",
+    borderRadius: 12,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: "#E6E6E6",
+  },
+  tab: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    borderRadius: 10,
+    gap: 6,
+  },
+  tabActive: {
+    backgroundColor: "#7B2C2C",
+  },
+  tabText: {
+    color: "#1A1A1A",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  tabTextActive: {
+    color: "#fff",
+  },
+  advancedButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: "#FFF5F5",
+    borderWidth: 1,
+    borderColor: "#FFE0E0",
+    gap: 6,
+  },
+  advancedButtonText: {
+    color: "#7B2C2C",
+    fontWeight: "600",
+    fontSize: 13,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 20,
+    paddingBottom: 20,
+    paddingHorizontal: 16,
+    maxHeight: "70%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E6E6E6",
+  },
+  modalTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#1A1A1A",
+  },
+  closeButton: {
+    padding: 4,
+  },
+  advancedItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: "#FAFAFA",
+    marginBottom: 8,
+    gap: 12,
+  },
+  advancedItemPressed: {
+    backgroundColor: "#F3F4F6",
+  },
+  advancedIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  advancedItemText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#1A1A1A",
+  },
+  cancelButton: {
+    marginTop: 12,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+  },
+  cancelButtonText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#666666",
+  },
+});

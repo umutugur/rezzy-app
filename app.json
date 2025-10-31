@@ -24,7 +24,7 @@
         "NSPhotoLibraryAddUsageDescription": "Profil fotoğrafını arşive kaydedebilmemiz için izin gerekir.",
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "3"
+      "buildNumber": "5"
     },
     "android": {
       "package": "com.rezzy.app",
@@ -52,7 +52,7 @@
           ]
         }
       ],
-      "versionCode": 7
+      "versionCode": 9
     },
     "web": {
       "favicon": "./src/assets/favicon.png"

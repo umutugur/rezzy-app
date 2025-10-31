@@ -11,11 +11,10 @@ import {
 import dayjs from "dayjs";
 import "dayjs/locale/tr";
 import * as Clipboard from "expo-clipboard";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, CommonActions } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { CommonActions } from "@react-navigation/native";
 import { Screen, Text } from "../components/Themed";
-import ReceiptCard from "../components/ReceiptCard"; // ← senin bileşenin
+import ReceiptCard from "../components/ReceiptCard";
 import { useReservation } from "../store/useReservation";
 import { getRestaurant, type Restaurant as ApiRestaurant } from "../api/restaurants";
 import {
@@ -23,8 +22,20 @@ import {
   uploadReceipt,
   type CreateReservationPayload,
 } from "../api/reservations";
+import { Ionicons } from "@expo/vector-icons";
 
 dayjs.locale("tr");
+
+/** Rezzy uyumlu renkler */
+const C = {
+  primary: "#7B2C2C",
+  primaryDark: "#6B2525",
+  bg: "#FAFAFA",
+  card: "#FFFFFF",
+  border: "#E6E6E6",
+  text: "#1A1A1A",
+  muted: "#666666",
+};
 
 const CTA_HEIGHT = 88;
 
@@ -129,7 +140,7 @@ export default function ReservationStep3Screen() {
     [groups]
   );
   const deposit = Number(restaurant?.depositAmount ?? 0) || 0;
-  const grandTotal = subtotal;
+  const grandTotal = subtotal; // kapora bilgilendirme amaçlı, toplamı değiştirmiyoruz
   const dateTimeLabel = dateTimeISO ? dayjs(dateTimeISO).format("DD MMM YYYY, HH:mm") : "";
 
   const onCopy = async (text?: string) => {
@@ -140,7 +151,6 @@ export default function ReservationStep3Screen() {
     } catch {}
   };
 
-  // ReceiptCard'dan dönen dosyayı state'e al
   const handlePickReceipt = async (file: { uri: string; name: string; type: string }) => {
     setReceiptFile(file);
     showToast("Dekont seçildi");
@@ -184,15 +194,16 @@ export default function ReservationStep3Screen() {
       }
 
       await uploadReceipt(id, receiptFile);
+
       nav.dispatch(
-  CommonActions.reset({
-    index: 1,
-    routes: [
-      { name: "Tabs" },                                // ana sayfa (istersen belirli taba da inebilirsin)
-      { name: "Rezervasyon Detayı", params: { id } },  // üstte görünecek ekran
-    ],
-  })
-);
+        CommonActions.reset({
+          index: 1,
+          routes: [
+            { name: "Tabs" },
+            { name: "Rezervasyon Detayı", params: { id } },
+          ],
+        })
+      );
     } catch (e: any) {
       console.log("Create/Upload error:", e?.response?.data || e?.message || e);
       showToast(e?.response?.data?.message || "Oluşturma/Dekont hatası");
@@ -205,25 +216,48 @@ export default function ReservationStep3Screen() {
   const ctaTitle = creating ? "Oluşturuluyor..." : receiptFile ? "Rezervasyonu Oluştur" : "Dekont Seçin";
 
   return (
-    <Screen>
+    <Screen topPadding="flat" style={{ backgroundColor: C.bg }}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
         keyboardVerticalOffset={0}
       >
+        {/* Başlık (Bookings/ReservationDetail ile aynı çizgide) */}
+        <View style={styles.header}>
+          <View style={styles.headerRow}>
+            <Ionicons name="document-text" size={24} color={C.primary} />
+            <Text style={styles.headerTitle}>Rezervasyon Özeti</Text>
+          </View>
+          {restaurant?.name ? (
+            <Text secondary style={styles.headerSub}>{restaurant.name}</Text>
+          ) : null}
+        </View>
+
         <ScrollView
           contentContainerStyle={{ padding: 16, paddingBottom: bottomPad }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.title}>Rezervasyon Özeti</Text>
-
+          {/* Tarih & Kişi */}
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>{restaurant?.name ?? "Restoran"}</Text>
-            {!!dateTimeLabel && <Text secondary>{dateTimeLabel}</Text>}
-            <Text secondary style={{ marginTop: 4 }}>Kişi: {partySize}</Text>
+            <View style={styles.rowLine}>
+              <View style={styles.rowLeftWrap}>
+                <Ionicons name="calendar" size={16} color={C.muted} />
+                <Text secondary style={{ marginLeft: 6 }}>Tarih & Saat</Text>
+              </View>
+              <Text style={styles.bold}>{dateTimeLabel || "-"}</Text>
+            </View>
+
+            <View style={[styles.rowLine, { marginTop: 8 }]}>
+              <View style={styles.rowLeftWrap}>
+                <Ionicons name="people" size={16} color={C.muted} />
+                <Text secondary style={{ marginLeft: 6 }}>Kişi</Text>
+              </View>
+              <Text style={styles.bold}>{partySize}</Text>
+            </View>
           </View>
 
+          {/* Seçilen Menüler & Toplam */}
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Seçilen Menüler</Text>
             {Object.keys(groups).length ? (
@@ -253,6 +287,7 @@ export default function ReservationStep3Screen() {
             )}
           </View>
 
+          {/* Ödeme Bilgileri */}
           {(restaurant?.iban || restaurant?.ibanName || restaurant?.bankName) && (
             <View style={styles.card}>
               <Text style={styles.sectionTitle}>Ödeme Bilgileri</Text>
@@ -294,7 +329,7 @@ export default function ReservationStep3Screen() {
             </View>
           )}
 
-          {/* Dekont: senin ReceiptCard'ını kullanıyoruz */}
+          {/* Dekont Yükleme */}
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Dekont</Text>
             <ReceiptCard
@@ -315,15 +350,13 @@ export default function ReservationStep3Screen() {
             onPress={onCreateReservation}
             disabled={!receiptFile || creating}
             activeOpacity={0.85}
-            style={[
-              styles.ctaBtn,
-              (!receiptFile || creating) && styles.ctaBtnDisabled,
-            ]}
+            style={[styles.ctaBtn, (!receiptFile || creating) && styles.ctaBtnDisabled]}
           >
             <Text style={styles.ctaBtnText}>{ctaTitle}</Text>
           </TouchableOpacity>
         </View>
 
+        {/* Mini Toast */}
         <Modal visible={toast.visible} transparent animationType="fade">
           <View style={styles.toastWrap}>
             <View style={styles.toastCard}>
@@ -342,18 +375,32 @@ const cardShadow = Platform.select({
 });
 
 const styles = StyleSheet.create({
-  title: { fontSize: 18, fontWeight: "800", marginBottom: 10 },
+  /** Header (aynı dil) */
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 12,
+    backgroundColor: C.card,
+    borderBottomColor: C.border,
+    borderBottomWidth: 1,
+  },
+  headerRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  headerTitle: { fontSize: 20, fontWeight: "800", color: C.text },
+  headerSub: { marginTop: 6 },
+
+  /** Kartlar */
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: C.card,
     borderRadius: 16,
     padding: 14,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "#F3F4F6",
+    borderColor: C.border,
     ...cardShadow,
   },
-  cardTitle: { fontWeight: "800", fontSize: 16 },
-  sectionTitle: { fontWeight: "800", marginBottom: 8 },
+  sectionTitle: { fontWeight: "800", marginBottom: 8, color: C.text },
+  bold: { fontWeight: "700", color: C.text },
+
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -361,11 +408,21 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 6,
   },
-  rowLeft: { fontWeight: "700" },
-  rowRight: { fontWeight: "700" },
-  totalLeft: { fontWeight: "800" },
-  totalRight: { fontWeight: "800" },
-  hr: { height: 1, backgroundColor: "#F3F4F6", marginVertical: 8 },
+  rowLine: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  rowLeftWrap: { flexDirection: "row", alignItems: "center" },
+
+  rowLeft: { fontWeight: "700", color: C.text },
+  rowRight: { fontWeight: "700", color: C.text },
+
+  totalLeft: { fontWeight: "800", color: C.text },
+  totalRight: { fontWeight: "800", color: C.primary },
+
+  hr: { height: 1, backgroundColor: C.border, marginVertical: 8 },
+
   copyRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
   copyBtn: {
     paddingHorizontal: 12,
@@ -374,13 +431,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#111827",
   },
   copyBtnText: { color: "#fff", fontWeight: "700" },
-  bold: { fontWeight: "700" },
 
+  /** CTA */
   ctaBar: {
     position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
+    left: 0, right: 0, bottom: 0,
     paddingHorizontal: 16,
     paddingTop: 10,
     backgroundColor: "rgba(255,255,255,0.98)",
@@ -390,7 +445,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   ctaBtn: {
-    backgroundColor: "#7C2D12",
+    backgroundColor: C.primary,
     minHeight: 56,
     paddingVertical: 14,
     borderRadius: 18,
@@ -398,13 +453,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   ctaBtnDisabled: { opacity: 0.55 },
-  ctaBtnText: {
-    color: "#fff",
-    fontWeight: "800",
-    fontSize: 16,
-    letterSpacing: 0.3,
-  },
+  ctaBtnText: { color: "#fff", fontWeight: "800", fontSize: 16, letterSpacing: 0.3 },
 
+  /** Toast */
   toastWrap: {
     flex: 1,
     backgroundColor: "transparent",
@@ -412,10 +463,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 24,
   },
-  toastCard: {
-    backgroundColor: "rgba(0,0,0,0.85)",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 999,
-  },
+  toastCard: { backgroundColor: "rgba(0,0,0,0.85)", paddingHorizontal: 16, paddingVertical: 10, borderRadius: 999 },
 });

@@ -10,6 +10,7 @@ export type AppNotification = {
   ts?: number;
 };
 
+// types...
 type State = {
   items: AppNotification[];
   unreadCount: number;
@@ -19,9 +20,10 @@ type State = {
   clearLatest: () => void;
 
   markAllReadLocal: () => void;
+  markReadLocal: (id: string) => void;        // 👈 EKLENDİ
   fetchUnreadCount: () => Promise<void>;
 
-  // opsiyonel server API’leri — varsa çalışır, yoksa sessiz geçer
+  // opsiyoneller
   markReadRemote?: (id: string) => Promise<void>;
   markAllReadRemote?: () => Promise<void>;
   fetchListRemote?: () => Promise<void>;
@@ -33,11 +35,7 @@ export const useNotifications = create<State>((set, get) => ({
   latest: null,
 
   addFromPush: (n) => {
-    const item: AppNotification = {
-      ...n,
-      read: false,
-      ts: n.ts ?? Date.now(),
-    };
+    const item: AppNotification = { ...n, read: false, ts: n.ts ?? Date.now() };
     set((s) => ({
       items: [item, ...s.items].slice(0, 50),
       unreadCount: s.unreadCount + 1,
@@ -54,26 +52,28 @@ export const useNotifications = create<State>((set, get) => ({
       latest: null,
     })),
 
+  // 👇 TEKİL LOCAL OKUNDU
+  markReadLocal: (id: string) =>
+    set((s) => {
+      const wasUnread = s.items.find((x) => x.id === id && !x.read) ? 1 : 0;
+      return {
+        items: s.items.map((x) => (x.id === id ? { ...x, read: true } : x)),
+        unreadCount: Math.max(0, s.unreadCount - wasUnread),
+      };
+    }),
+
   fetchUnreadCount: async () => {
     try {
-      // Sunucuda varsa:
       const { data } = await api.get("/notifications/unread-count");
-      if (typeof data?.count === "number") {
-        set({ unreadCount: data.count });
-      }
-    } catch {
-      // uç yoksa sessiz
-    }
+      if (typeof data?.count === "number") set({ unreadCount: data.count });
+    } catch {}
   },
 
   // Opsiyonel — mevcutsa kullanın
   markReadRemote: async (id: string) => {
     try {
       await api.post("/notifications/mark-read", { id });
-      set((s) => ({
-        items: s.items.map((x) => (x.id === id ? { ...x, read: true } : x)),
-        unreadCount: Math.max(0, s.unreadCount - 1),
-      }));
+      get().markReadLocal(id); // 👈 remote başarılıysa local’i de güncelle
     } catch {}
   },
 

@@ -1,5 +1,9 @@
 import { api } from "./client";
 import { normalizeMongoId } from "./restaurants";
+import { useAuth } from "../store/useAuth";
+import { Platform } from "react-native";
+// ✅ legacy import: uploadAsync burada
+import * as FileSystem from "expo-file-system/legacy";
 
 export interface Reservation {
   _id: string;
@@ -11,8 +15,8 @@ export interface Reservation {
   restaurantId?: any;
   userId?: any;
   receiptUrl?: string;
-  arrivedCount?: number;                 // check-in’de girilen gerçek gelen kişi
-  underattended?: boolean;               // eşik altı katılım var mı
+  arrivedCount?: number;
+  underattended?: boolean;
   [key: string]: any;
 }
 
@@ -23,8 +27,8 @@ export type ReservationStatus =
   | "no_show"
   | "cancelled";
 
-async function unwrap<T>(promise: Promise<{ data: T }>): Promise<T> {
-  const res = await promise;
+async function unwrap<T>(p: Promise<{ data: T }>): Promise<T> {
+  const res = await p;
   return res.data;
 }
 
@@ -43,86 +47,126 @@ export async function createReservation(
   return unwrap(api.post<Reservation>("/reservations", body));
 }
 
-/**
- * Restoran rezervasyonlarını getirir.
- * Sunucu hem [] hem { items, nextCursor } döndürebildiği için normalize ediyoruz.
- * Ayrıca 304’ü önlemek için client.ts’de cache-buster var; yine de burada da header/param koyuyoruz.
- */
 export async function fetchReservationsByRestaurant(
   restId: string
 ): Promise<Reservation[]> {
   const rid = normalizeMongoId(restId);
   return unwrap(
     api.get<Reservation[]>(`/restaurants/${rid}/reservations`, {
-      params: { _cb: Date.now() }, // ekstra güvenlik
+      params: { _cb: Date.now() },
     })
   );
 }
-
 
 export async function updateReservationStatus(
   id: string,
   status: string
 ): Promise<Reservation> {
-  return unwrap(
-    api.put<Reservation>(`/restaurants/reservations/${id}/status`, { status })
-  );
+  return unwrap(api.put<Reservation>(`/restaurants/reservations/${id}/status`, { status }));
 }
 
 export async function getReservationQR(id: string): Promise<string> {
-  const data = await unwrap(
-    api.get<{ qrDataUrl: string }>(`/reservations/${id}/qr`)
-  );
+  const data = await unwrap(api.get<{ qrDataUrl: string }>(`/reservations/${id}/qr`));
   return data.qrDataUrl;
 }
 
 export async function cancelReservation(id: string): Promise<Reservation> {
-  return unwrap(
-    api.put<Reservation>(`/restaurants/reservations/${id}/status`, {
-      status: "cancelled",
-    })
-  );
+  return unwrap(api.put<Reservation>(`/restaurants/reservations/${id}/status`, { status: "cancelled" }));
 }
 
-export async function uploadReceipt(
-  id: string,
-  file: { uri: string; name: string; type: string }
-): Promise<Reservation> {
-  const data = new FormData();
-  data.append(
-    "file",
-    {
-      uri: file.uri,
-      name: file.name ?? "receipt.jpg",
-      type: file.type ?? "image/jpeg",
-    } as any
-  );
+/* ----------------- Upload Receipt (axios → legacy uploadAsync fallback) ----------------- */
 
-  try {
-    return await unwrap(
-      api.post<Reservation>(`/reservations/${id}/receipt`, data, {
-        headers: { "Content-Type": "multipart/form-data" },
-      })
-    );
-  } catch (e: any) {
-    if (e?.response?.status === 404) {
-      return await unwrap(
-        api.post<Reservation>(`/restaurants/reservations/${id}/receipt`, data, {
-          headers: { "Content-Type": "multipart/form-data" },
-        })
-      );
+
+// src/api/reservations.ts (yalnızca uploadReceipt'i değiştiriyoruz)
+import { API_BASE_URL } from "./client";
+
+
+type FileLike = { uri: string; name?: string; type?: string };
+
+export async function uploadReceipt(id: string, file: FileLike) {
+  console.log("[uploadReceipt] ▶ start");
+  console.log("[uploadReceipt] id =", id);
+  console.log("[uploadReceipt] raw file =", file);
+
+  // — Güvenli isim/MIME & URI normalize —
+  const safeUri = file.uri?.startsWith("file://") ? file.uri : `file://${file.uri}`;
+  const nameFromUri = (safeUri.split("/").pop() || "receipt");
+  const extFromUri = (nameFromUri.split(".").pop() || "").toLowerCase();
+
+  const guessFromExt = (ext: string) => {
+    switch (ext) {
+      case "jpg":
+      case "jpeg": return "image/jpeg";
+      case "png":  return "image/png";
+      case "heic": return "image/heic";
+      case "heif": return "image/heif";
+      case "webp": return "image/webp";
+      case "pdf":  return "application/pdf";
+      default:     return "image/jpeg";
     }
-    throw e;
+  };
+
+  const finalName =
+    file.name && file.name.includes(".") ? file.name : (extFromUri ? nameFromUri : `${nameFromUri}.jpg`);
+
+  const finalType = file.type || guessFromExt((finalName.split(".").pop() || "").toLowerCase());
+
+  console.log("[uploadReceipt] normalized", {
+    platform: Platform.OS,
+    safeUri: safeUri.length > 90 ? safeUri.slice(0, 90) + "…" : safeUri,
+    finalName,
+    finalType,
+  });
+
+  // — FormData hazırlanıyor (fetch ile) —
+  const form = new FormData();
+  form.append("file", { uri: safeUri, name: finalName, type: finalType } as any);
+
+  const url = `${API_BASE_URL}/reservations/${id}/receipt?_cb=${Date.now()}`;
+  const { token } = useAuth.getState();
+
+  console.log("[uploadReceipt] 🔼 fetch POST", url);
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      // ÖNEMLİ: Content-Type'ı ELLE AYARLAMA! fetch boundary'yi kendi ekler.
+    },
+    body: form,
+  });
+
+  console.log("[uploadReceipt] fetch done", { status: resp.status });
+
+  // 404 için eski rotaya fallback
+  if (resp.status === 404) {
+    const fbUrl = `${API_BASE_URL}/restaurants/reservations/${id}/receipt?_cb=${Date.now()}`;
+    console.log("[uploadReceipt] 🔁 fetch fallback POST", fbUrl);
+    const fbResp = await fetch(fbUrl, {
+      method: "POST",
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: form,
+    });
+    console.log("[uploadReceipt] fetch fallback done", { status: fbResp.status });
+    if (!fbResp.ok) {
+      const t = await fbResp.text().catch(() => "");
+      throw new Error(`fallback failed: HTTP ${fbResp.status} – ${t.slice(0, 200)}`);
+    }
+    return await fbResp.json().catch(() => ({}));
   }
-}
 
-export async function getReservation(id: string): Promise<Reservation> {
-  return unwrap(api.get<Reservation>(`/reservations/${id}`));
-}
+  if (!resp.ok) {
+    const t = await resp.text().catch(() => "");
+    console.log("[uploadReceipt] ❌ fetch error body", t.slice(0, 400));
+    throw new Error(`upload failed: HTTP ${resp.status} – ${t.slice(0, 200)}`);
+  }
 
+  // Başarılı: JSON bekliyoruz
+  const data = await resp.json().catch(() => ({}));
+  console.log("[uploadReceipt] ✅ success keys", Object.keys(data || {}));
+  return data;
+}
 export async function getMyReservations(): Promise<Reservation[]> {
   try {
-    // Aynı 304 önlemi burada da:
     const res = await api.get<Reservation[]>(`/reservations`, {
       params: { _cb: Date.now() },
       headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
@@ -133,16 +177,9 @@ export async function getMyReservations(): Promise<Reservation[]> {
   }
 }
 
-/** ✅ Listeler için hafif tip (export edildi!) */
+/** ✅ Listeler için hafif tip */
 export type ReservationLite = Pick<
   Reservation,
-  | "_id"
-  | "dateTimeUTC"
-  | "partySize"
-  | "totalPrice"
-  | "depositAmount"
-  | "status"
-  | "restaurantId"
-  | "userId"
-  | "receiptUrl"
+  "_id" | "dateTimeUTC" | "partySize" | "totalPrice" | "depositAmount" |
+  "status" | "restaurantId" | "userId" | "receiptUrl"
 >;

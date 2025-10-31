@@ -13,22 +13,19 @@ import {
   NativeSyntheticEvent,
   NativeScrollEvent,
   Dimensions,
-  Platform,
   Pressable,
+  Animated,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import dayjs from "dayjs";
 import "dayjs/locale/tr";
-import { lightTheme } from "../theme/theme";
 import {
   getRestaurant,
   getAvailability,
   type Restaurant as ApiRestaurant,
   type AvailabilitySlot,
 } from "../api/restaurants";
-
-// ✅ Favori API'leri (auth gerektirir)
 import {
   listFavorites,
   addFavorite,
@@ -36,9 +33,10 @@ import {
   isFavorited,
   type FavoriteRestaurant,
 } from "../api/favorites";
-
 import { useReservation } from "../store/useReservation";
 import { useAuth } from "../store/useAuth";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 dayjs.locale("tr");
 
@@ -62,12 +60,10 @@ export default function RestaurantDetailScreen() {
   const nav = useNavigation<any>();
   const restaurantId: string = route.params?.id ?? route.params?.restaurantId ?? "";
 
-  // 🔐 Auth (guest desteği + intendedRoute)
   const token = useAuth((s) => s.token);
   const user = useAuth((s) => s.user);
   const setIntended = useAuth((s) => s.setIntended);
 
-  // Rezervasyon store
   const setRestaurant = useReservation?.((s: any) => s.setRestaurant) ?? (() => {});
   const setDateTime = useReservation?.((s: any) => s.setDateTime) ?? (() => {});
   const setParty = useReservation?.((s: any) => s.setParty) ?? (() => {});
@@ -84,11 +80,30 @@ export default function RestaurantDetailScreen() {
   const photosListRef = useRef<FlatList<string>>(null);
   const dayLabel = dayjs(date).format("DD MMM");
 
-  // ✅ Favoriler state (sadece girişliyse çekeriz)
   const [favLoading, setFavLoading] = useState<boolean>(false);
   const [favs, setFavs] = useState<FavoriteRestaurant[]>([]);
 
-  // Restoran detayını çek
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.95)).current;
+
+  useEffect(() => {
+    if (!loading && r) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          tension: 50,
+          friction: 7,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [loading, r]);
+
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -107,7 +122,6 @@ export default function RestaurantDetailScreen() {
     };
   }, [restaurantId]);
 
-  // 🔐 Girişliyse favorilerimi çek
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -118,16 +132,13 @@ export default function RestaurantDetailScreen() {
         } else {
           if (mounted) setFavs([]);
         }
-      } catch {
-        // sessiz geç
-      }
+      } catch {}
     })();
     return () => {
       mounted = false;
     };
   }, [token, user?.role]);
 
-  // Slotları çek
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -162,16 +173,11 @@ export default function RestaurantDetailScreen() {
     setSelectedSlot(s);
   };
 
-  // 🔐 Devam et — giriş yoksa login'e yönlendir + intendedRoute kaydet
   const onContinue = async () => {
     if (!selectedSlot || !r) return;
 
     const [h, m] = selectedSlot.label.split(":");
-    const localDateTime = dayjs(date)
-      .hour(Number(h))
-      .minute(Number(m))
-      .second(0)
-      .toISOString();
+    const localDateTime = dayjs(date).hour(Number(h)).minute(Number(m)).second(0).toISOString();
 
     if (!token) {
       Alert.alert("Giriş gerekli", "Rezervasyon oluşturmak için giriş yapmalısın.");
@@ -191,7 +197,6 @@ export default function RestaurantDetailScreen() {
     setActivePhoto(Math.max(0, Math.min(idx, photos.length - 1)));
   };
 
-  // ✅ Favori toggle (giriş yoksa önce login)
   const toggleFavorite = async () => {
     if (!restaurantId || favLoading) return;
     if (!token || user?.role !== "customer") {
@@ -208,7 +213,6 @@ export default function RestaurantDetailScreen() {
         setFavs((prev) => prev.filter((f) => f._id !== restaurantId));
       } else {
         await addFavorite(restaurantId);
-        // Optimistic olarak minimal alanlarla ekleyelim
         setFavs((prev) =>
           prev.some((f) => f._id === restaurantId)
             ? prev
@@ -236,241 +240,296 @@ export default function RestaurantDetailScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color={lightTheme.colors.primary} />
+        <ActivityIndicator size="large" color="#7B2C2C" />
+        <Text style={styles.loadingText}>Yükleniyor…</Text>
       </View>
     );
   }
+
   if (!r) {
     return (
       <View style={styles.center}>
-        <Text style={styles.emptyText}>Restoran bulunamadı.</Text>
-        <View style={{ height: 10 }} />
-        <TouchableOpacity onPress={() => nav.goBack()} style={styles.ctaBtn}>
-          <Text style={styles.ctaBtnText}>Geri Dön</Text>
+        <Ionicons name="restaurant-outline" size={64} color="#666666" />
+        <Text style={styles.emptyTitle}>Restoran Bulunamadı</Text>
+        <Text style={styles.emptyText}>Bu restoran mevcut değil veya kaldırılmış.</Text>
+        <TouchableOpacity onPress={() => nav.goBack()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={18} color="#fff" />
+          <Text style={styles.backButtonText}>Geri Dön</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
-  // footer yüksekliği + güvenli alan kadar boşluk
   const scrollPadBottom = insets.bottom + 100;
 
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={{ paddingBottom: scrollPadBottom }}>
-        {/* ÜSTTE: Başlık Kartı */}
-        <View style={styles.headerCard}>
-          <View style={styles.headerRow}>
-            <Text style={styles.title}>{r.name}</Text>
+        <Animated.View style={{ opacity: fadeAnim, transform: [{ scale: scaleAnim }] }}>
+          {/* Galeri */}
+          <View style={styles.galleryWrap}>
+            {photos.length > 0 ? (
+              <>
+                <FlatList
+                  ref={photosListRef}
+                  data={photos}
+                  horizontal
+                  pagingEnabled
+                  onScroll={onPhotoScroll}
+                  showsHorizontalScrollIndicator={false}
+                  keyExtractor={(u, i) => `${u}-${i}`}
+                  renderItem={({ item }) => (
+                    <Image source={{ uri: item }} style={styles.photoFull} resizeMode="cover" />
+                  )}
+                />
 
-            {/* ❤️ Favori butonu (başlık yanında) */}
-            <Pressable
-              onPress={toggleFavorite}
-              style={{
-                paddingHorizontal: 12,
-                paddingVertical: 8,
-                borderRadius: 999,
-                borderWidth: 1,
-                borderColor: lightTheme.colors.border,
-                backgroundColor: "#fff",
-              }}
-            >
-              <Text style={{ fontWeight: "800", color: fav ? "#DC2626" : lightTheme.colors.text }}>
-                {fav ? "♥ Favori" : "♡ Favori"}
-              </Text>
-            </Pressable>
-          </View>
-          <View style={styles.metaRow}>
-            {!!r.city && <Text style={styles.metaChip}>{r.city}</Text>}
-            {!!r.priceRange && <Text style={styles.metaChip}>{r.priceRange}</Text>}
-            {typeof minMenuPrice === "number" && (
-              <Text style={[styles.metaChip, styles.metaChipPrimary]}>
-                ₺{minMenuPrice.toLocaleString("tr-TR")}+
-              </Text>
-            )}
-          </View>
-          {!!r.address && <Text style={styles.addressText}>{r.address}</Text>}
-        </View>
+                <Pressable onPress={toggleFavorite} style={styles.favoriteOverlay}>
+                  <LinearGradient
+                    colors={fav ? ["#E53935", "#C62828"] : ["#ffffff", "#ffffff"]}
+                    style={styles.favoriteButton}
+                  >
+                    <Ionicons
+                      name={fav ? "heart" : "heart-outline"}
+                      size={22}
+                      color={fav ? "#fff" : "#7B2C2C"}
+                    />
+                  </LinearGradient>
+                </Pressable>
 
-        {/* Galeri */}
-        <View style={styles.galleryWrap}>
-          {photos.length > 0 ? (
-            <>
-              <FlatList
-                ref={photosListRef}
-                data={photos}
-                horizontal
-                pagingEnabled
-                onScroll={onPhotoScroll}
-                showsHorizontalScrollIndicator={false}
-                keyExtractor={(u, i) => `${u}-${i}`}
-                renderItem={({ item }) => <Image source={{ uri: item }} style={styles.photoFull} />}
-              />
+                <LinearGradient colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.4)"]} style={styles.gradBottom} />
 
-              {/* ❤️ Foto üstü kalp (kısayol) */}
-              <Pressable
-                onPress={toggleFavorite}
-                style={{
-                  position: "absolute",
-                  right: 14,
-                  top: 14,
-                  backgroundColor: "rgba(255,255,255,0.95)",
-                  borderRadius: 999,
-                  paddingHorizontal: 12,
-                  paddingVertical: 8,
-                  borderWidth: 1,
-                  borderColor: lightTheme.colors.border,
-                }}
-              >
-                <Text style={{ fontWeight: "900", color: fav ? "#DC2626" : lightTheme.colors.text }}>
-                  {fav ? "♥" : "♡"}
-                </Text>
-              </Pressable>
-
-              <View style={styles.gradBottom} />
-              <View style={styles.dots}>
-                {photos.map((_, i) => (
-                  <View key={i} style={[styles.dot, i === activePhoto && styles.dotActive]} />
-                ))}
-              </View>
-            </>
-          ) : (
-            <View style={{ paddingHorizontal: H_PADDING, paddingTop: 8 }}>
+                <View style={styles.dots}>
+                  {photos.map((_, i) => (
+                    <View key={i} style={[styles.dot, i === activePhoto && styles.dotActive]} />
+                  ))}
+                </View>
+              </>
+            ) : (
               <View style={styles.photoPlaceholder}>
+                <Ionicons name="image-outline" size={48} color="#999999" />
                 <Text style={styles.photoPlaceholderText}>Fotoğraf bulunamadı</Text>
               </View>
-            </View>
-          )}
-        </View>
-
-        {!!r.description && (
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Hakkında</Text>
-            <Text style={styles.description}>{r.description}</Text>
+            )}
           </View>
-        )}
 
-        {/* Fix Menüler */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Fix Menüler</Text>
-          {menus.length === 0 ? (
-            <Text style={styles.muted}>Bu restoran için menü bulunamadı.</Text>
-          ) : (
-            <View style={{ gap: 12 }}>
-              {menus.map((m) => (
-                <View key={`${m._id || m.title}`} style={styles.menuCard}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.menuTitle}>{m.title}</Text>
-                    {!!m.description && <Text style={styles.menuDesc}>{m.description}</Text>}
+          {/* Header Card */}
+          <View style={styles.headerCard}>
+            <View style={styles.headerTop}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.title}>{r.name}</Text>
+                {!!r.address && (
+                  <View style={styles.addressRow}>
+                    <Ionicons name="location" size={16} color="#666666" />
+                    <Text style={styles.addressText}>{r.address}</Text>
                   </View>
-                  <View style={styles.menuPricePill}>
-                    <Text style={styles.menuPriceText}>
-                      ₺{Number(m.pricePerPerson).toLocaleString("tr-TR")}
-                    </Text>
-                    <Text style={styles.menuPriceSub}>kişi başı</Text>
-                  </View>
+                )}
+              </View>
+              <Pressable onPress={toggleFavorite} style={styles.favoriteButtonCard}>
+                <Ionicons
+                  name={fav ? "heart" : "heart-outline"}
+                  size={24}
+                  color={fav ? "#E53935" : "#666666"}
+                />
+              </Pressable>
+            </View>
+
+            <View style={styles.metaRow}>
+              {!!r.city && (
+                <View style={styles.metaChip}>
+                  <Ionicons name="location-outline" size={14} color="#666666" />
+                  <Text style={styles.metaChipText}>{r.city}</Text>
                 </View>
-              ))}
-            </View>
-          )}
-        </View>
-
-        {/* Uygun Saat Bul */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Uygun Saat Bul</Text>
-
-          <View style={styles.controlsRow}>
-            <View style={styles.dateControls}>
-              <TouchableOpacity
-                onPress={() => setDate(dayjs(date).subtract(1, "day").format("YYYY-MM-DD"))}
-                disabled={dayjs(date).isSame(dayjs(), "day")}
-                style={[styles.iconBtn, dayjs(date).isSame(dayjs(), "day") && styles.disabled]}
-              >
-                <Text style={styles.iconText}>{"<"}</Text>
-              </TouchableOpacity>
-
-              <Text style={styles.dateText} numberOfLines={1} ellipsizeMode="tail">
-                {dayjs(date).format("DD MMM YYYY ddd")}
-              </Text>
-
-              <TouchableOpacity
-                onPress={() => setDate(dayjs(date).add(1, "day").format("YYYY-MM-DD"))}
-                style={styles.iconBtn}
-              >
-                <Text style={styles.iconText}>{">"}</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.partyControls}>
-              <TouchableOpacity
-                onPress={() => setPartySize((p) => Math.max(1, p - 1))}
-                style={[styles.iconBtn, partySize <= 1 && styles.disabled]}
-              >
-                <Text style={styles.iconText}>-</Text>
-              </TouchableOpacity>
-
-              <Text style={styles.partyText}>Kişi: {partySize}</Text>
-
-              <TouchableOpacity onPress={() => setPartySize((p) => p + 1)} style={styles.iconBtn}>
-                <Text style={styles.iconText}>+</Text>
-              </TouchableOpacity>
+              )}
+              {!!r.priceRange && (
+                <View style={styles.metaChip}>
+                  <Ionicons name="wallet-outline" size={14} color="#666666" />
+                  <Text style={styles.metaChipText}>{r.priceRange}</Text>
+                </View>
+              )}
+              {typeof minMenuPrice === "number" && (
+                <View style={styles.metaChipPrimary}>
+                  <Ionicons name="pricetag" size={14} color="#fff" />
+                  <Text style={styles.metaChipTextPrimary}>
+                    ₺{minMenuPrice.toLocaleString("tr-TR")}+
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
 
-          {fetchingSlots ? (
-            <ActivityIndicator color={lightTheme.colors.primary} />
-          ) : (
-            <FlatList
-              data={slots}
-              horizontal
-              keyExtractor={(s) => s.timeISO}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingVertical: 6 }}
-              renderItem={({ item }) => {
-                const isSelected = selectedSlot?.timeISO === item.timeISO;
-                const disabled = !item.isAvailable;
-                return (
-                  <TouchableOpacity
-                    onPress={() => onSelectSlot(item)}
-                    disabled={disabled}
-                    style={[
-                      styles.slot,
-                      disabled && styles.slotDisabled,
-                      isSelected && styles.slotSelected,
-                    ]}
-                  >
-                    <Text style={[styles.slotText, isSelected && styles.slotTextSelected]}>
-                      {item.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              }}
-              ListEmptyComponent={<Text style={styles.muted}>Uygun saat bulunamadı.</Text>}
-            />
-          )}
-        </View>
+          {/* Fix Menüler */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="restaurant" size={22} color="#7B2C2C" />
+              <Text style={styles.sectionTitle}>Fix Menüler</Text>
+            </View>
+            {menus.length === 0 ? (
+              <View style={styles.emptyStateSmall}>
+                <Ionicons name="fast-food-outline" size={32} color="#999999" />
+                <Text style={styles.muted}>Bu restoran için menü bulunamadı.</Text>
+              </View>
+            ) : (
+              <View style={{ gap: 12 }}>
+                {menus.map((m, idx) => (
+                  <View key={`${m._id || m.title}-${idx}`} style={styles.menuCard}>
+                    <View style={styles.menuIconCircle}>
+                      <Ionicons name="nutrition" size={24} color="#7B2C2C" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.menuTitle}>{m.title}</Text>
+                      {!!m.description && <Text style={styles.menuDesc}>{m.description}</Text>}
+                    </View>
+                    <View style={styles.menuPricePill}>
+                      <Text style={styles.menuPriceText}>
+                        ₺{Number(m.pricePerPerson).toLocaleString("tr-TR")}
+                      </Text>
+                      <Text style={styles.menuPriceSub}>kişi başı</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
 
-        {/* İletişim */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>İletişim</Text>
-          <Text style={styles.contactText}>{r.phone ? `Tel: ${r.phone}` : "Telefon bilgisi yok"}</Text>
-          <Text style={styles.contactText}>{r.address || "Adres bilgisi yok"}</Text>
-        </View>
+          {/* Uygun Saat Bul */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="time" size={22} color="#7B2C2C" />
+              <Text style={styles.sectionTitle}>Uygun Saat Bul</Text>
+            </View>
+
+            <View style={styles.controlsContainer}>
+              <View style={styles.controlCard}>
+                <Text style={styles.controlLabel}>Tarih</Text>
+                <View style={styles.dateControls}>
+                  <Pressable
+                    onPress={() => setDate(dayjs(date).subtract(1, "day").format("YYYY-MM-DD"))}
+                    disabled={dayjs(date).isSame(dayjs(), "day")}
+                    style={[styles.controlButton, dayjs(date).isSame(dayjs(), "day") && styles.disabled]}
+                  >
+                    <Ionicons name="chevron-back" size={18} color="#1A1A1A" />
+                  </Pressable>
+
+                  <View style={styles.dateDisplay}>
+                    <Text style={styles.dateText}>{dayjs(date).format("DD MMM")}</Text>
+                    <Text style={styles.dayText}>{dayjs(date).format("dddd")}</Text>
+                  </View>
+
+                  <Pressable
+                    onPress={() => setDate(dayjs(date).add(1, "day").format("YYYY-MM-DD"))}
+                    style={styles.controlButton}
+                  >
+                    <Ionicons name="chevron-forward" size={18} color="#1A1A1A" />
+                  </Pressable>
+                </View>
+              </View>
+
+              <View style={styles.controlCard}>
+                <Text style={styles.controlLabel}>Kişi Sayısı</Text>
+                <View style={styles.partyControls}>
+                  <Pressable
+                    onPress={() => setPartySize((p) => Math.max(1, p - 1))}
+                    style={[styles.controlButton, partySize <= 1 && styles.disabled]}
+                  >
+                    <Ionicons name="remove" size={18} color="#1A1A1A" />
+                  </Pressable>
+
+                  <View style={styles.partyDisplay}>
+                    <Ionicons name="people" size={20} color="#7B2C2C" />
+                    <Text style={styles.partyText}>{partySize}</Text>
+                  </View>
+
+                  <Pressable onPress={() => setPartySize((p) => p + 1)} style={styles.controlButton}>
+                    <Ionicons name="add" size={18} color="#1A1A1A" />
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+
+            {fetchingSlots ? (
+              <View style={styles.slotsLoading}>
+                <ActivityIndicator color="#7B2C2C" />
+                <Text style={styles.slotsLoadingText}>Uygun saatler aranıyor…</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={slots}
+                horizontal
+                keyExtractor={(s) => s.timeISO}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.slotsList}
+                renderItem={({ item }) => {
+                  const isSelected = selectedSlot?.timeISO === item.timeISO;
+                  const disabled = !item.isAvailable;
+                  return (
+                    <Pressable
+                      onPress={() => onSelectSlot(item)}
+                      disabled={disabled}
+                      style={[styles.slot, disabled && styles.slotDisabled, isSelected && styles.slotSelected]}
+                    >
+                      <Ionicons
+                        name={isSelected ? "checkmark-circle" : "time-outline"}
+                        size={18}
+                        color={isSelected ? "#fff" : disabled ? "#999999" : "#7B2C2C"}
+                      />
+                      <Text style={[styles.slotText, isSelected && styles.slotTextSelected]}>{item.label}</Text>
+                    </Pressable>
+                  );
+                }}
+                ListEmptyComponent={
+                  <View style={styles.emptyStateSmall}>
+                    <Ionicons name="calendar-outline" size={32} color="#999999" />
+                    <Text style={styles.muted}>Uygun saat bulunamadı.</Text>
+                  </View>
+                }
+              />
+            )}
+          </View>
+           {/* Hakkında */}
+          {!!r.description && (
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Ionicons name="information-circle" size={22} color="#7B2C2C" />
+                <Text style={styles.sectionTitle}>Hakkında</Text>
+              </View>
+              <Text style={styles.description}>{r.description}</Text>
+            </View>
+          )}
+
+          {/* İletişim */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="call" size={22} color="#7B2C2C" />
+              <Text style={styles.sectionTitle}>İletişim</Text>
+            </View>
+            <View style={styles.contactItem}>
+              <Ionicons name="call-outline" size={18} color="#666666" />
+              <Text style={styles.contactText}>{r.phone || "Telefon bilgisi yok"}</Text>
+            </View>
+            <View style={styles.contactItem}>
+              <Ionicons name="location-outline" size={18} color="#666666" />
+              <Text style={styles.contactText}>{r.address || "Adres bilgisi yok"}</Text>
+            </View>
+          </View>
+        </Animated.View>
       </ScrollView>
 
-      {/* Sticky CTA bar */}
-      <View
-        pointerEvents="box-none"
-        style={[
-          styles.ctaBar,
-          { paddingBottom: 12 + insets.bottom },
-        ]}
+      {/* CTA Bar */}
+      <LinearGradient
+        colors={["rgba(255,255,255,0.95)", "rgba(255,255,255,1)"]}
+        style={[styles.ctaBar, { paddingBottom: 12 + insets.bottom }]}
       >
         <View style={{ flex: 1 }}>
-          <Text style={styles.ctaTitle}>
-            {selectedSlot ? `${dayLabel}, ${selectedSlot.label}` : "Tarih & Saat seç"}
-          </Text>
-          <Text style={styles.ctaSub}>Kişi: {partySize}</Text>
+          <View style={styles.ctaTitleRow}>
+            <Ionicons name="calendar" size={18} color="#7B2C2C" />
+            <Text style={styles.ctaTitle}>
+              {selectedSlot ? `${dayLabel}, ${selectedSlot.label}` : "Tarih & Saat Seçin"}
+            </Text>
+          </View>
+          <View style={styles.ctaSubRow}>
+            <Ionicons name="people" size={14} color="#666666" />
+            <Text style={styles.ctaSub}>{partySize} Kişi</Text>
+          </View>
         </View>
 
         <TouchableOpacity
@@ -479,206 +538,217 @@ export default function RestaurantDetailScreen() {
           style={[styles.ctaBtn, !selectedSlot && styles.ctaBtnDisabled]}
         >
           <Text style={styles.ctaBtnText}>Devam Et</Text>
+          <Ionicons name="arrow-forward" size={18} color="#fff" />
         </TouchableOpacity>
-      </View>
+      </LinearGradient>
     </View>
   );
 }
 
-const cardShadow = Platform.select({
-  ios: {
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-  },
-  android: { elevation: 3 },
-});
-
 const styles = StyleSheet.create({
-  screen: { backgroundColor: lightTheme.colors.background, flex: 1 },
+  screen: { backgroundColor: "#FAFAFA", flex: 1 },
+
   center: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: lightTheme.colors.background,
-    padding: 16,
+    backgroundColor: "#FAFAFA",
+    padding: 32,
+    gap: 12,
   },
-  emptyText: { color: lightTheme.colors.textSecondary },
-
-  headerCard: {
-    marginTop: 12,
-    marginHorizontal: H_PADDING,
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: lightTheme.colors.surface,
-    ...cardShadow,
-  },
-  headerRow: {
+  loadingText: { marginTop: 12, fontSize: 15, color: "#666666" },
+  emptyTitle: { fontSize: 20, fontWeight: "700", color: "#1A1A1A", marginTop: 16 },
+  emptyText: { color: "#666666", textAlign: "center", marginBottom: 24 },
+  backButton: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    backgroundColor: "#7B2C2C",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
     gap: 8,
   },
-  title: { fontSize: 20, fontWeight: "800", color: lightTheme.colors.text },
-  metaRow: { flexDirection: "row", gap: 8, marginTop: 8, flexWrap: "wrap" },
-  metaChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: "rgba(0,0,0,0.04)",
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.06)",
-    color: lightTheme.colors.text,
-  },
-  metaChipPrimary: {
-    backgroundColor: lightTheme.colors.primary,
-    color: "#fff",
-    borderColor: lightTheme.colors.primary,
-  },
-  addressText: { marginTop: 8, color: lightTheme.colors.textSecondary, lineHeight: 20 },
+  backButtonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
 
-  galleryWrap: {
-    position: "relative",
-    backgroundColor: lightTheme.colors.surface,
-    marginTop: 12,
+  galleryWrap: { position: "relative", backgroundColor: "#fff" },
+  photoFull: { width: PHOTO_W, height: PHOTO_H, backgroundColor: "#E6E6E6" },
+  favoriteOverlay: { position: "absolute", right: 16, top: 16 },
+  favoriteButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  photoFull: {
-    width: PHOTO_W,
-    height: PHOTO_H,
-    backgroundColor: lightTheme.colors.muted,
-  },
-  gradBottom: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 84,
-    backgroundColor: "rgba(0,0,0,0.10)",
-  },
+  gradBottom: { position: "absolute", bottom: 0, left: 0, right: 0, height: 100 },
   dots: {
     position: "absolute",
-    bottom: 10,
+    bottom: 16,
     left: 0,
     right: 0,
     flexDirection: "row",
     justifyContent: "center",
     gap: 6,
   },
-  dot: {
-    height: 5,
-    width: 12,
-    borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.45)",
+  dot: { height: 6, width: 6, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.5)" },
+  dotActive: { backgroundColor: "#fff", width: 24 },
+  photoPlaceholder: {
+    height: PHOTO_H,
+    backgroundColor: "#E6E6E6",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
   },
-  dotActive: { backgroundColor: "#fff", width: 26 },
+  photoPlaceholderText: { color: "#999999", fontSize: 14 },
+
+  headerCard: {
+    marginTop: -24,
+    marginHorizontal: H_PADDING,
+    padding: 18,
+    borderRadius: 20,
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  headerTop: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 12 },
+  title: { fontSize: 22, fontWeight: "800", color: "#1A1A1A", marginBottom: 6 },
+  addressRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  addressText: { flex: 1, color: "#666666", lineHeight: 20, fontSize: 14 },
+  favoriteButtonCard: { padding: 8 },
+  metaRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
+  metaChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: "#FAFAFA",
+    borderWidth: 1,
+    borderColor: "#E6E6E6",
+    gap: 6,
+  },
+  metaChipText: { fontSize: 13, fontWeight: "600", color: "#1A1A1A" },
+  metaChipPrimary: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: "#7B2C2C",
+    gap: 6,
+  },
+  metaChipTextPrimary: { fontSize: 13, fontWeight: "700", color: "#fff" },
 
   card: {
-    marginTop: 12,
+    marginTop: 16,
     marginHorizontal: H_PADDING,
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: lightTheme.colors.surface,
-    ...cardShadow,
+    padding: 18,
+    borderRadius: 20,
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
-
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "800",
-    marginBottom: 8,
-    color: lightTheme.colors.text,
-  },
-  description: { color: lightTheme.colors.textSecondary, lineHeight: 22 },
+  cardHeader: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 16 },
+  sectionTitle: { fontSize: 17, fontWeight: "800", color: "#1A1A1A" },
+  description: { color: "#666666", lineHeight: 24, fontSize: 15 },
 
   menuCard: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    padding: 14,
+    padding: 16,
     borderRadius: 16,
-    backgroundColor: "#fff",
-    ...cardShadow,
+    backgroundColor: "#FAFAFA",
+    borderWidth: 1,
+    borderColor: "#E6E6E6",
   },
-  menuTitle: { fontSize: 15, fontWeight: "700", color: lightTheme.colors.text },
-  menuDesc: { marginTop: 4, color: lightTheme.colors.textSecondary, lineHeight: 20 },
-  menuPricePill: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
+  menuIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#FFF5F5",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: lightTheme.colors.primary,
-    minWidth: 92,
   },
-  menuPriceText: { color: "#fff", fontWeight: "800" },
-  menuPriceSub: { color: "#fff", opacity: 0.9, fontSize: 12 },
-
-  controlsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-    gap: 8,
-    flexWrap: "wrap",
-  },
-  dateControls: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    flexShrink: 1,
-    minWidth: 0,
-    flex: 1,
-  },
-  partyControls: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  iconBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-    backgroundColor: "rgba(0,0,0,0.04)",
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.06)",
-  },
-  disabled: { opacity: 0.45 },
-  iconText: { fontSize: 16, fontWeight: "800", color: lightTheme.colors.text },
-  dateText: {
-    fontWeight: "700",
-    color: lightTheme.colors.text,
-    paddingHorizontal: 6,
-    flexShrink: 1,
-    minWidth: 0,
-    textAlign: "center",
-  },
-  partyText: {
-    color: lightTheme.colors.text,
-    minWidth: 70,
-    textAlign: "center",
-    fontWeight: "600",
-  },
-
-  slot: {
+  menuTitle: { fontSize: 16, fontWeight: "700", color: "#1A1A1A", marginBottom: 4 },
+  menuDesc: { color: "#666666", lineHeight: 20, fontSize: 13 },
+  menuPricePill: {
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 12,
-    backgroundColor: "#fff",
-    marginRight: 8,
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#7B2C2C",
+    minWidth: 80,
   },
-  slotDisabled: { opacity: 0.35 },
-  slotSelected: {
-    backgroundColor: "rgba(0,0,0,0.02)",
-    borderColor: lightTheme.colors.primary,
-  },
-  slotText: { fontWeight: "700", color: lightTheme.colors.text },
-  slotTextSelected: { color: lightTheme.colors.primary },
+  menuPriceText: { color: "#fff", fontWeight: "800", fontSize: 15 },
+  menuPriceSub: { color: "#fff", opacity: 0.9, fontSize: 12 },
 
-  contactText: { marginBottom: 2, color: lightTheme.colors.textSecondary, lineHeight: 20 },
-  muted: { color: lightTheme.colors.textSecondary, paddingHorizontal: 4 },
+  controlsContainer: { flexDirection: "row", gap: 12, marginBottom: 16 },
+  controlCard: {
+    flex: 1,
+    backgroundColor: "#FAFAFA",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#E6E6E6",
+  },
+  controlLabel: { fontSize: 12, fontWeight: "600", color: "#666666", marginBottom: 8 },
+  dateControls: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  partyControls: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  controlButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#E6E6E6",
+  },
+  disabled: { opacity: 0.4 },
+  dateDisplay: { alignItems: "center" },
+  dateText: { fontSize: 15, fontWeight: "700", color: "#1A1A1A" },
+  dayText: { fontSize: 11, color: "#666666", marginTop: 2 },
+  partyDisplay: { flexDirection: "row", alignItems: "center", gap: 6 },
+  partyText: { fontSize: 16, fontWeight: "700", color: "#1A1A1A" },
+
+  slotsLoading: { alignItems: "center", paddingVertical: 20, gap: 8 },
+  slotsLoadingText: { color: "#666666", fontSize: 13 },
+  slotsList: { paddingVertical: 8 },
+  slot: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: "#FAFAFA",
+    marginRight: 10,
+    borderWidth: 2,
+    borderColor: "#E6E6E6",
+    gap: 6,
+  },
+  slotDisabled: { opacity: 0.4 },
+  slotSelected: { backgroundColor: "#7B2C2C", borderColor: "#7B2C2C" },
+  slotText: { fontWeight: "700", color: "#1A1A1A", fontSize: 14 },
+  slotTextSelected: { color: "#fff" },
+
+  emptyStateSmall: { alignItems: "center", gap: 8, paddingVertical: 16 },
+  muted: { color: "#888888", fontSize: 13 },
+
+  contactItem: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 },
+  contactText: { color: "#1A1A1A", fontSize: 14 },
 
   ctaBar: {
     position: "absolute",
@@ -686,36 +756,27 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     paddingHorizontal: H_PADDING,
-    paddingTop: 10,
-    backgroundColor: "rgba(255,255,255,0.98)",
+    paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: "rgba(0,0,0,0.06)",
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    ...cardShadow,
   },
-  ctaTitle: { fontWeight: "800", color: lightTheme.colors.text },
-  ctaSub: { color: lightTheme.colors.textSecondary },
+  ctaTitleRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 },
+  ctaTitle: { fontSize: 15, fontWeight: "800", color: "#1A1A1A" },
+  ctaSubRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  ctaSub: { fontSize: 13, color: "#666666" },
 
   ctaBtn: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 16,
-    backgroundColor: lightTheme.colors.primary,
-    minWidth: 148,
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#7B2C2C",
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 12,
   },
   ctaBtnDisabled: { opacity: 0.5 },
-  ctaBtnText: { color: "#fff", fontWeight: "800" },
-
-  photoPlaceholder: {
-    height: PHOTO_H,
-    borderRadius: 12,
-    backgroundColor: lightTheme.colors.muted,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  photoPlaceholderText: { color: lightTheme.colors.textSecondary },
+  ctaBtnText: { color: "#fff", fontWeight: "800", fontSize: 15 },
 });

@@ -1,11 +1,5 @@
 // src/api/restaurants.ts
-//
-// Bu modül Rezzy backend'ine yönelik restoran uç noktalarıyla iletişim
-// kurmak için axios üzerinden HTTP istekleri gönderir. Ortak
-// `api` örneği `src/api/client.ts` dosyasında tanımlıdır ve tüm
-// isteklerde JWT token'ını header'a eklemek için bir interceptor
-// içerir. Böylece burada ayrıca baseURL ayarlamak veya token eklemek
-// zorunda kalmayız.
+import { api } from "./client";
 
 export type OpeningHour = {
   day: number;
@@ -15,12 +9,11 @@ export type OpeningHour = {
 };
 export type ListRestaurantsParams = {
   city?: string;
-  query?: string;   // ⬅️ yeni: isim/arama metni
+  query?: string;
   limit?: number;
   cursor?: string;
 };
 
-// Restoran tipi. Panelde kullanılan alanları içerir.
 export interface Restaurant {
   _id: string;
   name: string;
@@ -48,18 +41,12 @@ export interface Restaurant {
 
 export type TableItem = { name: string; capacity: number; isActive?: boolean };
 
-import { api } from "./client";
-
-// Axios yanıtları `data` alanı içerisinde döner; bu yardımcı fonksiyon
-// gelen yanıttan `data` alanını döndürerek çağıran kodun yalnızca veri
-// ile ilgilenmesini sağlar. Tip güvenliği için generics kullanıyoruz.
+// ---- helpers ----
 async function unwrap<T>(promise: Promise<{ data: T }>): Promise<T> {
   const res = await promise;
   return res.data;
 }
 
-// Bazı durumlarda kimlik parametresi `{ _id: new ObjectId('...'), name: ... }`
-// şeklinde gelebilir. Bu yardımcı, geçerli bir Mongo ObjectId'yi çıkartır.
 export function normalizeMongoId(input: any): string {
   if (!input) return "";
   if (typeof input === "object" && input !== null) {
@@ -72,7 +59,6 @@ export function normalizeMongoId(input: any): string {
   return str;
 }
 
-// YYYY-MM-DD formatına normalize et
 const toYMD = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
@@ -83,7 +69,6 @@ export type AvailabilitySlot = {
   isAvailable: boolean;
   _fallback?: boolean;
 };
-
 export type AvailabilityResponse = {
   date: string;
   partySize: number;
@@ -92,60 +77,94 @@ export type AvailabilityResponse = {
 };
 
 // ---------- REST çağrıları ----------
-
-// Tüm restoranları listele (şehir + arama desteği)
 export async function listRestaurants(params: ListRestaurantsParams = {}): Promise<Restaurant[]> {
   return unwrap(api.get<Restaurant[]>("/restaurants", { params }));
 }
 
-// Belirli bir restoranın detayını getirir.
 export async function getRestaurant(id: string): Promise<Restaurant> {
   const rid = normalizeMongoId(id);
   return unwrap(api.get<Restaurant>(`/restaurants/${rid}`));
 }
 
-// Genel restoran bilgilerini güncelle. Geriye güncellenmiş restoran
-// nesnesini döndürür.
-export async function updateRestaurant(id: string, payload: any): Promise<Restaurant> {
+/**
+ * Genel bilgileri günceller.
+ * UI tarafında RP_General formunda tutulan alan isimlerini bozma:
+ * - Düz alanlar: name, email, phone, city, address, description, iban, ibanName, bankName, mapAddress, googleMapsUrl
+ * - Konum: _lat, _lng (string/number)
+ * - Mevcut lokasyon tipi: _existingLocation (GeoJSON Point ya da {lat,lng})
+ */
+export async function updateRestaurant(id: string, form: any): Promise<Restaurant> {
   const rid = normalizeMongoId(id);
+
+  // Sadece backend’in beklediği düz alanları gönder
+  const FLAT_FIELDS = [
+    "name",
+    "email",
+    "phone",
+    "city",
+    "address",
+    "description",
+    "iban",
+    "ibanName",
+    "bankName",
+    "mapAddress",
+    "googleMapsUrl",
+  ] as const;
+
+  const payload: any = {};
+  for (const k of FLAT_FIELDS) {
+    const v = form?.[k];
+    if (v !== undefined) payload[k] = v;
+  }
+
+  // Konum (lat/lng) – sayıya çevir
+  const latRaw = form?._lat;
+  const lngRaw = form?._lng;
+  const lat = latRaw === "" || latRaw == null ? null : Number(latRaw);
+  const lng = lngRaw === "" || lngRaw == null ? null : Number(lngRaw);
+
+  if (Number.isFinite(lat) && Number.isFinite(lng)) {
+    const existing = form?._existingLocation;
+    const isGeoJSONPoint =
+      existing &&
+      typeof existing === "object" &&
+      existing.type === "Point" &&
+      Array.isArray(existing.coordinates) &&
+      existing.coordinates.length === 2;
+
+    payload.location = isGeoJSONPoint
+      ? { type: "Point", coordinates: [lng, lat] } // GeoJSON
+      : { lat, lng }; // Düz obje
+  }
+
   return unwrap(api.put<Restaurant>(`/restaurants/${rid}`, payload));
 }
 
-// Çalışma saatlerini güncelle.
 export async function updateOpeningHours(id: string, hours: OpeningHour[]): Promise<Restaurant> {
   const rid = normalizeMongoId(id);
   return unwrap(api.put<Restaurant>(`/restaurants/${rid}/opening-hours`, { openingHours: hours }));
 }
 
-// Masa listesini güncelle.
 export async function updateTables(id: string, tables: any[]): Promise<Restaurant> {
   const rid = normalizeMongoId(id);
   return unwrap(api.put<Restaurant>(`/restaurants/${rid}/tables`, { tables }));
 }
 
-// Rezervasyon politikalarını güncelle. Örneğin minPartySize, maxPartySize ve
-// diğer politikalar `payload` içerisinde gönderilebilir. Geriye
-// güncellenmiş restoran nesnesi döner.
 export async function updatePolicies(id: string, payload: any): Promise<Restaurant> {
   const rid = normalizeMongoId(id);
   return unwrap(api.put<Restaurant>(`/restaurants/${rid}/policies`, payload));
 }
 
-// Menüler listesini güncelle. Geriye güncellenmiş restoran nesnesi döner.
 export async function updateMenus(id: string, menus: any[]): Promise<Restaurant> {
   const rid = normalizeMongoId(id);
   return unwrap(api.put<Restaurant>(`/restaurants/${rid}/menus`, { menus }));
 }
 
-// Fotoğraf ekle. Mobile tarafında base64 veya URI değerini doğrudan
-// gönderiyoruz. Geriye güncellenmiş restoran nesnesi döner.
-export async function addPhoto(id: string, uri: string, fileName: string, mimeType: string): Promise<Restaurant> {
+export async function addPhoto(id: string, uri: string, _fileName: string, _mimeType: string): Promise<Restaurant> {
   const rid = normalizeMongoId(id);
   return unwrap(api.post<Restaurant>(`/restaurants/${rid}/photos`, { fileUrl: uri }));
 }
 
-// Fotoğraf kaldır. Axios ile DELETE metodunda gövde göndermek için
-// `data` alanı kullanılmalı.
 export async function removePhoto(id: string, url: string): Promise<Restaurant> {
   const rid = normalizeMongoId(id);
   return unwrap(
@@ -157,14 +176,6 @@ export async function removePhoto(id: string, url: string): Promise<Restaurant> 
   );
 }
 
-/**
- * UYGUNLUK (SLOT) ÇEKME
- *
- * Ekranda şu imzayla çağırıyorsun:
- *   getAvailability({ id: restaurantId, date, partySize })
- * Aşağıdaki fonksiyon hem bu obje imzasını, hem de (id, date, partySize)
- * şeklindeki klasik imzayı destekler.
- */
 export async function getAvailability(
   input: { id: string; date: string | Date; partySize: number } | string,
   dateMaybe?: string | Date,
@@ -191,7 +202,6 @@ export async function getAvailability(
     params: { date: dateStr, partySize: Math.max(1, Number(partySizeVal) || 1) },
   });
 
-  // Debug log (gerekirse kapat)
   console.log("AVAIL req ->", `/restaurants/${rid}/availability`, { date: dateStr, partySize: partySizeVal });
   console.log("AVAIL res ->", res.data?.debug || "(no debug)", Array.isArray(res.data?.slots) ? res.data.slots.length : 0);
 
