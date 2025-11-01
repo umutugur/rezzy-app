@@ -20,6 +20,8 @@ import { useRoute, useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import dayjs from "dayjs";
 import "dayjs/locale/tr";
+import { isPast } from "../utils/format";
+import { useNotifications } from "../store/useNotifications";
 import {
   getRestaurant,
   getAvailability,
@@ -82,6 +84,19 @@ export default function RestaurantDetailScreen() {
 
   const [favLoading, setFavLoading] = useState<boolean>(false);
   const [favs, setFavs] = useState<FavoriteRestaurant[]>([]);
+
+  // --- In-app toast helper: store üzerinden addFromPush ile tetikle ---
+  const fireToast = React.useCallback((title: string, body?: string) => {
+    try {
+      const api: any = (useNotifications as any)?.getState?.();
+      if (api?.addFromPush) {
+        api.addFromPush({ id: String(Date.now()), title, body });
+        return;
+      }
+    } catch {}
+    // store erişilemezse fallback
+    Alert.alert(title, body);
+  }, []);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
@@ -170,6 +185,14 @@ export default function RestaurantDetailScreen() {
 
   const onSelectSlot = (s: AvailabilitySlot) => {
     if (!s.isAvailable) return;
+    // Seçilen slotu gün ile birleştir -> ISO
+    const [h, m] = s.label.split(":");
+    const iso = dayjs(date).hour(Number(h)).minute(Number(m)).second(0).toISOString();
+    // Geçmiş kontrolü
+    if (isPast(iso)) {
+      fireToast("Geçmiş saat", "Geçmiş bir tarih/saat için rezervasyon yapılamaz.");
+      return;
+    }
     setSelectedSlot(s);
   };
 
@@ -178,6 +201,11 @@ export default function RestaurantDetailScreen() {
 
     const [h, m] = selectedSlot.label.split(":");
     const localDateTime = dayjs(date).hour(Number(h)).minute(Number(m)).second(0).toISOString();
+    // Geçmiş kontrolü (ikinci bariyer)
+    if (isPast(localDateTime)) {
+      fireToast("Geçmiş tarih/saat", "Lütfen ileri bir tarih ve saat seçin.");
+      return;
+    }
 
     if (!token) {
       Alert.alert("Giriş gerekli", "Rezervasyon oluşturmak için giriş yapmalısın.");

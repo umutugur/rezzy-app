@@ -30,11 +30,10 @@ import ContactScreen from "../screens/ContactScreen";
 import AboutScreen from "../screens/AboutScreen";
 import LicensesScreen from "../screens/LicensesScreen";
 import DeleteAccountScreen from "../screens/DeleteAccountScreen";
-
 import { useAuth } from "../store/useAuth";
 import { useNotifications } from "../store/useNotifications";
 import AppHeaderTitle from "../components/AppHeaderTitle";
-
+import AdminPanelNavigator from "./AdminPanelNavigator";
 const Stack = createNativeStackNavigator();
 const Tabs = createBottomTabNavigator();
 
@@ -163,7 +162,7 @@ export default function RootNavigator() {
             <Stack.Screen name="Rezervasyon - Özet" component={ReservationStep3Screen} />
             <Stack.Screen name="Rezervasyon Detayı" component={ReservationDetailScreen} />
             <Stack.Screen name="RestaurantPanel" component={RestaurantPanelNavigator} options={{ headerShown: false }}/>
-            <Stack.Screen name="AdminPanel" component={AdminPanelScreen} />
+            <Stack.Screen name="AdminPanel" component={AdminPanelNavigator} options={{ headerShown: false }} />
             <Stack.Screen name="Terms" component={TermsScreen} options={{ title: "Kullanım Koşulları" }} />
             <Stack.Screen name="Privacy" component={PrivacyPolicyScreen} options={{ title: "Gizlilik Politikası" }} />
             <Stack.Screen name="Help" component={HelpSupportScreen} options={{ title: "Yardım & Destek" }} />

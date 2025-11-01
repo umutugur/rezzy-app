@@ -94,6 +94,36 @@ export default function ProfileScreen() {
   const [manualRid, setManualRid] = useState("");
   const [manualArrived, setManualArrived] = useState("");
 
+  // ✅ Uygulama stiline uygun mesaj modalı (bilgi & hata & uyarı)
+  const [msgOpen, setMsgOpen] = useState(false);
+  const [msgTitle, setMsgTitle] = useState("");
+  const [msgBody, setMsgBody] = useState("");
+  const [msgKind, setMsgKind] = useState<"info" | "error" | "warn">("info");
+  const [msgOnRetry, setMsgOnRetry] = useState<null | (() => void)>(null);
+  const [msgRetryLabel, setMsgRetryLabel] = useState<string>("Tekrar Dene");
+  const showMsg = (title: string, body?: string) => {
+    setMsgKind("info");
+    setMsgTitle(title);
+    setMsgBody(body || "");
+    setMsgOnRetry(null);
+    setMsgOpen(true);
+  };
+  const showError = (title: string, body?: string, onRetry?: () => void, retryLabel: string = "Tekrar Dene") => {
+    setMsgKind("error");
+    setMsgTitle(title);
+    setMsgBody(body || "");
+    setMsgOnRetry(onRetry || null);
+    setMsgRetryLabel(retryLabel);
+    setMsgOpen(true);
+  };
+  const showWarn = (title: string, body?: string) => {
+    setMsgKind("warn");
+    setMsgTitle(title);
+    setMsgBody(body || "");
+    setMsgOnRetry(null);
+    setMsgOpen(true);
+  };
+
   useEffect(() => {
     (async () => {
       try {
@@ -592,7 +622,16 @@ export default function ProfileScreen() {
                 setQrArrivedInput("");
                 setQrArrivedOpen(true);
               } catch (e: any) {
-                Alert.alert("Hata", e?.response?.data?.message || e?.message || "QR geçersiz");
+                setQrOpen(false);
+                showError(
+                  "Geçersiz QR",
+                  e?.response?.data?.message || e?.message || "QR kodu doğrulanamadı.",
+                  () => {
+                    // tekrar tarama
+                    setQrOpen(true);
+                  },
+                  "Tekrar Tara"
+                );
               }
             }}
           />
@@ -643,7 +682,7 @@ export default function ProfileScreen() {
                 onPress={async () => {
                   const n = Number(qrArrivedInput.trim());
                   if (!Number.isFinite(n) || n < 0) {
-                    Alert.alert("Uyarı", "Geçerli bir sayı girin (0 veya daha büyük).");
+                    showWarn("Uyarı", "Geçerli bir sayı girin (0 veya daha büyük).");
                     return;
                   }
                   try {
@@ -651,9 +690,9 @@ export default function ProfileScreen() {
                     setQrArrivedOpen(false);
                     setQrPayload(null);
                     setQrArrivedInput("");
-                    Alert.alert("OK", "Check-in yapıldı.");
+                    showMsg("Check-in tamam", "Giriş başarıyla kaydedildi.");
                   } catch (e: any) {
-                    Alert.alert("Hata", e?.response?.data?.message || e?.message || "Check-in başarısız");
+                    showError("Check-in başarısız", e?.response?.data?.message || e?.message || "İşlem tamamlanamadı.");
                   }
                 }}
               />
@@ -709,23 +748,86 @@ export default function ProfileScreen() {
                 title="Check-in"
                 onPress={async () => {
                   if (!manualRid.trim()) {
-                    Alert.alert("Uyarı", "Rezervasyon ID gerekli.");
+                    showWarn("Uyarı", "Rezervasyon ID gerekli.");
                     return;
                   }
                   const n = Number(manualArrived.trim());
                   if (!Number.isFinite(n) || n < 0) {
-                    Alert.alert("Uyarı", "Geçerli bir sayı girin (0 veya daha büyük).");
+                    showWarn("Uyarı", "Geçerli bir sayı girin (0 veya daha büyük).");
                     return;
                   }
                   try {
                     await checkinManual(String(manualRid.trim()), n);
                     setManualOpen(false);
-                    Alert.alert("OK", "Check-in tamam.");
+                    showMsg("Check-in tamam", "Giriş başarıyla kaydedildi.");
                   } catch (e: any) {
-                    Alert.alert("Hata", e?.response?.data?.message || e?.message || "İşlem olmadı");
+                    showError("İşlem başarısız", e?.response?.data?.message || e?.message || "Check-in gerçekleştirilemedi.");
                   }
                 }}
               />
+            </View>
+          </View>
+        </View>
+      </Modal>
+      {/* ✅ Uygulama stili mesaj modalı (bilgi/hata/uyarı) */}
+      <Modal visible={msgOpen} transparent animationType="fade" onRequestClose={() => setMsgOpen(false)}>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.6)",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 20,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: 14,
+              width: "100%",
+              padding: 16,
+              borderWidth: 1,
+              borderColor:
+                msgKind === "error"
+                  ? "#FCA5A5"
+                  : msgKind === "warn"
+                  ? "#FDE68A"
+                  : T.colors.border,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: "800",
+                color:
+                  msgKind === "error"
+                    ? "#B91C1C"
+                    : msgKind === "warn"
+                    ? "#92400E"
+                    : T.colors.text,
+                marginBottom: 8,
+              }}
+            >
+              {msgTitle || (msgKind === "error" ? "Hata" : msgKind === "warn" ? "Uyarı" : "Bilgi")}
+            </Text>
+            {!!msgBody && (
+              <Text style={{ color: T.colors.textSecondary, marginBottom: 12 }}>{msgBody}</Text>
+            )}
+            <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10 }}>
+              <SecondaryButton title="Kapat" onPress={() => setMsgOpen(false)} />
+              {msgOnRetry ? (
+                <PrimaryButton
+                  title={msgRetryLabel || "Tekrar Dene"}
+                  onPress={() => {
+                    const cb = msgOnRetry;
+                    setMsgOpen(false);
+                    setMsgOnRetry(null);
+                    if (cb) cb();
+                  }}
+                />
+              ) : (
+                <PrimaryButton title="Tamam" onPress={() => setMsgOpen(false)} />
+              )}
             </View>
           </View>
         </View>

@@ -27,16 +27,14 @@ export default function UploadChip({
 
     // ——— Deprecation uyumlu mediaTypes ———
     const mediaTypes =
-      // Yeni API mevcutsa onu kullan (SDK 54+)
-      (ImagePicker as any).MediaType?.Images ??
-      // Tipler eskiyse, geriye dönük fallback
-      ImagePicker.MediaTypeOptions.Images;
+  (ImagePicker as any).MediaType?.Images ??
+  ImagePicker.MediaTypeOptions.Images; // eski API fallback
 
-    const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes,
-      quality: 0.8,
-      selectionLimit: 1,
-    });
+const res = await ImagePicker.launchImageLibraryAsync({
+  mediaTypes,      // string veya dizi olduğu için TS hata vermez
+  quality: 0.8,
+  selectionLimit: 1,
+});
 
     console.log("[picker] canceled:", res.canceled);
     if (res.canceled || !res.assets?.[0]) return;

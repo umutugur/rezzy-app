@@ -64,7 +64,7 @@ export default function InAppToast({ onPressItem }: Props) {
           hide();
         }}
         style={{
-          backgroundColor: "#111827",
+          backgroundColor: "#7B2C2C",
           borderRadius: 14,
           paddingVertical: 12,
           paddingHorizontal: 12,
