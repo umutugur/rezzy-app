@@ -10,6 +10,9 @@ import {
   Pressable,
   StyleSheet,
   Animated,
+  TouchableOpacity,
+  Platform,
+  Linking,
 } from "react-native";
 import { useRoute } from "@react-navigation/native";
 import { Screen, Text } from "../components/Themed";
@@ -71,6 +74,14 @@ const STATUS_HELPER_TEXT: Record<NonNullable<Reservation["status"]>, string> = {
 type Selection = { person: number; menuId: string; price: number };
 type MenuLite = { _id: string; name: string; pricePerPerson: number };
 
+type InfoModalState = {
+  visible: boolean;
+  type: "success" | "error";
+  title: string;
+  message: string;
+  autoClose?: boolean; // başarıda otomatik kapanma
+} | null;
+
 export default function ReservationDetailScreen() {
   const route = useRoute<any>();
   const { id } = route.params as { id: string };
@@ -83,7 +94,27 @@ export default function ReservationDetailScreen() {
   const [qrLoading, setQrLoading] = React.useState(false);
   const [qrUrl, setQrUrl] = React.useState<string | null>(null);
 
+  const [infoModal, setInfoModal] = React.useState<InfoModalState>(null);
+  const modalScale = React.useRef(new Animated.Value(0.85)).current;
+  const modalOpacity = React.useRef(new Animated.Value(0)).current;
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
+
+  // Info modal animasyon + otomatik kapanma
+  React.useEffect(() => {
+    if (infoModal?.visible) {
+      modalScale.setValue(0.85);
+      modalOpacity.setValue(0);
+      Animated.parallel([
+        Animated.timing(modalScale, { toValue: 1, duration: 220, useNativeDriver: true }),
+        Animated.timing(modalOpacity, { toValue: 1, duration: 220, useNativeDriver: true }),
+      ]).start();
+
+      if (infoModal.autoClose) {
+        const t = setTimeout(() => setInfoModal(null), 1500);
+        return () => clearTimeout(t);
+      }
+    }
+  }, [infoModal?.visible]);
 
   React.useEffect(() => {
     if (!loading && r) {
@@ -139,6 +170,12 @@ export default function ReservationDetailScreen() {
   const canCancel = status === "pending";
   const canShowQR = status === "confirmed" || status === "arrived";
 
+  const showSuccess = (title: string, message: string, autoClose = true) =>
+    setInfoModal({ visible: true, type: "success", title, message, autoClose });
+
+  const showError = (title: string, message: string) =>
+    setInfoModal({ visible: true, type: "error", title, message });
+
   /* ---------- Actions ---------- */
 
   const handleReplace = async (file: { uri: string; name: string; type: string }) => {
@@ -148,9 +185,9 @@ export default function ReservationDetailScreen() {
       setData((prev: any) =>
         prev ? { ...prev, receiptUrl: res.receiptUrl, status: res.status as any } : prev
       );
-      Alert.alert("Başarılı", "Dekont yüklendi.");
+      showSuccess("Başarılı", "Dekont yüklendi.");
     } catch (e: any) {
-      Alert.alert("Hata", e?.message ?? "Yükleme başarısız");
+      showError("Hata", e?.message ?? "Yükleme başarısız");
     } finally {
       setUploading(false);
     }
@@ -168,9 +205,9 @@ export default function ReservationDetailScreen() {
             setCanceling(true);
             const out = await cancelReservation(id);
             setData((prev: any) => (prev ? { ...prev, status: out.status as any } : prev));
-            Alert.alert("İptal edildi", "Rezervasyonunuz iptal edildi.");
+            showSuccess("İptal edildi", "Rezervasyonunuz iptal edildi.");
           } catch (e: any) {
-            Alert.alert("Hata", e?.message ?? "İptal edilemedi.");
+            showError("Hata", e?.message ?? "İptal edilemedi.");
           } finally {
             setCanceling(false);
           }
@@ -186,27 +223,79 @@ export default function ReservationDetailScreen() {
       setQrUrl(url);
       setQrOpen(true);
     } catch (e: any) {
-      Alert.alert("Hata", e?.message ?? "QR alınamadı.");
+      showError("Hata", e?.message ?? "QR alınamadı.");
     } finally {
       setQrLoading(false);
     }
   };
 
-  /** 🧭 Her zaman Google Maps rota URL’i açar (app varsa app, yoksa web) */
-    const onDirections = async () => {
-  const rest = (r as any)?.restaurantId || (r as any)?.restaurant || {};
-  const url = buildMapsUrl({
-    googleMapsUrl: rest.googleMapsUrl,
-    lat: rest?.coordinates?.lat,   // number | undefined
-    lng: rest?.coordinates?.lng,   // number | undefined
-  });
+  /** 🧭 Platform-safe directions opener (Android/iOS) */
+  const onDirections = async () => {
+    const rest = (r as any)?.restaurantId || (r as any)?.restaurant || {};
+    const lat = typeof rest?.coordinates?.lat === "number" ? rest.coordinates.lat : undefined;
+    const lng = typeof rest?.coordinates?.lng === "number" ? rest.coordinates.lng : undefined;
+    const label = encodeURIComponent(rest?.name || "Hedef");
+    const gmUrl = rest?.googleMapsUrl as string | undefined;
 
-  if (!url) {
-    Alert.alert("Konum bulunamadı", "Restoran konumu mevcut değil.");
-    return;
-  }
-  await openInMaps(url);
-};
+    try {
+      // If we only have a Google Maps URL from backend, try it first
+      if (!lat || !lng) {
+        if (gmUrl) {
+          const can = await Linking.canOpenURL(gmUrl);
+          if (can) return Linking.openURL(gmUrl);
+        }
+        showError("Konum bulunamadı", "Restoran konumu mevcut değil.");
+        return;
+      }
+
+      if (Platform.OS === "android") {
+        // Prefer Google Maps navigation intent if available
+        const googleMapsScheme = "google.navigation:q=" + `${lat},${lng}`;
+        const canGoogleNav = await Linking.canOpenURL(googleMapsScheme);
+        if (canGoogleNav) {
+          await Linking.openURL(googleMapsScheme);
+          return;
+        }
+
+        // Fallback to geo: URI
+        const geoUri = `geo:${lat},${lng}?q=${lat},${lng}(${label})`;
+        const canGeo = await Linking.canOpenURL(geoUri);
+        if (canGeo) {
+          await Linking.openURL(geoUri);
+          return;
+        }
+
+        // Final fallback to HTTPS web directions
+        const webUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+        await Linking.openURL(webUrl);
+        return;
+      } else {
+        // iOS: Prefer Google Maps app if installed
+        const gmapsIOS = `comgooglemaps://?daddr=${lat},${lng}&directionsmode=driving`;
+        const canGmaps = await Linking.canOpenURL(gmapsIOS);
+        if (canGmaps) {
+          await Linking.openURL(gmapsIOS);
+          return;
+        }
+
+        // Apple Maps
+        const appleMaps = `http://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`;
+        const canApple = await Linking.canOpenURL(appleMaps);
+        if (canApple) {
+          await Linking.openURL(appleMaps);
+          return;
+        }
+
+        // Web fallback
+        const webUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+        await Linking.openURL(webUrl);
+        return;
+      }
+    } catch (e) {
+      showError("Yönlendirme açılamadı", "Cihazda harita uygulaması açılamadı.");
+    }
+  };
+
   /* ---------- Render helpers ---------- */
 
   const StatusBadge = ({ status }: { status: NonNullable<Reservation["status"]> }) => {
@@ -448,6 +537,59 @@ export default function ReservationDetailScreen() {
               </View>
             )}
           </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Info Modal (success/error) */}
+      <Modal
+        visible={!!infoModal?.visible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setInfoModal(null)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setInfoModal(null)}>
+          <Animated.View
+            onStartShouldSetResponder={() => true}
+            style={[
+              styles.modalContent,
+              { transform: [{ scale: modalScale }], opacity: modalOpacity },
+            ]}
+          >
+            <View
+              style={[
+                styles.iconBadge,
+                infoModal?.type === "success" ? styles.iconBadgeSuccess : styles.iconBadgeError,
+              ]}
+            >
+              <Ionicons
+                name={infoModal?.type === "success" ? "checkmark-circle" : "alert-circle"}
+                size={48}
+                color="#fff"
+              />
+            </View>
+
+            <Text
+              style={[
+                styles.modalTitle,
+                infoModal?.type === "success" ? { color: "#166534" } : { color: "#991B1B" },
+              ]}
+            >
+              {infoModal?.title}
+            </Text>
+
+            <Text style={{ color: REZZY.textMuted, marginVertical: 10, textAlign: "center" }}>
+              {infoModal?.message}
+            </Text>
+
+            {infoModal?.type === "error" && (
+              <TouchableOpacity
+                style={[styles.qrButton, { alignSelf: "center", backgroundColor: REZZY.danger }]}
+                onPress={() => setInfoModal(null)}
+              >
+                <Text style={styles.qrButtonText}>Tamam</Text>
+              </TouchableOpacity>
+            )}
+          </Animated.View>
         </Pressable>
       </Modal>
     </Screen>
@@ -761,6 +903,9 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700",
     color: REZZY.text,
+    textAlign: "center",
+    alignSelf: "center",
+    width: "100%",
   },
   closeButton: {
     padding: 4,
@@ -784,5 +929,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: REZZY.textMuted,
     textAlign: "center",
+  },
+  iconBadge: {
+    alignSelf: "center",
+    marginBottom: 12,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconBadgeSuccess: {
+    backgroundColor: "#16A34A",
+  },
+  iconBadgeError: {
+    backgroundColor: "#DC2626",
   },
 });

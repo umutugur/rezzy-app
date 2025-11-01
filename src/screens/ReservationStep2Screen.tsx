@@ -1,12 +1,13 @@
 import React from "react";
-import { View, ScrollView, ActivityIndicator, TouchableOpacity, StyleSheet } from "react-native";
+import { View, ScrollView, ActivityIndicator, TouchableOpacity, StyleSheet, Platform, Alert, ToastAndroid } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { Screen, Text } from "../components/Themed";
 import Button from "../components/Button";
 import { getRestaurant } from "../api/restaurants";
 import { useReservation } from "../store/useReservation";
 import { Ionicons } from "@expo/vector-icons";
+import { useShallow } from "zustand/react/shallow";
 
 /** ---- Renk Paleti (Rezzy ile uyumlu) ---- */
 const C = {
@@ -21,6 +22,7 @@ const C = {
 };
 
 type MenuItem = { _id: string; name: string; price: number };
+type Selection = { person: number; menuId: string };
 
 function parsePrice(input: any): number {
   if (input == null) return 0;
@@ -54,11 +56,21 @@ function parsePrice(input: any): number {
 export default function ReservationStep2Screen() {
   const insets = useSafeAreaInsets();
   const nav = useNavigation<any>();
-  const { restaurantId, partySize, selections } = useReservation();
+  const { restaurantId, partySize, selections, setSelection, setParty } = useReservation(
+    useShallow((s: any) => ({
+      restaurantId: s.restaurantId,
+      partySize: s.partySize,
+      selections: s.selections,
+      setSelection: s.setSelection,
+      setParty: s.setParty,
+    }))
+  );
 
   const [menus, setMenus] = React.useState<MenuItem[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [resetting, setResetting] = React.useState(true);
+  const [touched, setTouched] = React.useState(false);
 
   React.useEffect(() => {
     let alive = true;
@@ -96,6 +108,19 @@ export default function ReservationStep2Screen() {
     };
   }, [restaurantId]);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      // Ekrana her odaklanıldığında selections'ı sıfırla
+      setResetting(true);
+      setTouched(false);
+      // Aynı partySize ile boş selections kur (menuId="")
+      setParty(partySize);
+      // Bir sonraki microtask'te butonu tekrar değerlendirelim
+      setTimeout(() => setResetting(false), 0);
+      return () => {};
+    }, [partySize, restaurantId, setParty])
+  );
+
   const formatTL = (n: number) =>
     new Intl.NumberFormat("tr-TR", {
       style: "currency",
@@ -104,20 +129,37 @@ export default function ReservationStep2Screen() {
     }).format(isFinite(n) ? n : 0);
 
   const getSelectedFor = (personIndex: number) =>
-    selections.find((s) => s.person === personIndex)?.menuId;
+    (selections as Selection[]).find((s: Selection) => s.person === personIndex)?.menuId;
 
-  const allSelected =
-    selections.length === partySize && selections.every((s) => !!s.menuId);
+  const allSelected = React.useMemo(() => {
+    const arr = (selections as Selection[]) || [];
+    if (arr.length !== partySize) return false;
+    return arr.every((s) => typeof s.menuId === "string" && s.menuId.length > 0);
+  }, [selections, partySize]);
 
   const onSelect = (personIndex: number, menuId: string) => {
-    useReservation.getState().setSelection(personIndex, menuId);
+    setSelection(personIndex, menuId);
+    setTouched(true);
   };
 
   const scrollPadBottom = insets.bottom + 88;
 
+  const handleContinue = React.useCallback(() => {
+    // Ek güvenlik: iOS/Android — disabled bypass’ını engelle
+    if (!allSelected) {
+      if (Platform.OS === "android") {
+        ToastAndroid.show("Lütfen tüm kişiler için menü seçin.", ToastAndroid.SHORT);
+      } else {
+        Alert.alert("Eksik seçim", "Lütfen tüm kişiler için menü seçin.");
+      }
+      return;
+    }
+    nav.navigate("Rezervasyon - Özet");
+  }, [allSelected, nav]);
+
   return (
     <Screen topPadding="flat" style={{ backgroundColor: C.bg }}>
-      {/* Başlık Bloğu (Bookings/ReservationDetail ile uyumlu) */}
+      {/* Başlık Bloğu */}
       <View style={styles.header}>
         <View style={styles.headerRow}>
           <Ionicons name="restaurant" size={24} color={C.primary} />
@@ -189,7 +231,7 @@ export default function ReservationStep2Screen() {
             })}
           </ScrollView>
 
-          {/* CTA Bar (ReservationDetail ile aynı mantık) */}
+          {/* CTA Bar */}
           <View
             pointerEvents="box-none"
             style={[
@@ -199,8 +241,10 @@ export default function ReservationStep2Screen() {
           >
             <Button
               title="Devam"
-              onPress={() => nav.navigate("Rezervasyon - Özet")}
-              disabled={!allSelected}
+              onPress={handleContinue}
+              disabled={resetting || !touched || !allSelected}
+              accessibilityLabel="Devam"
+              testID="step2-continue-button"
             />
           </View>
         </>

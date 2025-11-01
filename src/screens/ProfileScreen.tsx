@@ -12,6 +12,7 @@ import {
   Platform,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import * as Notifications from "expo-notifications";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Ionicons } from "@expo/vector-icons";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -61,7 +62,7 @@ export default function ProfileScreen() {
   const [prefs, setPrefs] = useState({
     push: user?.notificationPrefs?.push ?? true,
     sms: user?.notificationPrefs?.sms ?? false,
-    email: user?.notificationPrefs?.email ?? true,
+    email: user?.notificationPrefs?.email ?? false,
   });
   const [providers, setProviders] = useState<string[]>(user?.providers || []);
   const [resv, setResv] = useState<any[]>([]);
@@ -215,6 +216,37 @@ export default function ProfileScreen() {
     }
   }
 
+  // ---- Bildirim izin / tercih kontrolü ----
+  async function togglePushPref() {
+    try {
+      // Eğer açılacaksa izinleri kontrol et
+      if (!prefs.push) {
+        const current = await Notifications.getPermissionsAsync();
+        let granted = current.status === "granted";
+        if (!granted) {
+          const req = await Notifications.requestPermissionsAsync();
+          granted = req.status === "granted";
+        }
+        if (!granted) {
+          Alert.alert("İzin gerekli", "Push bildirimleri açmak için bildirim izni vermelisiniz.");
+          return;
+        }
+        // izin var → aç
+        setPrefs((p) => ({ ...p, push: true }));
+        try {
+          await patchMe({ notificationPrefs: { ...prefs, push: true } });
+        } catch {}
+      } else {
+        // kapat
+        setPrefs((p) => ({ ...p, push: false }));
+        try {
+          await patchMe({ notificationPrefs: { ...prefs, push: false } });
+        } catch {}
+      }
+    } catch (e) {
+      Alert.alert("Hata", "Bildirim tercihi güncellenemedi.");
+    }
+  }
   // ---- Restoran kısayolları ----
   async function ensureCam() {
     if (!permission?.granted) {
@@ -430,14 +462,15 @@ export default function ProfileScreen() {
           <Text style={{ fontWeight: "800", fontSize: 16, marginTop: 12, color: T.colors.text }}>
             Bildirim Tercihleri
           </Text>
-          <Toggle label="Push" value={!!prefs.push} onChange={() => setPrefs((p) => ({ ...p, push: !p.push }))} />
-          <Toggle label="SMS" value={!!prefs.sms} onChange={() => setPrefs((p) => ({ ...p, sms: !p.sms }))} />
-          <Toggle label="E-posta" value={!!prefs.email} onChange={() => setPrefs((p) => ({ ...p, email: !p.email }))} />
+          <Toggle label="Push" value={!!prefs.push} onChange={togglePushPref} />
+          <Toggle label="SMS (yakında)" value={!!prefs.sms} onChange={() => {}} disabled />
+          <Toggle label="E-posta (yakında)" value={!!prefs.email} onChange={() => {}} disabled />
 
           <View style={{ flexDirection: "row", gap: 10, marginTop: 12 }}>
             <PrimaryButton title={loading ? "Kaydediliyor..." : "Kaydet"} onPress={onSave} />
           </View>
         </Section>
+
       )}
 
       {/* Şifre Değiştirme — yalnız password provider */}
@@ -894,11 +927,29 @@ function SecondaryButton({ title, onPress }: { title: string; onPress: () => voi
   );
 }
 
-function Toggle({ label, value, onChange }: { label: string; value: boolean; onChange: () => void }) {
+function Toggle({
+  label,
+  value,
+  onChange,
+  disabled = false,
+}: {
+  label: string;
+  value: boolean;
+  onChange: () => void;
+  disabled?: boolean;
+}) {
   return (
     <TouchableOpacity
-      onPress={onChange}
-      style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 10 }}
+      onPress={disabled ? undefined : onChange}
+      activeOpacity={disabled ? 1 : 0.7}
+      style={{
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        paddingVertical: 10,
+        opacity: disabled ? 0.5 : 1,
+      }}
+      disabled={disabled}
     >
       <Text style={{ color: T.colors.text }}>{label}</Text>
       <View

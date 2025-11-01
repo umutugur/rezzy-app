@@ -44,6 +44,9 @@ export default function Button({
 }: Props) {
   const tokens = lightTheme;
 
+  // 🔒 Hem disabled hem de loading durumunda kilitle
+  const isDisabled = disabled || loading;
+
   const sz = (() => {
     switch (size) {
       case "sm": return { height: 40, padH: 12, text: 14, radius: tokens.radius.md };
@@ -54,22 +57,22 @@ export default function Button({
 
   const palette = (() => {
     const c = tokens.colors;
-    const disabledBg = "#E5E7EB";
+    const disabledBg = "#D1D5DB";
     const disabledText = "#9CA3AF";
     const common = { borderWidth: 0, borderColor: "transparent" as string };
-    if (disabled) return { ...common, bg: disabledBg, text: disabledText, ripple: "rgba(0,0,0,0.08)" };
+    if (isDisabled) return { ...common, bg: disabledBg, text: disabledText, ripple: undefined as any };
     switch (variant) {
-      case "primary":  return { ...common, bg: c.primary, text: "#fff", ripple: "rgba(255,255,255,0.2)" };
-      case "secondary":return { ...common, bg: c.primarySoft, text: c.primary, ripple: "rgba(123,44,44,0.15)" };
-      case "outline":  return { borderWidth: 1, borderColor: c.primary, bg: "transparent", text: c.primary, ripple: "rgba(123,44,44,0.15)" };
-      case "ghost":    return { ...common, bg: "transparent", text: c.primary, ripple: "rgba(123,44,44,0.12)" };
-      case "danger":   return { ...common, bg: tokens.colors.error, text: "#fff", ripple: "rgba(255,255,255,0.2)" };
-      default:         return { ...common, bg: c.primary, text: "#fff", ripple: "rgba(255,255,255,0.2)" };
+      case "primary":   return { ...common, bg: c.primary,     text: "#fff", ripple: "rgba(255,255,255,0.2)" };
+      case "secondary": return { ...common, bg: c.primarySoft, text: c.primary, ripple: "rgba(123,44,44,0.15)" };
+      case "outline":   return { borderWidth: 1, borderColor: c.primary, bg: "transparent", text: c.primary, ripple: "rgba(123,44,44,0.15)" };
+      case "ghost":     return { ...common, bg: "transparent", text: c.primary, ripple: "rgba(123,44,44,0.12)" };
+      case "danger":    return { ...common, bg: tokens.colors.error, text: "#fff", ripple: "rgba(255,255,255,0.2)" };
+      default:          return { ...common, bg: c.primary,     text: "#fff", ripple: "rgba(255,255,255,0.2)" };
     }
   })();
 
   const handlePress = () => {
-    if (disabled || loading) return;
+    if (isDisabled) return; // iOS + Android hard block
     if (haptic) Haptics.selectionAsync().catch(() => {});
     onPress?.();
   };
@@ -78,10 +81,14 @@ export default function Button({
     <Pressable
       onPress={handlePress}
       hitSlop={hitSlop}
-      disabled={disabled || loading}
-      android_ripple={Platform.OS === "android" ? { color: palette.ripple, borderless: false } : undefined}
+      disabled={isDisabled}
+      android_ripple={
+        Platform.OS === "android" && !isDisabled
+          ? { color: palette.ripple as any, borderless: false }
+          : undefined
+      }
       accessibilityRole="button"
-      accessibilityState={{ disabled: disabled || loading, busy: loading }}
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
       accessibilityLabel={accessibilityLabel || title}
       testID={testID}
       style={({ pressed }) => [
@@ -97,13 +104,12 @@ export default function Button({
           flexDirection: "row",
           gap: 8,
           ...(fullWidth ? { alignSelf: "stretch" } : { alignSelf: "flex-start" }),
-          // ALWAYS provide an array for transform
           transform:
-            pressed && !disabled && !loading && (variant === "primary" || variant === "danger")
+            pressed && !isDisabled && (variant === "primary" || variant === "danger")
               ? [{ scale: 0.99 }]
               : [],
-          opacity: disabled ? 0.65 : 1,
-          ...(variant === "primary" || variant === "danger" || variant === "secondary"
+          opacity: isDisabled ? 0.6 : 1, // görünür şekilde kilitli
+          ...(!isDisabled && (variant === "primary" || variant === "danger" || variant === "secondary")
             ? tokens.shadows.sm
             : undefined),
         } as ViewStyle,
