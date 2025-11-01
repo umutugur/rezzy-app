@@ -60,7 +60,9 @@
     "plugins": [
       "expo-apple-authentication",
       "expo-notifications",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-font",
+      "expo-web-browser"
     ],
     "extra": {
       "googleClientIdAndroid": "323726747494-vdkp19mnbd5u77pb45snhnr6o1ud56pi.apps.googleusercontent.com",
