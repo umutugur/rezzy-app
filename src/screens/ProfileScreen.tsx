@@ -462,7 +462,7 @@ export default function ProfileScreen() {
           <Text style={{ fontWeight: "800", fontSize: 16, marginTop: 12, color: T.colors.text }}>
             Bildirim Tercihleri
           </Text>
-          <Toggle label="Push" value={!!prefs.push} onChange={togglePushPref} />
+          <Toggle label="Anlık Bildirimler" value={!!prefs.push} onChange={togglePushPref} />
           <Toggle label="SMS (yakında)" value={!!prefs.sms} onChange={() => {}} disabled />
           <Toggle label="E-posta (yakında)" value={!!prefs.email} onChange={() => {}} disabled />
 

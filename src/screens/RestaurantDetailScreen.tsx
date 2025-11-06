@@ -401,7 +401,7 @@ export default function RestaurantDetailScreen() {
                 {menus.map((m, idx) => (
                   <View key={`${m._id || m.title}-${idx}`} style={styles.menuCard}>
                     <View style={styles.menuIconCircle}>
-                      <Ionicons name="nutrition" size={24} color="#7B2C2C" />
+                      <Ionicons name="restaurant" size={24} color="#7B2C2C" />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.menuTitle}>{m.title}</Text>

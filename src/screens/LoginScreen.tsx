@@ -1,10 +1,20 @@
 import React from "react";
-import { View, Alert, Platform, Pressable, ActivityIndicator, Text as RNText } from "react-native";
+import {
+  View,
+  Platform,
+  Pressable,
+  ActivityIndicator,
+  Text as RNText,
+  Modal,
+  Animated,
+  Easing,
+} from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Screen, Text } from "../components/Themed";
 import Input from "../components/Input";
 import { login, googleSignIn, appleSignIn } from "../api/auth";
 import { useAuth } from "../store/useAuth";
+import { friendlyAuthError } from "../utils/errorText";
 
 import * as AppleAuthentication from "expo-apple-authentication";
 import * as Google from "expo-auth-session/providers/google";
@@ -12,7 +22,11 @@ import * as WebBrowser from "expo-web-browser";
 import { makeRedirectUri } from "expo-auth-session";
 import { registerPushToken } from "../hooks/usePushToken";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
-import { GOOGLE_ANDROID_CLIENT_ID, GOOGLE_IOS_CLIENT_ID, GOOGLE_WEB_CLIENT_ID } from "../config/keys";
+import {
+  GOOGLE_ANDROID_CLIENT_ID,
+  GOOGLE_IOS_CLIENT_ID,
+  GOOGLE_WEB_CLIENT_ID,
+} from "../config/keys";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -22,14 +36,37 @@ export default function LoginScreen() {
   const consumeIntended = useAuth((s) => s.consumeIntended);
   const clearAuth = useAuth((s) => s.clear);
 
-  const [email, setEmail] = React.useState("new-owner@rezzy.app");
-  const [password, setPassword] = React.useState("123456");
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [gLoading, setGLoading] = React.useState(false);
   const [aLoading, setALoading] = React.useState(false);
+  const [showPassword, setShowPassword] = React.useState(false);
+
+  // ------- Modal (Alert yerine) -------
+  const [modalVisible, setModalVisible] = React.useState(false);
+  const [modalMessage, setModalMessage] = React.useState<string>("");
+
+  const showModal = (msg: string) => {
+    setModalMessage(msg);
+    setModalVisible(true);
+  };
+
+  // ------- Shake animation (login hatasında) -------
+  const shakeAnim = React.useRef(new Animated.Value(0)).current;
+  const triggerShake = () => {
+    Animated.sequence([
+      Animated.timing(shakeAnim, { toValue: 8, duration: 60, easing: Easing.linear, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -8, duration: 60, easing: Easing.linear, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 4, duration: 60, easing: Easing.linear, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 0, duration: 60, easing: Easing.linear, useNativeDriver: true }),
+    ]).start();
+  };
 
   const afterAuthNavigate = async () => {
-    try { await registerPushToken(); } catch {}
+    try {
+      await registerPushToken();
+    } catch {}
     const intended = await consumeIntended();
 
     const TAB_SCREENS = new Set(["Keşfet", "Rezervasyonlar", "Profil"]);
@@ -51,12 +88,14 @@ export default function LoginScreen() {
   const onLogin = async () => {
     try {
       setLoading(true);
-      // ⬇️ refreshToken da geliyor
       const { token, refreshToken, user } = await login(email, password);
-      await setAuth(token, user, refreshToken); // ⬅️ 3. argüman eklendi
+      await setAuth(token, user, refreshToken);
       await afterAuthNavigate();
     } catch (e: any) {
-      Alert.alert("Giriş Hatası", e?.response?.data?.message || "Giriş başarısız");
+      const raw = e?.response?.data?.message ?? e?.message;
+      const { title, message } = friendlyAuthError(raw);
+      showModal(`${title}\n\n${message}`);
+      triggerShake();
     } finally {
       setLoading(false);
     }
@@ -74,27 +113,32 @@ export default function LoginScreen() {
 
   React.useEffect(() => {
     if (!response) return;
+
     if (response.type === "success") {
       const anyResp = response as any;
       const idToken: string | undefined =
-        anyResp?.params?.id_token || anyResp?.authentication?.idToken || anyResp?.authentication?.params?.id_token;
+        anyResp?.params?.id_token ||
+        anyResp?.authentication?.idToken ||
+        anyResp?.authentication?.params?.id_token;
 
       (async () => {
         try {
           if (!idToken) throw new Error("Google id_token alınamadı.");
-          // ⬇️ refreshToken da geliyor
           const { token, refreshToken, user } = await googleSignIn(idToken);
-          await setAuth(token, user, refreshToken); // ⬅️ 3. argüman eklendi
+          await setAuth(token, user, refreshToken);
           await afterAuthNavigate();
         } catch (err: any) {
-          Alert.alert("Google Girişi Hatası", err?.response?.data?.message || err?.message);
+          const raw = err?.response?.data?.message ?? err?.message;
+          const { title, message } = friendlyAuthError(raw);
+          showModal(`${title}\n\n${message}`);
         } finally {
           setGLoading(false);
         }
       })();
     } else if (response.type === "error") {
       setGLoading(false);
-      Alert.alert("Google Hatası", "Google ile giriş başarısız.");
+      const { title, message } = friendlyAuthError("Google sign-in error");
+      showModal(`${title}\n\n${message}`);
     } else if (response.type === "dismiss") {
       setGLoading(false);
     }
@@ -106,7 +150,8 @@ export default function LoginScreen() {
       await promptAsync();
     } catch (e: any) {
       setGLoading(false);
-      Alert.alert("Google Girişi Hatası", e?.message || "Bilinmeyen hata");
+      const { title, message } = friendlyAuthError(e?.message || "Unknown error");
+      showModal(`${title}\n\n${message}`);
     }
   };
 
@@ -123,13 +168,14 @@ export default function LoginScreen() {
       const identityToken = credential.identityToken;
       if (!identityToken) throw new Error("Apple identityToken alınamadı.");
 
-      // ⬇️ refreshToken da geliyor
       const { token, refreshToken, user } = await appleSignIn(identityToken);
-      await setAuth(token, user, refreshToken); // ⬅️ 3. argüman eklendi
+      await setAuth(token, user, refreshToken);
       await afterAuthNavigate();
     } catch (e: any) {
       if (e?.code !== "ERR_CANCELED") {
-        Alert.alert("Apple Girişi", e?.message || "Giriş başarısız.");
+        const raw = e?.response?.data?.message ?? e?.message;
+        const { title, message } = friendlyAuthError(raw);
+        showModal(`${title}\n\n${message}`);
       }
     } finally {
       setALoading(false);
@@ -139,7 +185,7 @@ export default function LoginScreen() {
   /** Misafir devam — sadece TabsGuest’e döner + Tüm auth state’i temizler */
   const onGuest = async () => {
     try {
-      await clearAuth(); // SecureStore’daki token dâhil hepsini sil
+      await clearAuth();
     } catch {}
     navigation.reset({ index: 0, routes: [{ name: "TabsGuest" }] });
   };
@@ -149,8 +195,46 @@ export default function LoginScreen() {
       <View style={{ paddingBottom: 16 }}>
         <Text style={{ fontSize: 28, fontWeight: "700", marginBottom: 16 }}>Rezzy</Text>
 
-        <Input label="E-posta" value={email} onChangeText={setEmail} placeholder="you@example.com" />
-        <Input label="Şifre" value={password} onChangeText={setPassword} secureTextEntry placeholder="******" />
+        <Animated.View style={{ transform: [{ translateX: shakeAnim }] }}>
+          <Input
+            label="E-posta"
+            value={email}
+            onChangeText={setEmail}
+            placeholder="ornek@mail.com"
+          />
+
+          <View style={{ position: "relative" }}>
+            <Input
+              label="Şifre"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              placeholder="Şifreniz"
+              style={{ paddingRight: 48 }} // ikon için sağ boşluk
+            />
+
+            <Pressable
+              android_ripple={{ color: "rgba(123,44,44,0.15)" }}
+              onPress={() => setShowPassword((p) => !p)}
+              style={{
+                position: "absolute",
+                right: 16,
+                top: "50%",
+                transform: [{ translateY: -12 }],
+                width: 32,
+                height: 32,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Ionicons
+                name={showPassword ? "eye-off-outline" : "eye-outline"}
+                size={20}
+                color="#7B2C2C"
+              />
+            </Pressable>
+          </View>
+        </Animated.View>
 
         <BrandButton
           title="Giriş Yap"
@@ -162,7 +246,12 @@ export default function LoginScreen() {
 
         <View style={{ height: 20 }} />
 
-        <GoogleBrandButton title="Google ile devam et" onPress={onGoogle} loading={gLoading} disabled={!request} />
+        <GoogleBrandButton
+          title="Google ile devam et"
+          onPress={onGoogle}
+          loading={gLoading}
+          disabled={!request}
+        />
 
         {Platform.OS === "ios" ? (
           <>
@@ -200,9 +289,55 @@ export default function LoginScreen() {
       <View style={{ marginTop: "auto" }}>
         <View style={{ height: 12 }} />
         <OutlineButton title="Üye olmadan devam et" onPress={onGuest} />
-        <View style={{ height: 14 }} />
-        <Text secondary style={{ textAlign: "center" }}>Demo: new-owner@rezzy.app / 123456</Text>
       </View>
+
+      {/* -------- Modal (Alert yerine) -------- */}
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.35)",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+          }}
+        >
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 420,
+              backgroundColor: "#fff",
+              borderRadius: 14,
+              padding: 18,
+              shadowColor: "#000",
+              shadowOpacity: 0.2,
+              shadowRadius: 16,
+              shadowOffset: { width: 0, height: 8 },
+            }}
+          >
+            <RNText style={{ fontSize: 16, color: "#111827" }}>{modalMessage}</RNText>
+
+            <Pressable
+              onPress={() => setModalVisible(false)}
+              style={({ pressed }) => ({
+                marginTop: 14,
+                alignSelf: "flex-end",
+                paddingHorizontal: 14,
+                paddingVertical: 10,
+                backgroundColor: pressed ? "#6D2626" : "#7B2C2C",
+                borderRadius: 10,
+              })}
+            >
+              <RNText style={{ color: "#fff", fontWeight: "700" }}>Tamam</RNText>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </Screen>
   );
 }
