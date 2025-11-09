@@ -5,28 +5,29 @@ import RootNavigator from "./src/navigation/RootNavigator";
 import { SafeAreaProvider, initialWindowMetrics } from "react-native-safe-area-context";
 import { View, ActivityIndicator, Text, TextInput, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
+import * as Location from "expo-location";
 import { useAuth } from "./src/store/useAuth";
+import { useRegion } from "./src/store/useRegion";
 import { registerPushToken, attachDeviceAfterLogin } from "./src/hooks/usePushToken";
 import InAppToast from "./src/components/InAppToast";
-// 🔧 Global font ölçek sınırı
+
+// Global font scale
 if ((Text as any).defaultProps == null) (Text as any).defaultProps = {};
 if ((TextInput as any).defaultProps == null) (TextInput as any).defaultProps = {};
 (Text as any).defaultProps.maxFontSizeMultiplier = 1.2;
 (TextInput as any).defaultProps.maxFontSizeMultiplier = 1.2;
 
-// 🔔 Bildirim davranışı
+// Bildirim davranışı
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
-    // iOS 17+
     shouldShowBanner: true,
     shouldShowList: true,
   }),
 });
 
-// (Tercihe bağlı) Android kanalını garanti altına almak için bir defa oluştur
 async function ensureAndroidChannel() {
   if (Platform.OS !== "android") return;
   await Notifications.setNotificationChannelAsync("default", {
@@ -36,56 +37,67 @@ async function ensureAndroidChannel() {
 }
 
 export default function App() {
-  const hydrate = useAuth((s) => s.hydrate);
-  const hydrated = useAuth((s) => s.hydrated);
-  const token = useAuth((s) => s.token);
+  const hydrateAuth = useAuth((s: any) => s.hydrate);
+  const authHydrated = useAuth((s: any) => s.hydrated);
+  const token = useAuth((s: any) => s.token);
 
-  // Storage -> belleğe
+  const hydrateRegion = useRegion((s) => s.hydrate);
+  const regionInitialized = useRegion((s) => s.initialized);
+  const hasUserChoice = useRegion((s) => s.hasUserChoice);
+  const setFromCountryCode = useRegion((s) => s.setFromCountryCode);
+
+  // Auth hydrate
   React.useEffect(() => {
-    hydrate();
-  }, [hydrate]);
+    hydrateAuth();
+  }, [hydrateAuth]);
 
-  // Uygulama ilk açılışta push token al ve (misafir ise register, login ise attach) gönder
+  // Region hydrate
+  React.useEffect(() => {
+    hydrateRegion();
+  }, [hydrateRegion]);
+
+  // İlk açılışta push token
   React.useEffect(() => {
     (async () => {
       await ensureAndroidChannel();
-      if (hydrated) {
+      if (authHydrated) {
         await registerPushToken();
       }
     })();
-  }, [hydrated]);
+  }, [authHydrated]);
 
-  // Oturum durumu değişince (login/logout) cihazı ilişkilendir
+  // Login / logout sonrası cihaz eşleştirme
   React.useEffect(() => {
     (async () => {
-      if (!hydrated) return;
+      if (!authHydrated) return;
       if (token) {
-        // Login olduysa kullanıcıya attach et (idempotent)
         await attachDeviceAfterLogin();
       } else {
-        // Logout sonrası tekrar guest olarak kayıt (idempotent)
         await registerPushToken();
       }
     })();
-  }, [token, hydrated]);
+  }, [token, authHydrated]);
 
-  // Bildirim tıklama dinleyicileri (opsiyonel – yönlendirme için RootNavigator içinden de ele alınabilir)
+  // Bölgeyi ülkeye göre otomatik tahmin (kullanıcı seçim yapmadıysa)
   React.useEffect(() => {
-    const sub1 = Notifications.addNotificationReceivedListener(() => {
-      // app foreground’da iken geldi — UI içinde zaten handler alert gösteriyor
-    });
-    const sub2 = Notifications.addNotificationResponseReceivedListener((resp) => {
-      // tıklama/aksiyon — navigasyon intent’ini burada ya da RootNavigator içinde handle edebilirsin
-      // const data = resp.notification.request.content.data as any;
-      // örn: if (data?.routeName) { /* navigationService.navigate(data.routeName, data.params) */ }
-    });
-    return () => {
-      sub1.remove();
-      sub2.remove();
-    };
-  }, []);
+    (async () => {
+      if (!regionInitialized || hasUserChoice) return;
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") return;
 
-  if (!hydrated) {
+        const pos = await Location.getCurrentPositionAsync({});
+        const geo = await Location.reverseGeocodeAsync(pos.coords);
+        const code = geo?.[0]?.isoCountryCode || null;
+        setFromCountryCode(code || undefined);
+      } catch {
+        // sessiz geç
+      }
+    })();
+  }, [regionInitialized, hasUserChoice, setFromCountryCode]);
+
+  // Hem auth hem region hazır değilse
+  if (!authHydrated || !regionInitialized) {
     return (
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
@@ -99,7 +111,6 @@ export default function App() {
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
       <StatusBar style="dark" />
       <RootNavigator />
-      {/* In-app toast en üst layer'da, tüm ekranların üzerinde */}
       <InAppToast />
     </SafeAreaProvider>
   );

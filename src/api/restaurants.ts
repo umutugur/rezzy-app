@@ -1,4 +1,3 @@
-// src/api/restaurants.ts
 import { api } from "./client";
 
 export type OpeningHour = {
@@ -7,9 +6,13 @@ export type OpeningHour = {
   close: string;
   isClosed: boolean;
 };
+
 export type ListRestaurantsParams = {
   city?: string;
   query?: string;
+  region?: "CY" | "UK";
+  lat?: number;
+  lng?: number;
   limit?: number;
   cursor?: string;
 };
@@ -17,6 +20,7 @@ export type ListRestaurantsParams = {
 export interface Restaurant {
   _id: string;
   name: string;
+  region?: "CY" | "UK";
   city?: string;
   address?: string;
   phone?: string;
@@ -36,6 +40,11 @@ export interface Restaurant {
   depositRequired?: boolean;
   depositAmount?: number;
   blackoutDates?: string[];
+  location?: {
+    type: "Point";
+    coordinates: [number, number]; // [lng, lat]
+  };
+  mapAddress?: string;
   [key: string]: any;
 }
 
@@ -50,7 +59,7 @@ async function unwrap<T>(promise: Promise<{ data: T }>): Promise<T> {
 export function normalizeMongoId(input: any): string {
   if (!input) return "";
   if (typeof input === "object" && input !== null) {
-    return input._id ?? "";
+    return (input as any)._id ?? "";
   }
   const str = String(input);
   const match = str.match(/ObjectId\('([0-9a-fA-F]{24})'\)/);
@@ -60,7 +69,9 @@ export function normalizeMongoId(input: any): string {
 }
 
 const toYMD = (d: Date) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate()
+  ).padStart(2, "0")}`;
 
 // ---------- Availability tipleri ----------
 export type AvailabilitySlot = {
@@ -77,7 +88,9 @@ export type AvailabilityResponse = {
 };
 
 // ---------- REST çağrıları ----------
-export async function listRestaurants(params: ListRestaurantsParams = {}): Promise<Restaurant[]> {
+export async function listRestaurants(
+  params: ListRestaurantsParams = {}
+): Promise<Restaurant[]> {
   return unwrap(api.get<Restaurant[]>("/restaurants", { params }));
 }
 
@@ -86,17 +99,9 @@ export async function getRestaurant(id: string): Promise<Restaurant> {
   return unwrap(api.get<Restaurant>(`/restaurants/${rid}`));
 }
 
-/**
- * Genel bilgileri günceller.
- * UI tarafında RP_General formunda tutulan alan isimlerini bozma:
- * - Düz alanlar: name, email, phone, city, address, description, iban, ibanName, bankName, mapAddress, googleMapsUrl
- * - Konum: _lat, _lng (string/number)
- * - Mevcut lokasyon tipi: _existingLocation (GeoJSON Point ya da {lat,lng})
- */
 export async function updateRestaurant(id: string, form: any): Promise<Restaurant> {
   const rid = normalizeMongoId(id);
 
-  // Sadece backend’in beklediği düz alanları gönder
   const FLAT_FIELDS = [
     "name",
     "email",
@@ -109,6 +114,7 @@ export async function updateRestaurant(id: string, form: any): Promise<Restauran
     "bankName",
     "mapAddress",
     "googleMapsUrl",
+    "region",
   ] as const;
 
   const payload: any = {};
@@ -117,55 +123,81 @@ export async function updateRestaurant(id: string, form: any): Promise<Restauran
     if (v !== undefined) payload[k] = v;
   }
 
-  // Konum (lat/lng) – sayıya çevir
   const latRaw = form?._lat;
   const lngRaw = form?._lng;
   const lat = latRaw === "" || latRaw == null ? null : Number(latRaw);
   const lng = lngRaw === "" || lngRaw == null ? null : Number(lngRaw);
 
   if (Number.isFinite(lat) && Number.isFinite(lng)) {
-    const existing = form?._existingLocation;
-    const isGeoJSONPoint =
-      existing &&
-      typeof existing === "object" &&
-      existing.type === "Point" &&
-      Array.isArray(existing.coordinates) &&
-      existing.coordinates.length === 2;
-
-    payload.location = isGeoJSONPoint
-      ? { type: "Point", coordinates: [lng, lat] } // GeoJSON
-      : { lat, lng }; // Düz obje
+    payload.location = {
+      type: "Point",
+      coordinates: [lng, lat],
+    };
   }
 
   return unwrap(api.put<Restaurant>(`/restaurants/${rid}`, payload));
 }
 
-export async function updateOpeningHours(id: string, hours: OpeningHour[]): Promise<Restaurant> {
+export async function updateOpeningHours(
+  id: string,
+  hours: OpeningHour[]
+): Promise<Restaurant> {
   const rid = normalizeMongoId(id);
-  return unwrap(api.put<Restaurant>(`/restaurants/${rid}/opening-hours`, { openingHours: hours }));
+  return unwrap(
+    api.put<Restaurant>(`/restaurants/${rid}/opening-hours`, {
+      openingHours: hours,
+    })
+  );
 }
 
-export async function updateTables(id: string, tables: any[]): Promise<Restaurant> {
+export async function updateTables(
+  id: string,
+  tables: any[]
+): Promise<Restaurant> {
   const rid = normalizeMongoId(id);
-  return unwrap(api.put<Restaurant>(`/restaurants/${rid}/tables`, { tables }));
+  return unwrap(
+    api.put<Restaurant>(`/restaurants/${rid}/tables`, { tables })
+  );
 }
 
-export async function updatePolicies(id: string, payload: any): Promise<Restaurant> {
+export async function updatePolicies(
+  id: string,
+  payload: any
+): Promise<Restaurant> {
   const rid = normalizeMongoId(id);
-  return unwrap(api.put<Restaurant>(`/restaurants/${rid}/policies`, payload));
+  return unwrap(
+    api.put<Restaurant>(`/restaurants/${rid}/policies`, payload)
+  );
 }
 
-export async function updateMenus(id: string, menus: any[]): Promise<Restaurant> {
+export async function updateMenus(
+  id: string,
+  menus: any[]
+): Promise<Restaurant> {
   const rid = normalizeMongoId(id);
-  return unwrap(api.put<Restaurant>(`/restaurants/${rid}/menus`, { menus }));
+  return unwrap(
+    api.put<Restaurant>(`/restaurants/${rid}/menus`, { menus })
+  );
 }
 
-export async function addPhoto(id: string, uri: string, _fileName: string, _mimeType: string): Promise<Restaurant> {
+export async function addPhoto(
+  id: string,
+  uri: string,
+  _fileName: string,
+  _mimeType: string
+): Promise<Restaurant> {
   const rid = normalizeMongoId(id);
-  return unwrap(api.post<Restaurant>(`/restaurants/${rid}/photos`, { fileUrl: uri }));
+  return unwrap(
+    api.post<Restaurant>(`/restaurants/${rid}/photos`, {
+      fileUrl: uri,
+    })
+  );
 }
 
-export async function removePhoto(id: string, url: string): Promise<Restaurant> {
+export async function removePhoto(
+  id: string,
+  url: string
+): Promise<Restaurant> {
   const rid = normalizeMongoId(id);
   return unwrap(
     api.request<Restaurant>({
@@ -196,14 +228,20 @@ export async function getAvailability(
   }
 
   const rid = normalizeMongoId(id);
-  const dateStr = typeof dateVal === "string" ? dateVal.slice(0, 10) : toYMD(dateVal);
+  const dateStr =
+    typeof dateVal === "string"
+      ? dateVal.slice(0, 10)
+      : toYMD(dateVal);
 
-  const res = await api.get<AvailabilityResponse>(`/restaurants/${rid}/availability`, {
-    params: { date: dateStr, partySize: Math.max(1, Number(partySizeVal) || 1) },
-  });
-
-  console.log("AVAIL req ->", `/restaurants/${rid}/availability`, { date: dateStr, partySize: partySizeVal });
-  console.log("AVAIL res ->", res.data?.debug || "(no debug)", Array.isArray(res.data?.slots) ? res.data.slots.length : 0);
+  const res = await api.get<AvailabilityResponse>(
+    `/restaurants/${rid}/availability`,
+    {
+      params: {
+        date: dateStr,
+        partySize: Math.max(1, Number(partySizeVal) || 1),
+      },
+    }
+  );
 
   return res.data;
 }

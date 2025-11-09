@@ -7,7 +7,7 @@ import {
   Platform,
   TextInput,
   Keyboard,
-  Pressable, // 👈 eklendi
+  Pressable,
 } from "react-native";
 import { Text } from "../components/Themed";
 import Card from "../components/Card";
@@ -16,13 +16,22 @@ import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import HomeHeader from "./_HomeHeader";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useNotifications } from "../store/useNotifications";
+import { useRegion, type Region } from "../store/useRegion";
+import * as Location from "expo-location";
 
-const CITIES = ["Hepsi", "Girne", "Lefkoşa", "Gazimağusa", "Güzelyurt", "İskele", "Lefke"];
+const CITIES_BY_REGION: Record<Region, string[]> = {
+  CY: ["Hepsi", "Girne", "Lefkoşa", "Gazimağusa", "Güzelyurt", "İskele", "Lefke"],
+  UK: ["All", "London", "Manchester", "Birmingham", "Liverpool", "Leeds", "Edinburgh"],
+};
 
 export default function HomeScreen() {
   const nav = useNavigation<any>();
+  const { region } = useRegion();
 
-  const [city, setCity] = React.useState<string>("Hepsi");
+  const cities = CITIES_BY_REGION[region] || CITIES_BY_REGION.CY;
+  const initialCity = cities[0] || "Hepsi";
+
+  const [city, setCity] = React.useState<string>(initialCity);
   const [query, setQuery] = React.useState<string>("");
 
   const [data, setData] = React.useState<Restaurant[]>([]);
@@ -31,21 +40,44 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = React.useState<boolean>(false);
   const [error, setError] = React.useState<string | undefined>();
 
-  // 🔎 arama aç/kapa
   const [searchOpen, setSearchOpen] = React.useState(false);
-
-  // input ref
   const inputRef = React.useRef<TextInput | null>(null);
 
-  // 🔔 bildirim sayacı
   const { unreadCount, fetchUnreadCount } = useNotifications();
 
-  // debounce
   const [qDebounced, setQDebounced] = React.useState<string>("");
   React.useEffect(() => {
     const t = setTimeout(() => setQDebounced(query.trim()), 300);
     return () => clearTimeout(t);
   }, [query]);
+
+  // 📍 Kullanıcı konumu
+  const [coords, setCoords] = React.useState<{ lat: number; lng: number } | null>(null);
+  const [locationRequested, setLocationRequested] = React.useState(false);
+
+  React.useEffect(() => {
+    (async () => {
+      if (locationRequested) return;
+      try {
+        setLocationRequested(true);
+        const perm = await Location.requestForegroundPermissionsAsync();
+        if (perm.status !== "granted") return;
+        const pos = await Location.getCurrentPositionAsync({});
+        setCoords({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        });
+      } catch (e) {
+        if (__DEV__) console.log("[home] location error", e);
+      }
+    })();
+  }, [locationRequested]);
+
+  // Bölge değişince şehir filtresini resetle
+  React.useEffect(() => {
+    const first = (CITIES_BY_REGION[region] || CITIES_BY_REGION.CY)[0] || "Hepsi";
+    setCity(first);
+  }, [region]);
 
   const load = React.useCallback(
     async (
@@ -58,20 +90,35 @@ export default function HomeScreen() {
         if (mode === "initial") setInitialLoading(true);
         else setFetching(true);
 
-        const cityParam = selectedCity && selectedCity !== "Hepsi" ? selectedCity : undefined;
+        const cityParam =
+          selectedCity &&
+          selectedCity !== "Hepsi" &&
+          selectedCity !== "All"
+            ? selectedCity
+            : undefined;
         const queryParam = searched && searched.length ? searched : undefined;
 
-        const list = await listRestaurants({ city: cityParam, query: queryParam });
+        const list = await listRestaurants({
+          region,
+          city: cityParam,
+          query: queryParam,
+          lat: coords?.lat,
+          lng: coords?.lng,
+        });
+
         setData(list || []);
       } catch (e: any) {
-        const msg = e?.response?.data?.message || e?.message || "Bağlantı hatası";
+        const msg =
+          e?.response?.data?.message ||
+          e?.message ||
+          "Bağlantı hatası";
         setError(msg);
       } finally {
         if (mode === "initial") setInitialLoading(false);
         setFetching(false);
       }
     },
-    []
+    [region, coords?.lat, coords?.lng]
   );
 
   // ilk yükleme
@@ -80,13 +127,19 @@ export default function HomeScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ekrana her dönüşte hafif tazele (tab değişimi/geri geliş)
+  // konum geldikten sonra yeniden yükle
+  React.useEffect(() => {
+    if (!initialLoading) {
+      load(city, qDebounced, "update");
+    }
+  }, [coords?.lat, coords?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ekrana her dönüşte hafif tazele + bildirim sayacı
   useFocusEffect(
     React.useCallback(() => {
       if (!initialLoading) {
         load(city, qDebounced, "update");
       }
-      // ekrana odaklanınca bildirim sayacını da güncelle
       fetchUnreadCount?.();
     }, [initialLoading, city, qDebounced, load, fetchUnreadCount])
   );
@@ -106,7 +159,7 @@ export default function HomeScreen() {
     }
   }, [city, qDebounced, load, fetchUnreadCount]);
 
-  // 🔔 + 🔎 ikonları
+  // header ikonları
   React.useLayoutEffect(() => {
     nav.setOptions({
       headerShadowVisible: false,
@@ -151,9 +204,8 @@ export default function HomeScreen() {
         </View>
       ),
     });
-  }, [nav, searchOpen, unreadCount]); // 👈 unreadCount değişince header güncellensin
+  }, [nav, searchOpen, unreadCount]);
 
-  // renderItem & keyExtractor memo
   const keyExtractor = React.useCallback((i: Restaurant) => String(i._id), []);
   const renderItem = React.useCallback(
     ({ item }: { item: Restaurant }) => (
@@ -161,7 +213,11 @@ export default function HomeScreen() {
         <Card
           photo={item.photos?.[0]}
           title={item.name}
-          subtitle={`${item.city || ""} • ${item.priceRange || "₺₺"}`}
+          subtitle={
+            [item.city, item.priceRange || "₺₺"]
+              .filter(Boolean)
+              .join(" • ")
+          }
           onPress={() => nav.navigate("Restoran", { id: item._id })}
         />
       </View>
@@ -173,7 +229,7 @@ export default function HomeScreen() {
     <HomeHeader
       searchOpen={searchOpen}
       inputRef={inputRef}
-      cities={CITIES}
+      cities={cities}
       city={city}
       setCity={(c) => {
         inputRef.current?.blur();
@@ -220,13 +276,14 @@ export default function HomeScreen() {
             keyExtractor={keyExtractor}
             renderItem={renderItem}
             ListHeaderComponent={listHeader}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
             ListEmptyComponent={
               <View style={{ paddingHorizontal: 12, paddingVertical: 12 }}>
                 <Text>Sonuç bulunamadı. Filtreleri temizleyip tekrar deneyin.</Text>
               </View>
             }
-            // 🔧 iOS otomatik insetleri kapat: üst/alt boşluk şişmesin
             contentInsetAdjustmentBehavior="never"
             automaticallyAdjustContentInsets={false}
             keyboardDismissMode="none"

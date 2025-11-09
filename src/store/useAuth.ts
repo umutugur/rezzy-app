@@ -1,17 +1,22 @@
 import * as SecureStore from "expo-secure-store";
 import { create } from "zustand";
 import { Platform } from "react-native";
+import { useRegion } from "./useRegion";
 
 export type User = {
   id: string;
   name: string;
   role: "customer" | "restaurant" | "admin" | "guest";
-  email?: string;
-  phone?: string;
+  email?: string | null;
+  phone?: string | null;
   restaurantId?: string | null;
   avatarUrl?: string | null;
   notificationPrefs?: { push?: boolean; sms?: boolean; email?: boolean };
   providers?: string[];
+  noShowCount?: number;
+  riskScore?: number;
+  preferredRegion?: "CY" | "UK";
+  preferredLanguage?: "tr" | "en";
   createdAt?: string | null;
   updatedAt?: string | null;
 };
@@ -55,13 +60,30 @@ export const useAuth = create<AuthState>((set, get) => ({
 
   setAuth: async (token, user, refreshToken) => {
     const prev = get();
+
     const next = {
       token: token ?? prev.token ?? null,
-      user: user === undefined ? (prev.user ?? null) : user, // undefined gelirse mevcut user korunur
+      user: user === undefined ? (prev.user ?? null) : user,
       refreshToken: refreshToken ?? prev.refreshToken ?? null,
     };
 
     set(next);
+
+    // ✅ Region & dil tercihini global store'a yansıt
+    try {
+      const u = next.user;
+      if (u) {
+        const regionStore = useRegion.getState();
+        if (u.preferredRegion === "CY" || u.preferredRegion === "UK") {
+          regionStore.setRegion(u.preferredRegion);
+        }
+        if (u.preferredLanguage === "tr" || u.preferredLanguage === "en") {
+          regionStore.setLanguage(u.preferredLanguage);
+        }
+      }
+    } catch {
+      // sessiz geç
+    }
 
     try {
       const current = await SecureStore.getItemAsync(KEY);
@@ -74,22 +96,52 @@ export const useAuth = create<AuthState>((set, get) => ({
   },
 
   updateUser: (patch) =>
-    set((s) => ({
-      user: s.user ? { ...s.user, ...patch } : s.user ?? null,
-    })),
+    set((s) => {
+      const merged = s.user ? { ...s.user, ...patch } : s.user ?? null;
+
+      // ✅ Eğer backend'den gelen patch içinde tercih güncellemesi varsa useRegion'a bas
+      try {
+        if (merged) {
+          const regionStore = useRegion.getState();
+          if (merged.preferredRegion === "CY" || merged.preferredRegion === "UK") {
+            regionStore.setRegion(merged.preferredRegion);
+          }
+          if (merged.preferredLanguage === "tr" || merged.preferredLanguage === "en") {
+            regionStore.setLanguage(merged.preferredLanguage);
+          }
+        }
+      } catch {}
+
+      return { user: merged };
+    }),
 
   hydrate: async () => {
     try {
       const raw = await SecureStore.getItemAsync(KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
+        const user: User | null = parsed?.user ?? null;
+
         set({
           token: parsed?.token ?? null,
           refreshToken: parsed?.refreshToken ?? null,
-          user: parsed?.user ?? null,
+          user,
           intendedRoute: parsed?.intendedRoute ?? null,
           hydrated: true,
         });
+
+        // ✅ Persisted user varsa region & dili oradan da çek
+        try {
+          if (user) {
+            const regionStore = useRegion.getState();
+            if (user.preferredRegion === "CY" || user.preferredRegion === "UK") {
+              regionStore.setRegion(user.preferredRegion);
+            }
+            if (user.preferredLanguage === "tr" || user.preferredLanguage === "en") {
+              regionStore.setLanguage(user.preferredLanguage);
+            }
+          }
+        } catch {}
       } else {
         set({ hydrated: true });
       }
@@ -102,6 +154,9 @@ export const useAuth = create<AuthState>((set, get) => ({
     try {
       await SecureStore.deleteItemAsync(KEY);
     } catch {}
+
+    // NOT: Region/dil'i burada sıfırlamıyoruz; kullanıcı uygulamayı
+    // misafir olarak kullanmaya devam edebilir, en son seçtiği bölge kalabilir.
     set({ token: null, refreshToken: null, user: null, intendedRoute: null });
   },
 
@@ -161,4 +216,4 @@ export const useAuth = create<AuthState>((set, get) => ({
   },
 }));
 
-// !!! BURADA KES. useAuth içine/altına api interceptor KOYMA !!!
+// !!! Buraya interceptor koyma. !!!
