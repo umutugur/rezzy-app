@@ -15,6 +15,7 @@ import {
   Dimensions,
   Pressable,
   Animated,
+  Modal,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -39,8 +40,13 @@ import { useReservation } from "../store/useReservation";
 import { useAuth } from "../store/useAuth";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-
-dayjs.locale("tr");
+import { useI18n } from "../i18n";
+import {
+  rpListCategories,
+  rpListItems,
+  type MenuCategory,
+  type MenuItem as ALaCarteItem,
+} from "../api/menu";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const H_PADDING = 16;
@@ -54,7 +60,15 @@ type FixMenu = {
   pricePerPerson: number;
   isActive?: boolean;
 };
-type Restaurant = ApiRestaurant & { menus?: FixMenu[] };
+
+type Restaurant = ApiRestaurant & {
+  menus?: FixMenu[]; // mevcut fix menüler
+  // ileride normal menü gelince burada a-la-carte yapıyı da taşıyacağız
+  // aLaCarteMenus?: ...
+};
+
+type ALaCarteCategory = MenuCategory;
+type ALaCarteItemsByCat = Record<string, ALaCarteItem[]>;
 
 export default function RestaurantDetailScreen() {
   const insets = useSafeAreaInsets();
@@ -65,6 +79,21 @@ export default function RestaurantDetailScreen() {
   const token = useAuth((s) => s.token);
   const user = useAuth((s) => s.user);
   const setIntended = useAuth((s) => s.setIntended);
+  const { t, language, locale: hookLocale } = useI18n();
+  const locale = language ?? hookLocale ?? "tr";
+
+  // i18n key yoksa fallback verelim
+  const tt = React.useCallback(
+    (key: string, fallback: string) => {
+      try {
+        const v = t(key);
+        return v === key ? fallback : v;
+      } catch {
+        return fallback;
+      }
+    },
+    [t]
+  );
 
   const setRestaurant = useReservation?.((s: any) => s.setRestaurant) ?? (() => {});
   const setDateTime = useReservation?.((s: any) => s.setDateTime) ?? (() => {});
@@ -78,14 +107,91 @@ export default function RestaurantDetailScreen() {
   const [fetchingSlots, setFetchingSlots] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<AvailabilitySlot | null>(null);
 
+  // Tabs artık sadece HAKKINDA / MENÜ
+  const [activeTab, setActiveTab] = useState<"ABOUT" | "MENU">("ABOUT");
+  // --- A-la-carte menü (kategori + ürün) ---
+  const [menuCats, setMenuCats] = useState<ALaCarteCategory[]>([]);
+  const [menuItemsByCat, setMenuItemsByCat] = useState<ALaCarteItemsByCat>({});
+  const [menuLoading, setMenuLoading] = useState(false);
+  const [expandedCatId, setExpandedCatId] = useState<string | null>(null);
+  const [expandAllMenuCats, setExpandAllMenuCats] = useState(false);
+  const [previewItem, setPreviewItem] = useState<ALaCarteItem | null>(null);
+
   const [activePhoto, setActivePhoto] = useState(0);
   const photosListRef = useRef<FlatList<string>>(null);
+  const [fullScreenOpen, setFullScreenOpen] = useState(false);
+  const [fullScreenIndex, setFullScreenIndex] = useState(0);
   const dayLabel = dayjs(date).format("DD MMM");
 
   const [favLoading, setFavLoading] = useState<boolean>(false);
   const [favs, setFavs] = useState<FavoriteRestaurant[]>([]);
 
-  // --- In-app toast helper: store üzerinden addFromPush ile tetikle ---
+  // --- Photos, Menus ---
+  const photos = useMemo(() => (r?.photos || []).filter(Boolean), [r]);
+  const menus = useMemo(
+    () => (r?.menus || []).filter((m) => m && (m.isActive ?? true)),
+    [r]
+  );
+
+  const loadALaCarteMenu = React.useCallback(async () => {
+    if (!restaurantId) return;
+    setMenuLoading(true);
+    try {
+      const cats = await rpListCategories(restaurantId);
+      // load items per category
+      const byCat: ALaCarteItemsByCat = {};
+      await Promise.all(
+        (cats || []).map(async (c) => {
+          try {
+            const its = await rpListItems(restaurantId, { categoryId: c._id });
+            const activeIts = (its || []).filter((x) => (x?.isActive ?? true));
+            if (activeIts.length) byCat[c._id] = activeIts;
+          } catch {
+            // ignore single category fetch errors
+          }
+        })
+      );
+
+      const nonEmptyCats = (cats || []).filter((c) => !!byCat[c._id]?.length && (c.isActive ?? true));
+      setMenuCats(nonEmptyCats);
+      setMenuItemsByCat(byCat);
+      setExpandedCatId(nonEmptyCats[0]?._id ?? null);
+      setExpandAllMenuCats(false);
+    } catch (e: any) {
+      setMenuCats([]);
+      setMenuItemsByCat({});
+    } finally {
+      setMenuLoading(false);
+    }
+  }, [restaurantId]);
+
+  useEffect(() => {
+    if (activeTab === "MENU") {
+      loadALaCarteMenu();
+    }
+  }, [activeTab, loadALaCarteMenu]);
+
+  // Region -> currency symbol
+  const currencySymbol = useMemo(() => {
+    const region = (r as any)?.region;
+    if (region === "UK") return "£";
+    return "₺"; // TR / CY default
+  }, [r]);
+
+  const minMenuPrice = useMemo(
+    () => (menus.length ? Math.min(...menus.map((m) => m.pricePerPerson)) : undefined),
+    [menus]
+  );
+
+  const formatPrice = React.useCallback(
+    (n: number) =>
+      `${currencySymbol}${Number(n).toLocaleString(
+        locale === "tr" ? "tr-TR" : "en-GB"
+      )}`,
+    [currencySymbol, locale]
+  );
+
+  // --- In-app toast helper ---
   const fireToast = React.useCallback((title: string, body?: string) => {
     try {
       const api: any = (useNotifications as any)?.getState?.();
@@ -94,12 +200,38 @@ export default function RestaurantDetailScreen() {
         return;
       }
     } catch {}
-    // store erişilemezse fallback
     Alert.alert(title, body);
   }, []);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
+  const autoTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Auto rotate photos
+  useEffect(() => {
+    if (autoTimer.current) {
+      clearInterval(autoTimer.current);
+      autoTimer.current = null;
+    }
+    if (fullScreenOpen || photos.length <= 1) return;
+
+    autoTimer.current = setInterval(() => {
+      setActivePhoto((prev) => {
+        const total = photos.length;
+        if (!total) return 0;
+        const next = (prev + 1) % total;
+        try {
+          photosListRef.current?.scrollToIndex({ index: next, animated: true });
+        } catch {}
+        return next;
+      });
+    }, 3000);
+
+    return () => {
+      if (autoTimer.current) clearInterval(autoTimer.current);
+      autoTimer.current = null;
+    };
+  }, [photos.length, fullScreenOpen]);
 
   useEffect(() => {
     if (!loading && r) {
@@ -117,8 +249,13 @@ export default function RestaurantDetailScreen() {
         }),
       ]).start();
     }
-  }, [loading, r]);
+  }, [loading, r, fadeAnim, scaleAnim]);
 
+  useEffect(() => {
+    dayjs.locale(locale === "tr" ? "tr" : "en");
+  }, [locale]);
+
+  // Restaurant fetch (loop fix)
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -127,7 +264,10 @@ export default function RestaurantDetailScreen() {
         const data = (await getRestaurant(restaurantId)) as Restaurant;
         if (alive) setR(data);
       } catch (e: any) {
-        Alert.alert("Hata", e?.response?.data?.message || e?.message || "Restoran yüklenemedi");
+        Alert.alert(
+          t("common.error"),
+          e?.response?.data?.message || e?.message || t("restaurantDetail.loadError")
+        );
       } finally {
         if (alive) setLoading(false);
       }
@@ -137,6 +277,7 @@ export default function RestaurantDetailScreen() {
     };
   }, [restaurantId]);
 
+  // Favorites
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -154,6 +295,7 @@ export default function RestaurantDetailScreen() {
     };
   }, [token, user?.role]);
 
+  // Slots
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -174,23 +316,17 @@ export default function RestaurantDetailScreen() {
     };
   }, [restaurantId, date, partySize]);
 
-  const photos = useMemo(() => (r?.photos || []).filter(Boolean), [r]);
-  const menus = useMemo(() => (r?.menus || []).filter((m) => m && (m.isActive ?? true)), [r]);
-  const minMenuPrice = useMemo(
-    () => (menus.length ? Math.min(...menus.map((m) => m.pricePerPerson)) : undefined),
-    [menus]
-  );
-
   const fav = useMemo(() => isFavorited(favs, restaurantId), [favs, restaurantId]);
 
   const onSelectSlot = (s: AvailabilitySlot) => {
     if (!s.isAvailable) return;
-    // Seçilen slotu gün ile birleştir -> ISO
     const [h, m] = s.label.split(":");
     const iso = dayjs(date).hour(Number(h)).minute(Number(m)).second(0).toISOString();
-    // Geçmiş kontrolü
     if (isPast(iso)) {
-      fireToast("Geçmiş saat", "Geçmiş bir tarih/saat için rezervasyon yapılamaz.");
+      fireToast(
+        tt("restaurantDetail.pastTimeTitle", "Geçmiş saat seçilemez"),
+        tt("restaurantDetail.pastTimeBody", "Lütfen ileri bir saat seçin.")
+      );
       return;
     }
     setSelectedSlot(s);
@@ -200,15 +336,25 @@ export default function RestaurantDetailScreen() {
     if (!selectedSlot || !r) return;
 
     const [h, m] = selectedSlot.label.split(":");
-    const localDateTime = dayjs(date).hour(Number(h)).minute(Number(m)).second(0).toISOString();
-    // Geçmiş kontrolü (ikinci bariyer)
+    const localDateTime = dayjs(date)
+      .hour(Number(h))
+      .minute(Number(m))
+      .second(0)
+      .toISOString();
+
     if (isPast(localDateTime)) {
-      fireToast("Geçmiş tarih/saat", "Lütfen ileri bir tarih ve saat seçin.");
+      fireToast(
+        tt("restaurantDetail.pastDateTimeTitle", "Geçmiş tarih/saat seçilemez"),
+        tt("restaurantDetail.pastDateTimeBody", "Lütfen ileri bir tarih/saat seçin.")
+      );
       return;
     }
 
     if (!token) {
-      Alert.alert("Giriş gerekli", "Rezervasyon oluşturmak için giriş yapmalısın.");
+      Alert.alert(
+        t("restaurantDetail.loginRequiredTitle"),
+        t("restaurantDetail.loginRequiredBodyReservation")
+      );
       await setIntended({ name: "Restoran", params: { id: restaurantId } });
       nav.navigate("Giriş");
       return;
@@ -228,7 +374,10 @@ export default function RestaurantDetailScreen() {
   const toggleFavorite = async () => {
     if (!restaurantId || favLoading) return;
     if (!token || user?.role !== "customer") {
-      Alert.alert("Giriş gerekli", "Favorilere eklemek için giriş yapmalısın.");
+      Alert.alert(
+        t("restaurantDetail.loginRequiredTitle"),
+        t("restaurantDetail.loginRequiredBodyFavorite")
+      );
       await setIntended({ name: "Restoran", params: { id: restaurantId } });
       nav.navigate("Giriş");
       return;
@@ -259,7 +408,10 @@ export default function RestaurantDetailScreen() {
         );
       }
     } catch (e: any) {
-      Alert.alert("Hata", e?.response?.data?.message || e?.message || "Favori işlemi başarısız");
+      Alert.alert(
+        t("common.error"),
+        e?.response?.data?.message || e?.message || t("restaurantDetail.favoriteError")
+      );
     } finally {
       setFavLoading(false);
     }
@@ -269,7 +421,7 @@ export default function RestaurantDetailScreen() {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#7B2C2C" />
-        <Text style={styles.loadingText}>Yükleniyor…</Text>
+        <Text style={styles.loadingText}>{t("restaurantDetail.loading")}</Text>
       </View>
     );
   }
@@ -278,11 +430,11 @@ export default function RestaurantDetailScreen() {
     return (
       <View style={styles.center}>
         <Ionicons name="restaurant-outline" size={64} color="#666666" />
-        <Text style={styles.emptyTitle}>Restoran Bulunamadı</Text>
-        <Text style={styles.emptyText}>Bu restoran mevcut değil veya kaldırılmış.</Text>
+        <Text style={styles.emptyTitle}>{t("restaurantDetail.notFoundTitle")}</Text>
+        <Text style={styles.emptyText}>{t("restaurantDetail.notFoundText")}</Text>
         <TouchableOpacity onPress={() => nav.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={18} color="#fff" />
-          <Text style={styles.backButtonText}>Geri Dön</Text>
+          <Text style={styles.backButtonText}>{t("restaurantDetail.back")}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -306,8 +458,16 @@ export default function RestaurantDetailScreen() {
                   onScroll={onPhotoScroll}
                   showsHorizontalScrollIndicator={false}
                   keyExtractor={(u, i) => `${u}-${i}`}
-                  renderItem={({ item }) => (
-                    <Image source={{ uri: item }} style={styles.photoFull} resizeMode="cover" />
+                  renderItem={({ item, index }) => (
+                    <Pressable
+                      onPress={() => {
+                        setFullScreenIndex(index);
+                        setFullScreenOpen(true);
+                      }}
+                      style={{ width: PHOTO_W, height: PHOTO_H }}
+                    >
+                      <Image source={{ uri: item }} style={styles.photoFull} resizeMode="cover" />
+                    </Pressable>
                   )}
                 />
 
@@ -324,7 +484,10 @@ export default function RestaurantDetailScreen() {
                   </LinearGradient>
                 </Pressable>
 
-                <LinearGradient colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.4)"]} style={styles.gradBottom} />
+                <LinearGradient
+                  colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.4)"]}
+                  style={styles.gradBottom}
+                />
 
                 <View style={styles.dots}>
                   {photos.map((_, i) => (
@@ -335,7 +498,7 @@ export default function RestaurantDetailScreen() {
             ) : (
               <View style={styles.photoPlaceholder}>
                 <Ionicons name="image-outline" size={48} color="#999999" />
-                <Text style={styles.photoPlaceholderText}>Fotoğraf bulunamadı</Text>
+                <Text style={styles.photoPlaceholderText}>{t("restaurantDetail.noPhoto")}</Text>
               </View>
             )}
           </View>
@@ -378,23 +541,26 @@ export default function RestaurantDetailScreen() {
                 <View style={styles.metaChipPrimary}>
                   <Ionicons name="pricetag" size={14} color="#fff" />
                   <Text style={styles.metaChipTextPrimary}>
-                    ₺{minMenuPrice.toLocaleString("tr-TR")}+
+                    {formatPrice(minMenuPrice)}+
                   </Text>
                 </View>
               )}
             </View>
           </View>
 
-          {/* Fix Menüler */}
+          {/* ✅ Fix Menüler (HER ZAMAN SABİT) */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Ionicons name="restaurant" size={22} color="#7B2C2C" />
-              <Text style={styles.sectionTitle}>Fix Menüler</Text>
+              <Text style={styles.sectionTitle}>
+                {t("restaurantDetail.fixedMenus")}
+              </Text>
             </View>
+
             {menus.length === 0 ? (
               <View style={styles.emptyStateSmall}>
                 <Ionicons name="fast-food-outline" size={32} color="#999999" />
-                <Text style={styles.muted}>Bu restoran için menü bulunamadı.</Text>
+                <Text style={styles.muted}>{t("restaurantDetail.noMenu")}</Text>
               </View>
             ) : (
               <View style={{ gap: 12 }}>
@@ -405,13 +571,17 @@ export default function RestaurantDetailScreen() {
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.menuTitle}>{m.title}</Text>
-                      {!!m.description && <Text style={styles.menuDesc}>{m.description}</Text>}
+                      {!!m.description && (
+                        <Text style={styles.menuDesc}>{m.description}</Text>
+                      )}
                     </View>
                     <View style={styles.menuPricePill}>
                       <Text style={styles.menuPriceText}>
-                        ₺{Number(m.pricePerPerson).toLocaleString("tr-TR")}
+                        {formatPrice(m.pricePerPerson)}
                       </Text>
-                      <Text style={styles.menuPriceSub}>kişi başı</Text>
+                      <Text style={styles.menuPriceSub}>
+                        {t("restaurantDetail.perPerson")}
+                      </Text>
                     </View>
                   </View>
                 ))}
@@ -419,128 +589,347 @@ export default function RestaurantDetailScreen() {
             )}
           </View>
 
-          {/* Uygun Saat Bul */}
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Ionicons name="time" size={22} color="#7B2C2C" />
-              <Text style={styles.sectionTitle}>Uygun Saat Bul</Text>
-            </View>
+          
 
-            <View style={styles.controlsContainer}>
-              <View style={styles.controlCard}>
-                <Text style={styles.controlLabel}>Tarih</Text>
-                <View style={styles.dateControls}>
-                  <Pressable
-                    onPress={() => setDate(dayjs(date).subtract(1, "day").format("YYYY-MM-DD"))}
-                    disabled={dayjs(date).isSame(dayjs(), "day")}
-                    style={[styles.controlButton, dayjs(date).isSame(dayjs(), "day") && styles.disabled]}
-                  >
-                    <Ionicons name="chevron-back" size={18} color="#1A1A1A" />
-                  </Pressable>
+          {/* ✅ Tabs (Hakkında / Menü) */}
+          <View style={styles.tabsWrap}>
+            <Pressable
+              onPress={() => setActiveTab("ABOUT")}
+              style={[styles.tabBtn, activeTab === "ABOUT" && styles.tabBtnActive]}
+            >
+              <Ionicons
+                name="information-circle"
+                size={16}
+                color={activeTab === "ABOUT" ? "#fff" : "#7B2C2C"}
+              />
+              <Text
+                style={[styles.tabText, activeTab === "ABOUT" && styles.tabTextActive]}
+              >
+                {tt("restaurantDetail.aboutTab", "Hakkında")}
+              </Text>
+            </Pressable>
 
-                  <View style={styles.dateDisplay}>
-                    <Text style={styles.dateText}>{dayjs(date).format("DD MMM")}</Text>
-                    <Text style={styles.dayText}>{dayjs(date).format("dddd")}</Text>
-                  </View>
+            <Pressable
+              onPress={() => setActiveTab("MENU")}
+              style={[styles.tabBtn, activeTab === "MENU" && styles.tabBtnActive]}
+            >
+              <Ionicons
+                name="book"
+                size={16}
+                color={activeTab === "MENU" ? "#fff" : "#7B2C2C"}
+              />
+              <Text
+                style={[styles.tabText, activeTab === "MENU" && styles.tabTextActive]}
+              >
+                {tt("restaurantDetail.menuTab", "Menü")}
+              </Text>
+            </Pressable>
+          </View>
 
-                  <Pressable
-                    onPress={() => setDate(dayjs(date).add(1, "day").format("YYYY-MM-DD"))}
-                    style={styles.controlButton}
-                  >
-                    <Ionicons name="chevron-forward" size={18} color="#1A1A1A" />
-                  </Pressable>
+          {/* ABOUT TAB */}
+          {activeTab === "ABOUT" && (
+            !!r.description ? (
+              <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <Ionicons name="information-circle" size={22} color="#7B2C2C" />
+                  <Text style={styles.sectionTitle}>
+                    {t("restaurantDetail.about")}
+                  </Text>
                 </View>
-              </View>
-
-              <View style={styles.controlCard}>
-                <Text style={styles.controlLabel}>Kişi Sayısı</Text>
-                <View style={styles.partyControls}>
-                  <Pressable
-                    onPress={() => setPartySize((p) => Math.max(1, p - 1))}
-                    style={[styles.controlButton, partySize <= 1 && styles.disabled]}
-                  >
-                    <Ionicons name="remove" size={18} color="#1A1A1A" />
-                  </Pressable>
-
-                  <View style={styles.partyDisplay}>
-                    <Ionicons name="people" size={20} color="#7B2C2C" />
-                    <Text style={styles.partyText}>{partySize}</Text>
-                  </View>
-
-                  <Pressable onPress={() => setPartySize((p) => p + 1)} style={styles.controlButton}>
-                    <Ionicons name="add" size={18} color="#1A1A1A" />
-                  </Pressable>
-                </View>
-              </View>
-            </View>
-
-            {fetchingSlots ? (
-              <View style={styles.slotsLoading}>
-                <ActivityIndicator color="#7B2C2C" />
-                <Text style={styles.slotsLoadingText}>Uygun saatler aranıyor…</Text>
+                <Text style={styles.description}>{r.description}</Text>
               </View>
             ) : (
-              <FlatList
-                data={slots}
-                horizontal
-                keyExtractor={(s) => s.timeISO}
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.slotsList}
-                renderItem={({ item }) => {
-                  const isSelected = selectedSlot?.timeISO === item.timeISO;
-                  const disabled = !item.isAvailable;
-                  return (
-                    <Pressable
-                      onPress={() => onSelectSlot(item)}
-                      disabled={disabled}
-                      style={[styles.slot, disabled && styles.slotDisabled, isSelected && styles.slotSelected]}
-                    >
-                      <Ionicons
-                        name={isSelected ? "checkmark-circle" : "time-outline"}
-                        size={18}
-                        color={isSelected ? "#fff" : disabled ? "#999999" : "#7B2C2C"}
-                      />
-                      <Text style={[styles.slotText, isSelected && styles.slotTextSelected]}>{item.label}</Text>
-                    </Pressable>
-                  );
-                }}
-                ListEmptyComponent={
-                  <View style={styles.emptyStateSmall}>
-                    <Ionicons name="calendar-outline" size={32} color="#999999" />
-                    <Text style={styles.muted}>Uygun saat bulunamadı.</Text>
-                  </View>
-                }
-              />
-            )}
-          </View>
-           {/* Hakkında */}
-          {!!r.description && (
+              <View style={styles.card}>
+                <View style={styles.emptyStateSmall}>
+                  <Ionicons name="information-circle-outline" size={32} color="#999999" />
+                  <Text style={styles.muted}>
+                    {tt("restaurantDetail.noAbout", "Bu mekan için açıklama yok.")}
+                  </Text>
+                </View>
+              </View>
+            )
+          )}
+
+          {/* MENU TAB (A-la-carte kategori + ürün listesi) */}
+          {activeTab === "MENU" && (
             <View style={styles.card}>
               <View style={styles.cardHeader}>
-                <Ionicons name="information-circle" size={22} color="#7B2C2C" />
-                <Text style={styles.sectionTitle}>Hakkında</Text>
+                
+
+                {menuCats.length > 0 && (
+                  <Pressable
+                    onPress={() => setExpandAllMenuCats((p) => !p)}
+                    style={styles.menuExpandAllBtn}
+                    hitSlop={8}
+                  >
+                    <Ionicons
+                      name={expandAllMenuCats ? "chevron-up-circle" : "chevron-down-circle"}
+                      size={16}
+                      color="#7B2C2C"
+                    />
+                    <Text style={styles.menuExpandAllText}>
+                      {expandAllMenuCats
+                        ? tt("restaurantDetail.collapseAll", "Hepsini Kapat")
+                        : tt("restaurantDetail.expandAll", "Hepsini Aç")}
+                    </Text>
+                  </Pressable>
+                )}
               </View>
-              <Text style={styles.description}>{r.description}</Text>
+
+              {menuLoading ? (
+                <View style={styles.emptyStateSmall}>
+                  <ActivityIndicator color="#7B2C2C" />
+                  <Text style={styles.muted}>
+                    {tt("restaurantDetail.menuLoading", "Menü yükleniyor...")}
+                  </Text>
+                </View>
+              ) : menuCats.length === 0 ? (
+                <View style={styles.emptyStateSmall}>
+                  <Ionicons name="list-outline" size={32} color="#999999" />
+                  <Text style={styles.muted}>
+                    {tt("restaurantDetail.menuComingSoon", "Bu mekan henüz menüsünü paylaşmadı.")}
+                  </Text>
+                </View>
+              ) : (
+                <View style={{ gap: 12 }}>
+                  {menuCats.map((c) => {
+                    const isOpen = expandAllMenuCats || expandedCatId === c._id;
+                    const catItems = menuItemsByCat[c._id] || [];
+
+                    return (
+                      <View key={c._id} style={styles.menuCatCard}>
+                        <Pressable
+                          onPress={() => {
+                            if (expandAllMenuCats) return;
+                            setExpandedCatId(isOpen ? null : c._id);
+                          }}
+                          style={styles.menuCatHeader}
+                        >
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.menuCatTitle}>{c.title}</Text>
+                            {!!c.description && (
+                              <Text style={styles.menuCatDesc} numberOfLines={2}>
+                                {c.description}
+                              </Text>
+                            )}
+                          </View>
+                          <View style={styles.menuCatBadge}>
+                            <Text style={styles.menuCatBadgeText}>{catItems.length}</Text>
+                            <Ionicons
+                              name={isOpen ? "chevron-up" : "chevron-down"}
+                              size={16}
+                              color="#7B2C2C"
+                            />
+                          </View>
+                        </Pressable>
+
+                        {isOpen && (
+                          <View style={{ paddingTop: 10, gap: 10 }}>
+                            {catItems.map((it) => (
+                              <Pressable
+                                key={it._id}
+                                onPress={() => setPreviewItem(it)}
+                                style={({ pressed }) => [
+                                  styles.menuItemRow,
+                                  pressed && styles.menuItemRowPressed,
+                                ]}
+                              >
+                                {it.photoUrl ? (
+                                  <Image
+                                    source={{ uri: it.photoUrl }}
+                                    style={styles.menuItemPhoto}
+                                    resizeMode="cover"
+                                  />
+                                ) : (
+                                  <View style={styles.menuItemPhotoPlaceholder}>
+                                    <View style={styles.menuItemPhotoPlaceholderInner}>
+                                      <Ionicons name="fast-food-outline" size={20} color="#7B2C2C" />
+                                    </View>
+                                    <Text style={styles.menuItemPhotoPlaceholderText}>
+                                      {tt("restaurantDetail.noPhotoShort", "Foto yok")}
+                                    </Text>
+                                  </View>
+                                )}
+
+                                <View style={styles.menuItemInfo}>
+                                  <Text style={styles.menuItemTitle}>{it.title}</Text>
+                                  {!!it.description && (
+                                    <Text style={styles.menuItemDesc} numberOfLines={2}>
+                                      {it.description}
+                                    </Text>
+                                  )}
+
+                                  {!!it.tags?.length && (
+                                    <View style={styles.menuItemTagsRow}>
+                                      {it.tags.slice(0, 4).map((tg, i) => (
+                                        <View key={`${it._id}-tg-${i}`} style={styles.menuItemTagPill}>
+                                          <Text style={styles.menuItemTagText}>#{tg}</Text>
+                                        </View>
+                                      ))}
+                                    </View>
+                                  )}
+                                </View>
+
+                                <View style={styles.menuItemPriceCol}>
+                                  <View style={styles.menuItemPricePill}>
+                                    <Text style={styles.menuItemPrice}>{formatPrice(it.price)}</Text>
+                                  </View>
+                                  {!it.isAvailable && (
+                                    <Text style={styles.menuItemUnavailable}>
+                                      {tt("restaurantDetail.notAvailable", "Stok yok")}
+                                    </Text>
+                                  )}
+                                </View>
+                              </Pressable>
+                            ))}
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
             </View>
           )}
+
 
           {/* İletişim */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Ionicons name="call" size={22} color="#7B2C2C" />
-              <Text style={styles.sectionTitle}>İletişim</Text>
+              <Text style={styles.sectionTitle}>{t("restaurantDetail.contact")}</Text>
             </View>
             <View style={styles.contactItem}>
               <Ionicons name="call-outline" size={18} color="#666666" />
-              <Text style={styles.contactText}>{r.phone || "Telefon bilgisi yok"}</Text>
+              <Text style={styles.contactText}>
+                {r.phone || t("restaurantDetail.noPhone")}
+              </Text>
             </View>
             <View style={styles.contactItem}>
               <Ionicons name="location-outline" size={18} color="#666666" />
-              <Text style={styles.contactText}>{r.address || "Adres bilgisi yok"}</Text>
+              <Text style={styles.contactText}>
+                {r.address || t("restaurantDetail.noAddress")}
+              </Text>
             </View>
           </View>
         </Animated.View>
       </ScrollView>
+
+      {/* Fullscreen photo viewer */}
+      <Modal
+        visible={fullScreenOpen}
+        transparent={false}
+        animationType="fade"
+        onRequestClose={() => setFullScreenOpen(false)}
+      >
+        <View style={styles.fullscreenContainer}>
+          <FlatList
+            data={photos}
+            horizontal
+            pagingEnabled
+            keyExtractor={(u, i) => `${u}-full-${i}`}
+            initialScrollIndex={fullScreenIndex}
+            getItemLayout={(_, index) => ({
+              length: PHOTO_W,
+              offset: PHOTO_W * index,
+              index,
+            })}
+            showsHorizontalScrollIndicator={false}
+            renderItem={({ item }) => (
+              <Image
+                source={{ uri: item }}
+                style={styles.fullscreenImage}
+                resizeMode="contain"
+              />
+            )}
+            onMomentumScrollEnd={(e) => {
+              const idx = Math.round(e.nativeEvent.contentOffset.x / PHOTO_W);
+              if (!Number.isNaN(idx) && photos.length) {
+                setActivePhoto(Math.max(0, Math.min(idx, photos.length - 1)));
+              }
+            }}
+          />
+
+          <View style={styles.fullscreenDots}>
+            {photos.map((_, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.fullscreenDot,
+                  i === activePhoto && styles.fullscreenDotActive,
+                ]}
+              />
+            ))}
+          </View>
+
+          <TouchableOpacity
+            style={styles.fullscreenClose}
+            onPress={() => setFullScreenOpen(false)}
+          >
+            <Ionicons name="close" size={26} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      </Modal>
+
+      {/* Menu item preview modal */}
+      <Modal
+        visible={!!previewItem}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPreviewItem(null)}
+      >
+        <Pressable
+          style={styles.previewBackdrop}
+          onPress={() => setPreviewItem(null)}
+        >
+          <Pressable style={styles.previewCard} onPress={() => {}}>
+            {previewItem?.photoUrl ? (
+              <Image
+                source={{ uri: previewItem.photoUrl }}
+                style={styles.previewImage}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={styles.previewImagePlaceholder}>
+                <Ionicons name="fast-food-outline" size={42} color="#7B2C2C" />
+                <Text style={styles.previewImagePlaceholderText}>
+                  {tt("restaurantDetail.noPhoto", "Fotoğraf yok")}
+                </Text>
+              </View>
+            )}
+
+            <View style={styles.previewBody}>
+              <Text style={styles.previewTitle}>{previewItem?.title}</Text>
+              {!!previewItem?.description && (
+                <Text style={styles.previewDesc}>{previewItem.description}</Text>
+              )}
+
+              <View style={styles.previewPriceRow}>
+                <Text style={styles.previewPrice}>{formatPrice(previewItem?.price || 0)}</Text>
+                {!previewItem?.isAvailable && (
+                  <Text style={styles.previewUnavailable}>
+                    {tt("restaurantDetail.notAvailable", "Stok yok")}
+                  </Text>
+                )}
+              </View>
+
+              {!!previewItem?.tags?.length && (
+                <Text style={styles.previewTags} numberOfLines={2}>
+                  #{previewItem.tags.join(" #")}
+                </Text>
+              )}
+            </View>
+
+            <Pressable
+              onPress={() => setPreviewItem(null)}
+              style={styles.previewClose}
+              hitSlop={8}
+            >
+              <Ionicons name="close" size={18} color="#fff" />
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* CTA Bar */}
       <LinearGradient
@@ -551,12 +940,16 @@ export default function RestaurantDetailScreen() {
           <View style={styles.ctaTitleRow}>
             <Ionicons name="calendar" size={18} color="#7B2C2C" />
             <Text style={styles.ctaTitle}>
-              {selectedSlot ? `${dayLabel}, ${selectedSlot.label}` : "Tarih & Saat Seçin"}
+              {selectedSlot
+                ? `${dayLabel}, ${selectedSlot.label}`
+                : t("restaurantDetail.ctaSelectDateTime")}
             </Text>
           </View>
           <View style={styles.ctaSubRow}>
             <Ionicons name="people" size={14} color="#666666" />
-            <Text style={styles.ctaSub}>{partySize} Kişi</Text>
+            <Text style={styles.ctaSub}>
+              {t("restaurantDetail.ctaPeople", { count: partySize })}
+            </Text>
           </View>
         </View>
 
@@ -565,7 +958,9 @@ export default function RestaurantDetailScreen() {
           disabled={!selectedSlot}
           style={[styles.ctaBtn, !selectedSlot && styles.ctaBtnDisabled]}
         >
-          <Text style={styles.ctaBtnText}>Devam Et</Text>
+          <Text style={styles.ctaBtnText}>
+            {t("restaurantDetail.ctaContinue")}
+          </Text>
           <Ionicons name="arrow-forward" size={18} color="#fff" />
         </TouchableOpacity>
       </LinearGradient>
@@ -675,6 +1070,33 @@ const styles = StyleSheet.create({
   },
   metaChipTextPrimary: { fontSize: 13, fontWeight: "700", color: "#fff" },
 
+  // Tabs
+  tabsWrap: {
+    marginTop: 14,
+    marginHorizontal: H_PADDING,
+    flexDirection: "row",
+    gap: 10,
+  },
+  tabBtn: {
+    flex: 1,
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: "#E6E6E6",
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+  },
+  tabBtnActive: {
+    backgroundColor: "#7B2C2C",
+    borderColor: "#7B2C2C",
+  },
+  tabText: { fontWeight: "800", color: "#7B2C2C", fontSize: 14 },
+  tabTextActive: { color: "#fff" },
+
   card: {
     marginTop: 16,
     marginHorizontal: H_PADDING,
@@ -722,6 +1144,99 @@ const styles = StyleSheet.create({
   },
   menuPriceText: { color: "#fff", fontWeight: "800", fontSize: 15 },
   menuPriceSub: { color: "#fff", opacity: 0.9, fontSize: 12 },
+
+  // A-la-carte kategori + ürün listesi
+  menuCatCard: {
+    backgroundColor: "#FAFAFA",
+    borderRadius: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#E6E6E6",
+  },
+  menuCatHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  menuCatTitle: { fontSize: 15, fontWeight: "800", color: "#1A1A1A" },
+  menuCatDesc: { marginTop: 4, color: "#666666", fontSize: 12, lineHeight: 18 },
+  menuCatBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#E6E6E6",
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  menuCatBadgeText: { fontWeight: "800", color: "#7B2C2C", fontSize: 12 },
+
+  menuItemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#fff",
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#F0F0F0",
+  },
+  menuItemPhoto: { width: 64, height: 64, borderRadius: 10, backgroundColor: "#E6E6E6" },
+  menuItemPhotoPlaceholder: {
+    width: 64,
+    height: 64,
+    borderRadius: 12,
+    backgroundColor: "#FFF5F5",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#F3DADA",
+    gap: 2,
+    paddingHorizontal: 4,
+  },
+  menuItemPhotoPlaceholderInner: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#E6E6E6",
+  },
+  menuItemPhotoPlaceholderText: {
+    marginTop: 2,
+    fontSize: 9,
+    fontWeight: "700",
+    color: "#7B2C2C",
+    opacity: 0.9,
+  },
+  menuItemRowPressed: {
+    transform: [{ scale: 1.02 }],
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  menuItemInfo: { flex: 1 },
+  menuItemTitle: { fontSize: 14, fontWeight: "700", color: "#1A1A1A" },
+  menuItemDesc: { marginTop: 4, color: "#666666", fontSize: 12, lineHeight: 18 },
+  menuItemTagsRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 6 },
+  menuItemTagPill: {
+    backgroundColor: "#FAFAFA",
+    borderWidth: 1,
+    borderColor: "#E6E6E6",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  menuItemTagText: { fontSize: 11, fontWeight: "700", color: "#7B2C2C" },
+  menuItemPriceCol: { alignItems: "flex-end" },
+  menuItemPrice: { fontSize: 16, fontWeight: "900", color: "#7B2C2C" },
+  menuItemUnavailable: { marginTop: 4, fontSize: 11, color: "#999999", fontWeight: "700" },
 
   controlsContainer: { flexDirection: "row", gap: 12, marginBottom: 16 },
   controlCard: {
@@ -807,4 +1322,155 @@ const styles = StyleSheet.create({
   },
   ctaBtnDisabled: { opacity: 0.5 },
   ctaBtnText: { color: "#fff", fontWeight: "800", fontSize: 15 },
-});
+
+  fullscreenContainer: {
+    flex: 1,
+    backgroundColor: "#000",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  fullscreenImage: {
+    width: PHOTO_W,
+    height: "100%",
+  },
+  fullscreenClose: {
+    position: "absolute",
+    top: 40,
+    right: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  fullscreenDots: {
+    position: "absolute",
+    bottom: 40,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8,
+    zIndex: 20,
+  },
+  fullscreenDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "rgba(255,255,255,0.4)",
+  },
+  fullscreenDotActive: {
+    width: 24,
+    backgroundColor: "#fff",
+  },
+  menuItemPricePill: {
+    backgroundColor: "#FFF5F5",
+    borderWidth: 1,
+    borderColor: "#F3DADA",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+
+  menuExpandAllBtn: {
+    marginLeft: "auto",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#FFF5F5",
+    borderWidth: 1,
+    borderColor: "#F3DADA",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  menuExpandAllText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#7B2C2C",
+  },
+
+  previewBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  previewCard: {
+    width: "100%",
+    maxWidth: 420,
+    backgroundColor: "#fff",
+    borderRadius: 18,
+    overflow: "hidden",
+  },
+  previewImage: {
+    width: "100%",
+    height: 240,
+    backgroundColor: "#E6E6E6",
+  },
+  previewImagePlaceholder: {
+    width: "100%",
+    height: 240,
+    backgroundColor: "#FFF5F5",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  previewImagePlaceholderText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#7B2C2C",
+    opacity: 0.9,
+  },
+  previewBody: {
+    padding: 14,
+    gap: 6,
+  },
+  previewTitle: {
+    fontSize: 17,
+    fontWeight: "900",
+    color: "#1A1A1A",
+  },
+  previewDesc: {
+    fontSize: 13,
+    color: "#666666",
+    lineHeight: 19,
+  },
+  previewPriceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 4,
+  },
+  previewPrice: {
+    fontSize: 18,
+    fontWeight: "900",
+    color: "#7B2C2C",
+  },
+  previewUnavailable: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#999999",
+  },
+  previewTags: {
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#7B2C2C",
+    opacity: 0.9,
+  },
+  previewClose: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    alignItems: "center",
+    justifyContent: "center"
+    }
+  })
+  

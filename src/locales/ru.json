@@ -1,0 +1,527 @@
+{
+  "common": {
+    "save": "Сохранить",
+    "saving": "Сохранение...",
+    "ok": "Ок",
+    "cancel": "Отмена",
+    "close": "Закрыть",
+    "retry": "Повторить",
+    "error": "Ошибка",
+    "warning": "Предупреждение",
+    "info": "Информация",
+    "noResults": "Ничего не найдено."
+  },
+  "profile": {
+    "title": "Профиль",
+    "logout": "Выйти",
+    "logoutConfirm": "Вы действительно хотите выйти из аккаунта?",
+    "role": {
+      "customer": "Гость",
+      "restaurant": "Ресторан",
+      "admin": "Админ"
+    },
+    "stats": {
+      "upcoming": "Предстоящие",
+      "confirmed": "Подтверждено",
+      "cancelled": "Отменено"
+    },
+    "section": {
+      "profileInfo": "Информация профиля",
+      "notificationPrefs": "Настройки уведомлений",
+      "appPrefs": "Настройки приложения",
+      "password": "Сменить пароль",
+      "favorites": "Избранные",
+      "reservations": "Мои бронирования",
+      "adminShortcuts": "Админ-панель",
+      "legalSupport": "Правовая информация"
+    },
+    "field": {
+      "name": "Имя и фамилия",
+      "email": "Эл. почта",
+      "phone": "Телефон"
+    },
+    "notify": {
+      "push": "Push-уведомления",
+      "sms": "SMS (скоро)",
+      "email": "Эл. почта (скоро)"
+    },
+    "appPrefs": {
+      "title": "Регион и язык",
+      "current": "Текущий",
+      "region": "Регион",
+      "seeAllRegions": "Все регионы",
+      "language": "Язык",
+      "seeAllLanguages": "Все языки",
+      "selectRegionTitle": "Выбрать регион",
+      "selectLanguageTitle": "Выбрать язык",
+      "selectRegion": "Выбрать регион",
+      "selectLanguage": "Выбрать язык"
+    },
+    "password": {
+      "current": "Текущий пароль",
+      "new": "Новый пароль",
+      "newConfirm": "Подтвердите новый пароль",
+      "update": "Обновить пароль",
+      "error": {
+        "missingTitle": "Недостаточно данных",
+        "missingBody": "Пожалуйста, заполните все поля пароля.",
+        "weakTitle": "Слабый пароль",
+        "weakBody": "Новый пароль должен содержать не менее 8 символов.",
+        "mismatchTitle": "Пароли не совпадают",
+        "mismatchBody": "Новые пароли должны совпадать."
+      },
+      "successTitle": "Пароль обновлён",
+      "successBody": "Ваш новый пароль успешно сохранён.",
+      "errorTitle": "Не удалось изменить пароль",
+      "errorBody": "Проверьте данные и попробуйте снова."
+    },
+    "avatar": {
+      "successTitle": "Обновлено",
+      "successBody": "Фото профиля обновлено.",
+      "errorBody": "Не удалось загрузить аватар."
+    },
+    "favorites": {
+      "total": "Всего",
+      "empty": "Вы ещё не добавили избранные.",
+      "remove": "Удалить",
+      "go": "Перейти"
+    },
+    "reservations": {
+      "total": "Всего",
+      "totalSpent": "Общая сумма",
+      "empty": "Бронирований пока нет.",
+      "restaurantFallback": "Ресторан",
+      "totalLabel": "Всего",
+      "itemTitle": "{{date}} • {{count}} гостей",
+      "fallbackRestaurant": "Ресторан",
+      "status": {
+        "pending": "В ожидании",
+        "confirmed": "Подтверждено",
+        "arrived": "Прибыл",
+        "noShow": "Не пришёл",
+        "cancelled": "Отменено"
+      }
+    },
+    "shortcuts": {
+      "restaurantPanel": "Панель ресторана",
+      "adminPanel": "Админ-панель",
+      "scanQR": "Сканировать QR",
+      "manualCheckin": "Ручной чек-ин"
+    },
+    "legal": {
+      "terms": "Условия использования",
+      "privacy": "Политика конфиденциальности",
+      "help": "Помощь и поддержка",
+      "contact": "Контакты",
+      "licenses": "Лицензии",
+      "about": "О приложении",
+      "deleteAccount": "Удалить аккаунт"
+    },
+    "selector": {
+      "chooseRegion": "Выбрать регион",
+      "chooseLanguage": "Выбрать язык"
+    },
+    "modal": {
+      "close": "Закрыть",
+      "confirm": "Ок",
+      "retry": "Повторить"
+    },
+    "toast": {
+      "pushPermissionTitle": "Требуется разрешение",
+      "pushPermissionBody": "Для включения push-уведомлений требуется разрешение на уведомления.",
+      "pushPrefErrorTitle": "Ошибка",
+      "pushPrefErrorBody": "Не удалось обновить настройки уведомлений.",
+      "cameraPermissionTitle": "Требуется разрешение",
+      "cameraPermissionBody": "Для сканирования QR-кодов требуется доступ к камере.",
+      "favoriteErrorTitle": "Ошибка",
+      "favoriteErrorBody": "Не удалось удалить из избранного.",
+      "invalidQRTitle": "Недействительный QR",
+      "invalidQRBody": "Не удалось подтвердить QR-код.",
+      "qrRetryLabel": "Сканировать снова",
+      "invalidNumberTitle": "Предупреждение",
+      "invalidNumberBody": "Введите корректное число (0 или больше).",
+      "checkinSuccessTitle": "Чек-ин выполнен",
+      "checkinSuccessBody": "Посещение успешно зарегистрировано.",
+      "checkinFailedTitle": "Ошибка чек-ина",
+      "checkinFailedBody": "Не удалось завершить операцию.",
+      "ridRequiredTitle": "Предупреждение",
+      "ridRequiredBody": "Требуется ID бронирования.",
+      "checkinManualFailedTitle": "Ошибка",
+      "checkinManualFailedBody": "Не удалось выполнить чек-ин.",
+      "saveSuccessTitle": "Сохранено",
+      "saveSuccessBody": "Профиль и настройки обновлены.",
+      "saveErrorTitle": "Ошибка обновления",
+      "saveErrorBody": "Пожалуйста, попробуйте снова."
+    },
+    "qr": {
+      "arrivedCountTitle": "Количество гостей",
+      "arrivedCountDescription": "QR отсканирован. Введите количество пришедших гостей (обязательно).",
+      "arrivedCountPlaceholder": "Напр.: 5"
+    },
+    "checkin": {
+      "manualTitle": "Ручной чек-ин",
+      "ridLabel": "ID бронирования (RID)",
+      "ridPlaceholder": "Напр.: 64b7… Mongo ObjectId",
+      "arrivedLabel": "Количество гостей (обязательно)",
+      "arrivedPlaceholder": "Напр.: 4",
+      "submit": "Чек-ин"
+    }
+  },
+  "status": {
+    "pending": "В ожидании",
+    "confirmed": "Подтверждено",
+    "arrived": "Прибыл",
+    "no_show": "Не пришёл",
+    "cancelled": "Отменено",
+    "rejected": "Отклонено",
+    "unknown": "Без статуса"
+  },
+  "home": {
+    "loading": "Загрузка...",
+    "error": "Ошибка подключения",
+    "noResults": "Ничего не найдено. Очистите фильтры и попробуйте снова.",
+    "explore": "Исследовать"
+  },
+  "bookings": {
+    "receipt": {
+      "upload": "Загрузить квитанцию",
+      "uploading": "Загружается…",
+      "acceptedFormats": "Допустимые форматы: JPG/PNG",
+      "view": "Просмотр",
+      "replace": "Заменить",
+      "share": "Поделиться",
+      "tapToClose": "Нажмите, чтобы закрыть"
+    },
+    "title": "Мои бронирования",
+    "guest": {
+      "title": "Ваши бронирования",
+      "subtitle": "Войдите, чтобы увидеть и управлять бронированиями.",
+      "login": "Войти"
+    },
+    "loading": "Загрузка бронирований...",
+    "loadError": "Не удалось загрузить.",
+    "errorPrefix": "Ошибка:",
+    "emptyTitle": "Нет данных",
+    "emptySubtitle": "Нет бронирований по заданным фильтрам.",
+    "restaurantFallback": "Ресторан"
+  },
+  "filters": {
+    "all": "Все",
+    "active": "Активные",
+    "past": "Прошедшие",
+    "advanced": "Расширенный фильтр",
+    "byStatus": "Фильтр по статусу"
+  },
+  "time": {
+    "all": "Все",
+    "today": "Сегодня",
+    "week": "На этой неделе",
+    "custom": "Выбрать дату",
+    "rangeTitle": "Выберите период",
+    "apply": "Применить",
+    "clear": "Очистить",
+    "start": "Начало",
+    "end": "Конец"
+  },
+  "search": { "placeholder": "Поиск ресторана..." },
+  "restaurantDetail": {
+    "loading": "Загрузка…",
+    "notFoundTitle": "Ресторан не найден",
+    "notFoundText": "Этот ресторан не существует или был удалён.",
+    "back": "Назад",
+
+    "aboutTab": "О заведении",
+    "menuTab": "Меню",
+    "menuTitle": "Меню",
+    "menuComingSoon": "Это заведение ещё не добавило меню.",
+    "noAbout": "Описание для этого заведения отсутствует.",
+
+    "noPhoto": "Фото отсутствует",
+
+    "fixedMenus": "Фикс-меню",
+    "noMenu": "Меню отсутствует.",
+    "perPerson": "за человека",
+    "expandAll": "Открыть все",
+    "collapseAll": "Свернуть все",
+    "menuLoading": "Загрузка меню...",
+
+
+    "findSlot": "Найти время",
+    "date": "Дата",
+    "partySize": "Количество гостей",
+    "slotsSearching": "Поиск доступных времён…",
+    "noSlots": "Доступного времени нет.",
+
+    "about": "О ресторане",
+    "contact": "Контакты",
+    "noPhone": "Нет телефона",
+    "noAddress": "Нет адреса",
+
+    "ctaSelectDateTime": "Выберите дату и время",
+    "ctaPeople": "{{count}} чел.",
+    "ctaContinue": "Продолжить",
+
+    "pastTimeTitle": "Прошедшее время",
+    "pastTimeBody": "Нельзя бронировать на прошедшее время.",
+    "pastDateTimeTitle": "Прошедшая дата",
+    "pastDateTimeBody": "Выберите будущую дату и время.",
+
+    "loginRequiredTitle": "Требуется вход",
+    "loginRequiredBodyReservation": "Чтобы забронировать, необходимо войти.",
+    "loginRequiredBodyFavorite": "Чтобы добавить в избранное, необходимо войти.",
+
+    "loadError": "Ошибка загрузки ресторана",
+    "favoriteError": "Не удалось добавить в избранное"
+  },
+  "reservationStep2": {
+    "title": "Выбор гостей и меню",
+    "subtitle": "Выберите меню для каждого гостя.",
+    "loading": "Загрузка меню…",
+    "loadError": "Ошибка загрузки меню.",
+    "emptyMenus": "Нет доступных меню.",
+    "personTitle": "Гость {{index}}",
+    "toastAllRequired": "Пожалуйста, выберите меню для всех.",
+    "missingTitle": "Не выбрано",
+    "ctaContinue": "Продолжить",
+     "skipFixedMenus": "Не хочу фикс-меню",
+    "skipFixedMenusHelp": "Вы можете продолжить без выбора фикс-меню.",
+    "skipInfo": "Вы продолжаете без фикс-меню. Стоимость фикс-меню не будет добавлена в итог."
+  },
+  "reservationStep3": {
+    "title": "Итог бронирования",
+    "dateTimeLabel": "Дата и время",
+    "partySizeLabel": "Гости",
+    "selectedMenusTitle": "Выбранные меню",
+    "subtotalLabel": "Промежуточный итог",
+    "depositLabel": "Депозит",
+    "totalLabel": "Итого",
+    "noMenus": "Нет выбранных меню.",
+    "paymentInfoTitle": "Платёжная информация",
+    "bankLabel": "Банк",
+    "ibanNameLabel": "Имя владельца",
+    "ibanLabel": "IBAN",
+    "depositHint": "После оплаты загрузите квитанцию.",
+    "receiptTitle": "Квитанция",
+    "ctaCreating": "Создание...",
+    "ctaCreate": "Создать бронирование",
+    "ctaPickReceipt": "Выбрать квитанцию",
+    "toastCopied": "Скопировано",
+    "toastReceiptSelected": "Квитанция выбрана",
+    "toastMissing": "Не вся информация заполнена",
+    "toastNoId": "Не удалось получить ID бронирования",
+    "toastCreateError": "Ошибка создания/квитанции",
+    "fallbackMenuName": "Меню",
+    "paymentMethodTitle": "Способ оплаты",
+  "methodBankTransfer": "Банковский перевод / IBAN",
+  "methodCard": "Карта / Apple / Google Pay",
+  "copy": "Копировать",
+
+  "noFixedMenusSelected": "Фикс-меню не выбрано.",
+
+
+  "receiptInfoForCard": "Если вы платите картой, загружать квитанцию не нужно.",
+
+  "ctaStripeProcessing": "Обработка платежа...",
+  "ctaStripePay": "Оплатить картой / Apple / Google Pay",
+
+  "toastNoDepositForCard": "Для этого заведения депозит не настроен.",
+  "toastStripeInitError": "Не удалось начать платеж. Попробуйте еще раз.",
+  "toastStripePaymentError": "Платеж не был завершен. Попробуйте еще раз.",
+  "toastStripeSuccess": "Платеж успешно выполнен.",
+  "methodCardShort": "Оплатить картой",
+  "ctaStripePayWithAmount": "Оплатить {{amount}}",
+  "paySuffix": "оплатить"
+  },
+  "restaurant": {
+    "noMenus": "Меню отсутствует."
+  },
+  "upload": {
+    "receipt": {
+      "button": "Загрузить квитанцию",
+      "permissionTitle": "Требуется разрешение",
+      "permissionMessage": "Нет доступа к галерее.",
+      "errorTitle": "Ошибка",
+      "errorMessage": "Произошла ошибка при выборе файла.",
+      "acceptedTypes": "Допустимые форматы: JPG/PNG"
+    }
+  },
+  "about": {
+    "title": "О приложении",
+    "subtitle": "Честный и удобный опыт для гостей и ресторанов.",
+    "headline": "Мы делаем бронирование умнее и безопаснее.",
+    "description": "Rezzy объединяет депозиты, QR check-in и контроль заполняемости — всё для удобства гостей и ресторанов.",
+    "features": {
+      "smartBooking": {
+        "title": "Умный процесс бронирования",
+        "desc": "Предлагаются варианты времени с учётом расписания и доступных столов."
+      },
+      "deposit": {
+        "title": "Депозит и гарантия",
+        "desc": "Снижает риск no-show и обеспечивает уверенность гостя."
+      },
+      "qr": {
+        "title": "Быстрый QR check-in",
+        "desc": "QR-код подтверждает бронирование за секунды."
+      },
+      "transparency": {
+        "title": "Прозрачная аналитика",
+        "desc": "История, отмены и заполняемость — всё в одном месте."
+      }
+    },
+    "meta": {
+      "title": "Информация о приложении",
+      "version": "Версия",
+      "regions": "Активные регионы",
+      "regionsValue": "Великобритания и Северный Кипр (пилот)",
+      "contact": "Контакты"
+    }
+  },
+  "contact": {
+    "title": "Контакты",
+    "subtitle": "Свяжитесь с нами — мы поможем.",
+
+    "emailTitle": "Поддержка по email",
+    "emailDesc": "Пишите нам по любым вопросам.",
+
+    "workHoursTitle": "Часы работы",
+    "workdays": "Будни",
+    "workhours": "09:00 — 18:00",
+
+    "moreInfo": "Дополнительная информация",
+    "moreInfoDesc": "Скоро здесь появится больше сведений."
+  },
+  "deleteAccount": {
+    "title": "Удалить аккаунт",
+    "subtitle": "Вы можете навсегда удалить свой аккаунт Rezzy.",
+    "sectionTitle": "Перед удалением",
+    "descriptionMain": "Ваши данные будут удалены без возможности восстановления.",
+    "dataTitle": "Будет удалено:",
+    "dataItemReservations": "История бронирований",
+    "dataItemProfile": "Информация профиля",
+    "dataItemAnalytics": "Использование, связанное с вами",
+    "warningTitle": "Это действие необратимо",
+    "warningText": "Для повторного входа нужно будет создать новый аккаунт.",
+    "buttonLabel": "Удалить навсегда",
+    "buttonLoading": "Удаление...",
+    "successTitle": "Аккаунт удалён",
+    "successMessage": "Ваш аккаунт успешно удалён.",
+    "errorGeneric": "Произошла ошибка."
+  },
+  "helpSupport": {
+    "title": "Помощь и поддержка",
+    "subtitle": "Ответы на часто задаваемые вопросы.",
+    "faq": {
+      "title": "FAQ",
+      "subtitle": "Самые распространённые вопросы.",
+      "q1": "Как сделать бронирование?",
+      "q2": "Как отменить бронирование?",
+      "q3": "Как отслеживать статус?",
+      "q4": "Почему нет уведомлений?",
+      "a1": "С Rezzy вы можете быстро бронировать, оплачивать депозит и подтверждать QR-кодом.",
+      "a2": "Статус легко отслеживать в деталях бронирования.",
+      "a3": "Условия отмены зависят от ресторана.",
+      "a4": "Свяжитесь с нами через раздел Поддержка."
+    },
+    "tips": {
+      "title": "Быстрые советы",
+      "subtitle": "Чтобы избежать проблем:",
+      "item1": "Убедитесь, что включены уведомления и есть интернет.",
+      "item2": "Используйте последнюю версию приложения.",
+      "item3": "Перезапустите приложение или выполните повторный вход."
+    },
+    "contact": {
+      "title": "Нужна помощь?",
+      "subtitle": "Мы отвечаем как можно быстрее.",
+      "button": "Связаться"
+    }
+  },
+  "licenses": {
+    "title": "Открытые лицензии",
+    "subtitle": "Rezzy использует современные open-source библиотеки.",
+    "section": {
+      "overviewTitle": "Почему open-source?",
+      "overviewBody1": "Быстрая разработка, безопасность и стабильность.",
+      "overviewBody2": "Ниже — основные категории используемых библиотек.",
+      "coreTitle": "Основные библиотеки",
+      "uiTitle": "UI и взаимодействие",
+      "toolingTitle": "Инструменты",
+      "noteTitle": "Важно",
+      "noteBody1": "Список содержит основные модули.",
+      "noteBody2": "Все библиотеки используются в соответствии с их лицензиями."
+    }
+  },
+  "privacy": {
+    "title": "Политика конфиденциальности",
+    "subtitle": "Мы ценим вашу конфиденциальность.",
+
+    "collected": "Собираемые данные",
+    "collected_id": "Идентификационные данные",
+    "collected_usage": "Информация о бронированиях",
+    "collected_device": "Информация об устройстве",
+
+    "usage": "Использование данных",
+    "usage_reservation": "Для управления бронированиями",
+    "usage_notifications": "Для отправки уведомлений",
+    "usage_security": "Для повышения безопасности",
+
+    "sharing": "Передача данных",
+    "sharing_restaurants": "Передаётся связанным ресторанам",
+    "sharing_law": "При юридических требованиях",
+
+    "retention": "Хранение данных",
+    "retention_text": "Хранится только при необходимости.",
+
+    "rights": "Ваши права",
+    "rights_text": "Вы можете запросить изменение или удаление своих данных.",
+
+    "cookies": "Cookies",
+    "cookies_text": "Мы используем базовые cookies.",
+
+    "contact": "Контакты",
+    "contact_text": "Свяжитесь с нами по любым вопросам.",
+    "disclaimer": "Политика может быть обновлена."
+  },
+  "terms": {
+    "title": "Условия использования",
+    "subtitle": "Используя Rezzy, вы принимаете условия.",
+    "accountTitle": "Аккаунт и безопасность",
+    "accountText": "Вы несёте ответственность за безопасность аккаунта.",
+    "reservationsTitle": "Бронирования и отмены",
+    "reservationsText1": "Условия зависят от ресторана.",
+    "reservationsText2": "Проверьте политику отмены перед подтверждением.",
+    "prohibitedTitle": "Запрещённые действия",
+    "prohibitedText": "Запрещены мошеннические и вредоносные действия.",
+    "liabilityTitle": "Отказ от ответственности",
+    "liabilityText": "Rezzy — посредник и не отвечает за работу ресторанов.",
+    "changesTitle": "Изменения",
+    "changesText": "Условия могут обновляться.",
+    "legalTitle": "Юридическая информация",
+    "legalText1": "Это справочный текст.",
+    "legalText2": "Свяжитесь с нами по вопросам.",
+    "disclaimer": "*Не является юридической консультацией.",
+    "lastUpdate": "Последнее обновление: 2025"
+  },
+  "auth": {
+    "emailLabel": "Эл. почта",
+    "emailPlaceholder": "пример@mail.com",
+    "passwordLabel": "Пароль",
+    "passwordPlaceholder": "Ваш пароль",
+    "loginButton": "Войти",
+    "continueWithGoogle": "Продолжить с Google",
+    "continueAsGuest": "Продолжить как гость"
+  },
+  "filter": {
+  "open": "Фильтр",
+  "title": "Фильтр",
+  "clearAll": "Сбросить всё",
+  "date": "Дата",
+  "datePlaceholder": "Выберите дату",
+  "time": "Время",
+  "timePlaceholder": "Выберите время",
+  "people": "Количество человек",
+  "city": "Город",
+  "cityHint": "Город можно изменить в верхней панели.",
+  "price": "Ценовой диапазон",
+  "apply": "Найти заведение"
+}
+}

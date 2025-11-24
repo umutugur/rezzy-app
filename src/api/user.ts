@@ -14,6 +14,8 @@ export async function getMe(): Promise<User> {
     avatarUrl: data.avatarUrl || null,
     notificationPrefs: data.notificationPrefs || {},
     providers: data.providers || [],
+    preferredRegion: data.preferredRegion,       // 🔹 EK
+    preferredLanguage: data.preferredLanguage,   // 🔹 EK
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
   } as User;
@@ -26,6 +28,8 @@ export async function patchMe(patch: {
   email?: string;
   avatarUrl?: string | null;
   notificationPrefs?: { push?: boolean; sms?: boolean; email?: boolean };
+  preferredRegion?: string;       // 🔹 EK
+  preferredLanguage?: string;     // 🔹 EK
 }): Promise<User> {
   const { data } = await api.patch("/auth/me", patch);
   return {
@@ -38,6 +42,8 @@ export async function patchMe(patch: {
     avatarUrl: data.avatarUrl || null,
     notificationPrefs: data.notificationPrefs || {},
     providers: data.providers || [],
+    preferredRegion: data.preferredRegion,       // 🔹 EK
+    preferredLanguage: data.preferredLanguage,   // 🔹 EK
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
   } as User;

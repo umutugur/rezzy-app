@@ -1,0 +1,548 @@
+{
+  "common": {
+    "save": "Αποθήκευση",
+    "saving": "Αποθηκεύεται...",
+    "ok": "ΟΚ",
+    "cancel": "Ακύρωση",
+    "close": "Κλείσιμο",
+    "retry": "Ξανά",
+    "error": "Σφάλμα",
+    "warning": "Προειδοποίηση",
+    "info": "Πληροφορία",
+    "noResults": "Δεν βρέθηκαν αποτελέσματα."
+  },
+  "profile": {
+    "title": "Προφίλ",
+    "logout": "Αποσύνδεση",
+    "role": {
+      "customer": "Πελάτης",
+      "restaurant": "Εστιατόριο",
+      "admin": "Διαχειριστής"
+    },
+    "stats": {
+      "upcoming": "Επερχόμενα",
+      "confirmed": "Επιβεβαιωμένα",
+      "cancelled": "Ακυρωμένα"
+    },
+    "section": {
+      "profileInfo": "Πληροφορίες Προφίλ",
+      "notificationPrefs": "Προτιμήσεις Ειδοποιήσεων",
+      "appPrefs": "Ρυθμίσεις Εφαρμογής",
+      "password": "Αλλαγή Κωδικού",
+      "favorites": "Αγαπημένα",
+      "reservations": "Κρατήσεις",
+      "adminShortcuts": "Διαχειριστικές Συντομεύσεις",
+      "legalSupport": "Νομικά & Υποστήριξη"
+    },
+    "field": {
+      "name": "Ονοματεπώνυμο",
+      "email": "Email",
+      "phone": "Τηλέφωνο"
+    },
+    "notify": {
+      "push": "Push Ειδοποιήσεις",
+      "sms": "SMS (σύντομα)",
+      "email": "Email (σύντομα)"
+    },
+    "appPrefs": {
+      "title": "Περιοχή & Γλώσσα",
+      "current": "Τρέχον",
+      "region": "Περιοχή",
+      "seeAllRegions": "Όλες οι περιοχές",
+      "language": "Γλώσσα",
+      "seeAllLanguages": "Όλες οι γλώσσες",
+      "selectRegionTitle": "Επιλογή Περιοχής",
+      "selectLanguageTitle": "Επιλογή Γλώσσας",
+      "selectRegion": "Επιλογή Περιοχής",
+      "selectLanguage": "Επιλογή Γλώσσας"
+    },
+    "password": {
+      "current": "Τρέχων Κωδικός",
+      "new": "Νέος Κωδικός",
+      "newConfirm": "Επιβεβαίωση Νέου Κωδικού",
+      "update": "Ενημέρωση Κωδικού",
+      "error": {
+        "missingTitle": "Ελλιπή στοιχεία",
+        "missingBody": "Παρακαλούμε συμπληρώστε όλα τα πεδία κωδικού.",
+        "weakTitle": "Αδύναμος κωδικός",
+        "weakBody": "Ο νέος κωδικός πρέπει να έχει τουλάχιστον 8 χαρακτήρες.",
+        "mismatchTitle": "Οι κωδικοί δεν ταιριάζουν",
+        "mismatchBody": "Οι νέοι κωδικοί πρέπει να είναι ίδιοι."
+      },
+      "successTitle": "Ο κωδικός ενημερώθηκε",
+      "successBody": "Ο νέος σας κωδικός αποθηκεύτηκε με επιτυχία.",
+      "errorTitle": "Δεν ήταν δυνατή η αλλαγή κωδικού",
+      "errorBody": "Ελέγξτε τα στοιχεία σας και προσπαθήστε ξανά."
+    },
+    "avatar": {
+      "successTitle": "Ενημερώθηκε",
+      "successBody": "Η φωτογραφία προφίλ ενημερώθηκε.",
+      "errorBody": "Δεν ήταν δυνατή η μεταφόρτωση του avatar."
+    },
+    "favorites": {
+      "total": "Σύνολο",
+      "empty": "Δεν έχετε προσθέσει αγαπημένα.",
+      "remove": "Αφαίρεση",
+      "go": "Μετάβαση"
+    },
+    "reservations": {
+      "total": "Σύνολο",
+      "totalSpent": "Συνολική Δαπάνη",
+      "empty": "Δεν υπάρχουν κρατήσεις.",
+      "restaurantFallback": "Εστιατόριο",
+      "totalLabel": "Σύνολο",
+      "itemTitle": "{{date}} • {{count}} άτομα",
+      "fallbackRestaurant": "Εστιατόριο",
+      "status": {
+        "pending": "Σε αναμονή",
+        "confirmed": "Επιβεβαιωμένο",
+        "arrived": "Παρουσία",
+        "noShow": "Δεν εμφανίστηκε",
+        "cancelled": "Ακυρωμένο"
+      }
+    },
+    "shortcuts": {
+      "restaurantPanel": "Πίνακας Εστιατορίου",
+      "adminPanel": "Πίνακας Διαχειριστή",
+      "scanQR": "Σάρωση QR",
+      "manualCheckin": "Χειροκίνητο Check-in"
+    },
+    "legal": {
+      "terms": "Όροι Χρήσης",
+      "privacy": "Πολιτική Απορρήτου",
+      "help": "Βοήθεια & Υποστήριξη",
+      "contact": "Επικοινωνία",
+      "licenses": "Άδειες",
+      "about": "Σχετικά",
+      "deleteAccount": "Διαγραφή Λογαριασμού"
+    },
+    "selector": {
+      "chooseRegion": "Επιλογή Περιοχής",
+      "chooseLanguage": "Επιλογή Γλώσσας"
+    },
+    "modal": {
+      "close": "Κλείσιμο",
+      "confirm": "ΟΚ",
+      "retry": "Ξανά"
+    },
+    "logoutConfirm": "Θέλετε σίγουρα να αποσυνδεθείτε;",
+    "toast": {
+      "pushPermissionTitle": "Απαιτείται άδεια",
+      "pushPermissionBody": "Πρέπει να δώσετε άδεια ειδοποιήσεων για να ενεργοποιηθούν τα push.",
+      "pushPrefErrorTitle": "Σφάλμα",
+      "pushPrefErrorBody": "Δεν ήταν δυνατή η ενημέρωση των προτιμήσεων ειδοποιήσεων.",
+      "cameraPermissionTitle": "Απαιτείται άδεια",
+      "cameraPermissionBody": "Πρέπει να δώσετε άδεια κάμερας για σάρωση QR.",
+      "favoriteErrorTitle": "Σφάλμα",
+      "favoriteErrorBody": "Δεν ήταν δυνατή η αφαίρεση από τα αγαπημένα.",
+      "invalidQRTitle": "Μη έγκυρο QR",
+      "invalidQRBody": "Δεν ήταν δυνατή η επιβεβαίωση του QR.",
+      "qrRetryLabel": "Σάρωση ξανά",
+      "invalidNumberTitle": "Προειδοποίηση",
+      "invalidNumberBody": "Εισαγάγετε έγκυρο αριθμό (0 ή μεγαλύτερο).",
+      "checkinSuccessTitle": "Το check-in ολοκληρώθηκε",
+      "checkinSuccessBody": "Η είσοδος καταχωρήθηκε με επιτυχία.",
+      "checkinFailedTitle": "Αποτυχία check-in",
+      "checkinFailedBody": "Δεν ήταν δυνατή η ολοκλήρωση της ενέργειας.",
+      "ridRequiredTitle": "Προειδοποίηση",
+      "ridRequiredBody": "Απαιτείται ID κράτησης.",
+      "checkinManualFailedTitle": "Αποτυχία",
+      "checkinManualFailedBody": "Δεν ήταν δυνατή η εκτέλεση χειροκίνητου check-in.",
+      "saveSuccessTitle": "Αποθηκεύτηκε",
+      "saveSuccessBody": "Το προφίλ και οι ρυθμίσεις σας ενημερώθηκαν.",
+      "saveErrorTitle": "Η ενημέρωση απέτυχε",
+      "saveErrorBody": "Παρακαλούμε δοκιμάστε ξανά."
+    },
+    "messages": {
+      "saved": "Οι ρυθμίσεις αποθηκεύτηκαν.",
+      "avatarUpdated": "Η φωτογραφία προφίλ ενημερώθηκε.",
+      "passwordUpdated": "Ο κωδικός ενημερώθηκε.",
+      "checkinSuccess": "Το check-in ολοκληρώθηκε με επιτυχία."
+    },
+    "errors": {
+      "updateFailed": "Η ενημέρωση απέτυχε.",
+      "passwordChangeFailed": "Η αλλαγή κωδικού απέτυχε.",
+      "invalidQR": "Μη έγκυρο QR.",
+      "checkinFailed": "Το check-in απέτυχε."
+    },
+    "warnings": {
+      "missingFields": "Παρακαλώ συμπληρώστε όλα τα πεδία.",
+      "weakPassword": "Ο νέος κωδικός πρέπει να έχει τουλάχιστον 8 χαρακτήρες.",
+      "passwordMismatch": "Οι νέοι κωδικοί δεν ταιριάζουν.",
+      "permissionRequired": "Απαιτείται άδεια.",
+      "invalidNumber": "Εισαγάγετε έγκυρο αριθμό.",
+      "ridRequired": "Απαιτείται RID."
+    },
+    "qr": {
+      "arrivedCountTitle": "Αριθμός αφιχθέντων",
+      "arrivedCountDescription": "Το QR σαρώθηκε. Εισαγάγετε τον αριθμό αφιχθέντων (υποχρεωτικό).",
+      "arrivedCountPlaceholder": "π.χ. 5"
+    },
+    "checkin": {
+      "manualTitle": "Χειροκίνητο Check-in",
+      "ridLabel": "ID Κράτησης (RID)",
+      "ridPlaceholder": "π.χ. 64b7… Mongo ObjectId",
+      "arrivedLabel": "Αριθμός αφιχθέντων (υποχρεωτικό)",
+      "arrivedPlaceholder": "π.χ. 4",
+      "submit": "Check-in"
+    }
+  },
+  "status": {
+    "pending": "Σε αναμονή",
+    "confirmed": "Επιβεβαιωμένο",
+    "arrived": "Παρουσία",
+    "no_show": "Δεν εμφανίστηκε",
+    "cancelled": "Ακυρωμένο",
+    "rejected": "Απορρίφθηκε",
+    "unknown": "Άγνωστο"
+  },
+  "home": {
+    "loading": "Φόρτωση...",
+    "error": "Σφάλμα σύνδεσης",
+    "noResults": "Δεν βρέθηκαν αποτελέσματα. Δοκιμάστε ξανά.",
+    "explore": "Εξερεύνηση"
+  },
+  "bookings": {
+    "receipt": {
+      "upload": "Μεταφόρτωση απόδειξης",
+      "uploading": "Γίνεται μεταφόρτωση...",
+      "acceptedFormats": "Αποδεκτά: JPG/PNG",
+      "view": "Προβολή",
+      "replace": "Αντικατάσταση",
+      "share": "Κοινοποίηση",
+      "tapToClose": "Πατήστε για κλείσιμο"
+    },
+    "title": "Οι κρατήσεις μου",
+    "guest": {
+      "title": "Οι κρατήσεις σας",
+      "subtitle": "Συνδεθείτε για να δείτε και να διαχειριστείτε τις κρατήσεις σας.",
+      "login": "Σύνδεση"
+    },
+    "loading": "Φόρτωση κρατήσεων...",
+    "loadError": "Αποτυχία φόρτωσης.",
+    "errorPrefix": "Σφάλμα:",
+    "emptyTitle": "Κενό",
+    "emptySubtitle": "Δεν υπάρχουν διαθέσιμες κρατήσεις.",
+    "restaurantFallback": "Εστιατόριο"
+  },
+  "filters": {
+    "all": "Όλα",
+    "active": "Ενεργά",
+    "past": "Παλαιά",
+    "advanced": "Προηγμένο φίλτρο",
+    "byStatus": "Φίλτρο ανά κατάσταση"
+  },
+  "time": {
+    "all": "Όλα",
+    "today": "Σήμερα",
+    "week": "Αυτή την εβδομάδα",
+    "custom": "Επιλογή ημερομηνίας",
+    "rangeTitle": "Επιλογή περιόδου",
+    "apply": "Εφαρμογή",
+    "clear": "Καθαρισμός",
+    "start": "Αρχή",
+    "end": "Τέλος"
+  },
+  "search": {
+    "placeholder": "Αναζήτηση εστιατορίου..."
+  },
+  "restaurantDetail": {
+    "loading": "Φόρτωση...",
+    "notFoundTitle": "Το εστιατόριο δεν βρέθηκε",
+    "notFoundText": "Δεν υπάρχει ή έχει αφαιρεθεί.",
+    "back": "Πίσω",
+    "noPhoto": "Δεν υπάρχει φωτογραφία",
+
+    "aboutTab": "Σχετικά",
+    "menuTab": "Μενού",
+    "menuTitle": "Μενού",
+    "menuComingSoon": "Το κατάστημα δεν έχει ανεβάσει ακόμη μενού.",
+    "noAbout": "Δεν υπάρχει περιγραφή για αυτό το κατάστημα.",
+
+
+    "fixedMenus": "Σταθερά Μενού",
+    "noMenu": "Δεν υπάρχουν διαθέσιμα μενού.",
+    "perPerson": "ανά άτομο",
+
+    "expandAll": "Άνοιγμα όλων",
+    "collapseAll": "Κλείσιμο όλων",
+    "menuLoading": "Φόρτωση μενού...",
+
+    "findSlot": "Εύρεση ώρας",
+    "date": "Ημερομηνία",
+    "partySize": "Άτομα",
+    "slotsSearching": "Αναζήτηση διαθέσιμων ωρών…",
+    "noSlots": "Δεν βρέθηκαν διαθέσιμες ώρες.",
+
+    "about": "Σχετικά",
+    "contact": "Επικοινωνία",
+    "noPhone": "Δεν υπάρχει τηλέφωνο",
+    "noAddress": "Δεν υπάρχει διεύθυνση",
+
+    "ctaSelectDateTime": "Επιλέξτε ημερομηνία & ώρα",
+    "ctaPeople": "{{count}} άτομα",
+    "ctaContinue": "Συνέχεια",
+
+    "pastTimeTitle": "Προηγούμενη ώρα",
+    "pastTimeBody": "Δεν μπορείτε να κάνετε κράτηση για προηγούμενη ώρα.",
+    "pastDateTimeTitle": "Προηγούμενη ημερομηνία",
+    "pastDateTimeBody": "Επιλέξτε μελλοντική ημερομηνία.",
+
+    "loginRequiredTitle": "Απαιτείται σύνδεση",
+    "loginRequiredBodyReservation": "Για να κάνετε κράτηση, πρέπει να συνδεθείτε.",
+    "loginRequiredBodyFavorite": "Για να προσθέσετε στα αγαπημένα, πρέπει να συνδεθείτε.",
+
+    "loadError": "Αποτυχία φόρτωσης",
+    "favoriteError": "Αποτυχία προσθήκης"
+  },
+  "reservationStep2": {
+    "title": "Επιλογή ατόμων & μενού",
+    "subtitle": "Επιλέξτε μενού για κάθε άτομο.",
+    "loading": "Φόρτωση μενού...",
+    "loadError": "Αποτυχία φόρτωσης.",
+    "emptyMenus": "Δεν υπάρχουν μενού.",
+    "personTitle": "Άτομο {{index}}",
+    "toastAllRequired": "Επιλέξτε μενού για όλους.",
+    "missingTitle": "Λείπουν επιλογές",
+    "ctaContinue": "Συνέχεια",
+    "skipFixedMenus": "Δεν θέλω σταθερό μενού",
+    "skipFixedMenusHelp": "Μπορείτε να συνεχίσετε χωρίς επιλογή σταθερού μενού.",
+    "skipInfo": "Συνεχίζετε χωρίς σταθερό μενού. Δεν θα προστεθεί κόστος σταθερού μενού στη σύνοψη."
+  },
+  "reservationStep3": {
+    "title": "Σύνοψη κράτησης",
+    "dateTimeLabel": "Ημερομηνία & ώρα",
+    "partySizeLabel": "Άτομα",
+    "selectedMenusTitle": "Επιλεγμένα μενού",
+    "subtotalLabel": "Υποσύνολο",
+    "depositLabel": "Προκαταβολή",
+    "totalLabel": "Σύνολο",
+    "noMenus": "Δεν υπάρχουν επιλεγμένα μενού.",
+    "paymentInfoTitle": "Πληροφορίες Πληρωμής",
+    "bankLabel": "Τράπεζα",
+    "ibanNameLabel": "Όνομα",
+    "ibanLabel": "IBAN",
+    "depositHint": "Μετά την πληρωμή, ανεβάστε την απόδειξη.",
+    "receiptTitle": "Απόδειξη",
+    "ctaCreating": "Δημιουργείται...",
+    "ctaCreate": "Δημιουργία κράτησης",
+    "ctaPickReceipt": "Επιλέξτε απόδειξη",
+    "toastCopied": "Αντιγράφηκε",
+    "toastReceiptSelected": "Επιλέχθηκε απόδειξη",
+    "toastMissing": "Λείπουν στοιχεία",
+    "toastNoId": "Σφάλμα ID κράτησης",
+    "toastCreateError": "Σφάλμα δημιουργίας",
+    "fallbackMenuName": "Μενού",
+     "paymentMethodTitle": "Τρόπος πληρωμής",
+  "methodBankTransfer": "Τραπεζική μεταφορά / IBAN",
+  "methodCard": "Κάρτα / Apple / Google Pay",
+  "copy": "Αντιγραφή",
+
+  "noFixedMenusSelected": "Δεν επιλέχθηκε σταθερό μενού.",
+
+  "receiptInfoForCard": "Αν πληρώσετε με κάρτα, δεν χρειάζεται να ανεβάσετε αποδεικτικό.",
+
+  "ctaStripeProcessing": "Γίνεται επεξεργασία πληρωμής...",
+  "ctaStripePay": "Πληρωμή με κάρτα / Apple / Google Pay",
+
+  "toastNoDepositForCard": "Δεν έχει οριστεί προκαταβολή για αυτό το κατάστημα.",
+  "toastStripeInitError": "Δεν ήταν δυνατή η έναρξη της πληρωμής. Προσπαθήστε ξανά.",
+  "toastStripePaymentError": "Η πληρωμή δεν ολοκληρώθηκε. Προσπαθήστε ξανά.",
+  "toastStripeSuccess": "Η πληρωμή ολοκληρώθηκε με επιτυχία.",
+  "methodCardShort": "Πλήρωσε με κάρτα",
+  "ctaStripePayWithAmount": "Πλήρωσε {{amount}}",
+  "paySuffix": "πλήρωσε"
+  },
+  "restaurant": {
+    "noMenus": "Δεν υπάρχουν μενού."
+  },
+  "upload": {
+    "receipt": {
+      "button": "Μεταφόρτωση απόδειξης",
+      "permissionTitle": "Απαιτείται άδεια",
+      "permissionMessage": "Δεν δόθηκε πρόσβαση στη συλλογή.",
+      "errorTitle": "Σφάλμα",
+      "errorMessage": "Παρουσιάστηκε σφάλμα.",
+      "acceptedTypes": "Αποδεκτά: JPG/PNG"
+    }
+  },
+  "about": {
+    "title": "Σχετικά",
+    "subtitle": "Δίκαιη και εύκολη εμπειρία για όλους.",
+    "headline": "Κάνουμε τις κρατήσεις πιο έξυπνες.",
+    "description": "Το Rezzy ενώνει προκαταβολές, QR check-in και διαχείριση διαθεσιμότητας.",
+    "features": {
+      "smartBooking": {
+        "title": "Έξυπνη ροή κράτησης",
+        "desc": "Ώρες βασισμένες στη διαθεσιμότητα του εστιατορίου."
+      },
+      "deposit": {
+        "title": "Προκαταβολή & ασφάλεια",
+        "desc": "Μειώνει το ρίσκο no-show."
+      },
+      "qr": {
+        "title": "Γρήγορο QR check-in",
+        "desc": "Επιβεβαίωση σε δευτερόλεπτα."
+      },
+      "transparency": {
+        "title": "Διαφάνεια",
+        "desc": "Τα πάντα σε μία οθόνη."
+      }
+    },
+    "meta": {
+      "title": "Πληροφορίες εφαρμογής",
+      "version": "Έκδοση",
+      "regions": "Ενεργές περιοχές",
+      "regionsValue": "Ηνωμένο Βασίλειο & Βόρεια Κύπρος (πιλοτικό)",
+      "contact": "Επικοινωνία"
+    }
+  },
+  "contact": {
+    "title": "Επικοινωνία",
+    "subtitle": "Είμαστε εδώ για να βοηθήσουμε.",
+
+    "emailTitle": "Υποστήριξη μέσω email",
+    "emailDesc": "Στείλτε μας τις απορίες σας.",
+
+    "workHoursTitle": "Ώρες λειτουργίας",
+    "workdays": "Καθημερινές",
+    "workhours": "09:00 — 18:00",
+
+    "moreInfo": "Περισσότερες πληροφορίες",
+    "moreInfoDesc": "Περισσότερα σύντομα."
+  },
+  "deleteAccount": {
+    "title": "Διαγραφή λογαριασμού",
+    "subtitle": "Διαγράψτε οριστικά τον λογαριασμό σας.",
+    "sectionTitle": "Πριν τη διαγραφή",
+    "descriptionMain": "Τα δεδομένα σας θα αφαιρεθούν οριστικά.",
+    "dataTitle": "Θα διαγραφούν:",
+    "dataItemReservations": "Κρατήσεις",
+    "dataItemProfile": "Στοιχεία προφίλ",
+    "dataItemAnalytics": "Συνδεδεμένα δεδομένα",
+    "warningTitle": "Η ενέργεια δεν αναιρείται",
+    "warningText": "Θα χρειαστεί νέος λογαριασμός.",
+    "buttonLabel": "Οριστική διαγραφή",
+    "buttonLoading": "Διαγραφή...",
+    "successTitle": "Διαγράφηκε",
+    "successMessage": "Ο λογαριασμός σας διαγράφηκε.",
+    "errorGeneric": "Παρουσιάστηκε σφάλμα."
+  },
+  "helpSupport": {
+    "title": "Βοήθεια & υποστήριξη",
+    "subtitle": "Συχνές ερωτήσεις.",
+    "faq": {
+      "title": "FAQ",
+      "subtitle": "Οι πιο συχνές απορίες.",
+      "q1": "Πώς κάνω κράτηση;",
+      "q2": "Πώς ακυρώνω;",
+      "q3": "Πώς βλέπω την κατάσταση;",
+      "q4": "Γιατί δεν λαμβάνω ειδοποιήσεις;",
+      "a1": "Με το Rezzy μπορείτε να κάνετε κράτηση άμεσα.",
+      "a2": "Μπορείτε να δείτε όλες τις λεπτομέρειες στην εφαρμογή.",
+      "a3": "Οι πολιτικές ακύρωσης διαφέρουν ανά εστιατόριο.",
+      "a4": "Επικοινωνήστε μαζί μας στην υποστήριξη."
+    },
+    "tips": {
+      "title": "Χρήσιμες συμβουλές",
+      "subtitle": "Για αποφυγή προβλημάτων.",
+      "item1": "Ελέγξτε άδειες & internet.",
+      "item2": "Χρησιμοποιήστε την τελευταία έκδοση.",
+      "item3": "Κάντε επανεκκίνηση εάν χρειαστεί."
+    },
+    "contact": {
+      "title": "Χρειάζεστε βοήθεια;",
+      "subtitle": "Θα απαντήσουμε το συντομότερο.",
+      "button": "Επικοινωνία"
+    }
+  },
+  "licenses": {
+    "title": "Άδειες",
+    "subtitle": "Η εφαρμογή χρησιμοποιεί open-source βιβλιοθήκες.",
+    "section": {
+      "overviewTitle": "Γιατί open-source;",
+      "overviewBody1": "Ταχύτητα, ασφάλεια και ευελιξία.",
+      "overviewBody2": "Επισκόπηση βασικών βιβλιοθηκών.",
+      "coreTitle": "Κύριες βιβλιοθήκες",
+      "uiTitle": "UI & αλληλεπίδραση",
+      "toolingTitle": "Εργαλεία",
+      "noteTitle": "Σημείωση",
+      "noteBody1": "Ο κατάλογος είναι ενδεικτικός.",
+      "noteBody2": "Όλες οι βιβλιοθήκες χρησιμοποιούνται νόμιμα."
+    }
+  },
+  "privacy": {
+    "title": "Πολιτική Απορρήτου",
+    "subtitle": "Σεβόμαστε το απόρρητό σας.",
+
+    "collected": "Συλλογή δεδομένων",
+    "collected_id": "Στοιχεία ταυτοποίησης",
+    "collected_usage": "Στοιχεία κρατήσεων",
+    "collected_device": "Στοιχεία συσκευής",
+
+    "usage": "Χρήση δεδομένων",
+    "usage_reservation": "Για διαχείριση κρατήσεων",
+    "usage_notifications": "Για ειδοποιήσεις",
+    "usage_security": "Για ασφάλεια",
+
+    "sharing": "Κοινοποίηση δεδομένων",
+    "sharing_restaurants": "Κοινοποιούνται στα εστιατόρια",
+    "sharing_law": "Όταν απαιτείται νομικά",
+
+    "retention": "Διατήρηση",
+    "retention_text": "Μόνο όσο απαιτείται.",
+
+    "rights": "Δικαιώματα",
+    "rights_text": "Μπορείτε να ζητήσετε διαγραφή ή τροποποίηση.",
+
+    "cookies": "Cookies",
+    "cookies_text": "Χρησιμοποιούμε βασικά cookies.",
+
+    "contact": "Επικοινωνία",
+    "contact_text": "Επικοινωνήστε μαζί μας για απορίες.",
+    "disclaimer": "Η πολιτική μπορεί να αλλάξει."
+  },
+  "terms": {
+    "title": "Όροι Χρήσης",
+    "subtitle": "Χρησιμοποιώντας την εφαρμογή αποδέχεστε τους όρους.",
+    "accountTitle": "Λογαριασμός & ασφάλεια",
+    "accountText": "Είστε υπεύθυνοι για τον λογαριασμό σας.",
+    "reservationsTitle": "Κρατήσεις & ακυρώσεις",
+    "reservationsText1": "Οι όροι καθορίζονται από το εστιατόριο.",
+    "reservationsText2": "Ελέγξτε την πολιτική ακύρωσης.",
+    "prohibitedTitle": "Απαγορευμένη χρήση",
+    "prohibitedText": "Απαγορεύεται κακόβουλη χρήση.",
+    "liabilityTitle": "Αποποίηση ευθύνης",
+    "liabilityText": "Το Rezzy δεν ευθύνεται για υπηρεσίες των εστιατορίων.",
+    "changesTitle": "Αλλαγές",
+    "changesText": "Οι όροι ενδέχεται να ενημερωθούν.",
+    "legalTitle": "Νομικά στοιχεία",
+    "legalText1": "Ενημερωτικό κείμενο.",
+    "legalText2": "Επικοινωνήστε για απορίες.",
+    "disclaimer": "*Δεν αποτελεί νομική συμβουλή.",
+    "lastUpdate": "Τελευταία ενημέρωση: 2025"
+  },
+  "auth": {
+    "emailLabel": "Email",
+    "emailPlaceholder": "παράδειγμα@mail.com",
+    "passwordLabel": "Κωδικός",
+    "passwordPlaceholder": "Ο κωδικός σας",
+    "loginButton": "Σύνδεση",
+    "continueWithGoogle": "Συνέχεια με Google",
+    "continueAsGuest": "Συνέχεια χωρίς λογαριασμό"
+  },
+  "filter": {
+  "open": "Φίλτρα",
+  "title": "Φίλτρα",
+  "clearAll": "Καθαρισμός όλων",
+  "date": "Ημερομηνία",
+  "datePlaceholder": "Επιλέξτε ημερομηνία",
+  "time": "Ώρα",
+  "timePlaceholder": "Επιλέξτε ώρα",
+  "people": "Αριθμός ατόμων",
+  "city": "Πόλη",
+  "cityHint": "Μπορείτε να αλλάξετε την πόλη από την πάνω μπάρα.",
+  "price": "Εύρος τιμής",
+  "apply": "Βρες μαγαζί"
+}
+}

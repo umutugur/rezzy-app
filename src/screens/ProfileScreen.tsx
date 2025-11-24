@@ -27,9 +27,10 @@ import { checkinByQR, checkinManual } from "../api/restaurantTools";
 import { useNavigation } from "@react-navigation/native";
 import { listFavorites, removeFavorite, type FavoriteRestaurant } from "../api/favorites";
 import { useRegion } from "../store/useRegion";
+import { useI18n } from "../i18n";
 
 type RegionCode = "CY" | "UK";
-type LangCode = "tr" | "en";
+type LangCode = "tr" | "en" | "ru" | "el";
 
 const REGION_OPTIONS: { code: RegionCode; label: string; flag?: string }[] = [
   { code: "CY", label: "Kuzey Kıbrıs", flag: "🇨🇾" },
@@ -39,6 +40,8 @@ const REGION_OPTIONS: { code: RegionCode; label: string; flag?: string }[] = [
 const LANGUAGE_OPTIONS: { code: LangCode; label: string }[] = [
   { code: "tr", label: "Türkçe" },
   { code: "en", label: "English" },
+  { code: "ru", label: "Русский" },
+  { code: "el", label: "Ελληνικά" },
 ];
 
 /** para formatı */
@@ -48,28 +51,12 @@ const Money = ({ n }: { n?: number }) => (
   </Text>
 );
 
-/** durum → {label,color} */
-const statusMeta = (s: string) => {
-  switch (String(s)) {
-    case "pending":
-      return { label: "Beklemede", bg: "#FEF3C7", fg: "#92400E" };
-    case "confirmed":
-      return { label: "Onaylı", bg: "#DCFCE7", fg: "#166534" };
-    case "arrived":
-      return { label: "Giriş Yapıldı", bg: "#DBEAFE", fg: "#1E40AF" };
-    case "no_show":
-      return { label: "Gelmedi", bg: "#FEE2E2", fg: "#991B1B" };
-    case "cancelled":
-      return { label: "İptal", bg: "#F3F4F6", fg: "#374151" };
-    default:
-      return { label: s, bg: "#EEE", fg: "#111" };
-  }
-};
 
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
   const { user, updateUser, clear } = useAuth();
   const { region, language, setRegion, setLanguage } = useRegion();
+  const { t, language: i18nLanguage, locale } = useI18n();
 
   const [name, setName] = useState(user?.name || "");
   const [email, setEmail] = useState(user?.email || "");
@@ -116,18 +103,20 @@ export default function ProfileScreen() {
   const [msgBody, setMsgBody] = useState("");
   const [msgKind, setMsgKind] = useState<"info" | "error" | "warn">("info");
   const [msgOnRetry, setMsgOnRetry] = useState<null | (() => void)>(null);
-  const [msgRetryLabel, setMsgRetryLabel] = useState<string>("Tekrar Dene");
+  const [msgRetryLabel, setMsgRetryLabel] = useState<string>(t("profile.modal.retry"));
 
   const [prefRegion, setPrefRegion] = useState<RegionCode>(
     user?.preferredRegion === "UK" || user?.preferredRegion === "CY"
       ? (user.preferredRegion as RegionCode)
       : (region as RegionCode)
   );
-  const [prefLang, setPrefLang] = useState<LangCode>(
-    user?.preferredLanguage === "en" || user?.preferredLanguage === "tr"
-      ? (user.preferredLanguage as LangCode)
-      : (language as LangCode)
-  );
+  const [prefLang, setPrefLang] = useState<LangCode>(() => {
+    const uLang = user?.preferredLanguage;
+    if (uLang && ["tr", "en", "ru", "el"].includes(uLang as string)) {
+      return uLang as LangCode;
+    }
+    return language as LangCode;
+  });
 
   const highlightAnim = useState(new Animated.Value(0))[0];
   const [selectorOpen, setSelectorOpen] = useState<null | "region" | "language">(null);
@@ -140,12 +129,12 @@ export default function ProfileScreen() {
     setMsgOnRetry(null);
     setMsgOpen(true);
   };
-  const showError = (title: string, body?: string, onRetry?: () => void, retryLabel: string = "Tekrar Dene") => {
+  const showError = (title: string, body?: string, onRetry?: () => void, retryLabel?: string) => {
     setMsgKind("error");
     setMsgTitle(title);
     setMsgBody(body || "");
     setMsgOnRetry(onRetry || null);
-    setMsgRetryLabel(retryLabel);
+    setMsgRetryLabel(retryLabel || t("profile.modal.retry"));
     setMsgOpen(true);
   };
   const showWarn = (title: string, body?: string) => {
@@ -175,9 +164,9 @@ export default function ProfileScreen() {
           setPrefRegion(me.preferredRegion);
           setRegion(me.preferredRegion);
         }
-        if (me.preferredLanguage === "tr" || me.preferredLanguage === "en") {
-          setPrefLang(me.preferredLanguage);
-          setLanguage(me.preferredLanguage);
+        if (me.preferredLanguage && ["tr", "en", "ru", "el"].includes(me.preferredLanguage as string)) {
+          setPrefLang(me.preferredLanguage as LangCode);
+          setLanguage(me.preferredLanguage as LangCode);
         }
       } catch {}
       try {
@@ -217,9 +206,9 @@ export default function ProfileScreen() {
         setPrefRegion(me.preferredRegion);
         setRegion(me.preferredRegion);
       }
-      if (me.preferredLanguage === "tr" || me.preferredLanguage === "en") {
-        setPrefLang(me.preferredLanguage);
-        setLanguage(me.preferredLanguage);
+      if (me.preferredLanguage && ["tr", "en", "ru", "el"].includes(me.preferredLanguage as string)) {
+        setPrefLang(me.preferredLanguage as LangCode);
+        setLanguage(me.preferredLanguage as LangCode);
       }
 
       Animated.sequence([
@@ -237,11 +226,16 @@ export default function ProfileScreen() {
         }),
       ]).start();
 
-      showMsg("Kaydedildi", "Profil ve uygulama tercihlerin güncellendi.");
+      showMsg(
+        t("profile.toast.saveSuccessTitle"),
+        t("profile.toast.saveSuccessBody")
+      );
     } catch (e: any) {
       showError(
-        "Güncelleme başarısız",
-        e?.response?.data?.message || e?.message || "Lütfen tekrar deneyin."
+        t("profile.toast.saveErrorTitle"),
+        e?.response?.data?.message ||
+          e?.message ||
+          t("profile.toast.saveErrorBody")
       );
     } finally {
       setLoading(false);
@@ -251,15 +245,24 @@ export default function ProfileScreen() {
   async function onChangePassword() {
     try {
       if (!curPw || !newPw || !newPw2) {
-        showWarn("Eksik bilgi", "Lütfen tüm şifre alanlarını doldurun.");
+        showWarn(
+          t("profile.password.error.missingTitle"),
+          t("profile.password.error.missingBody")
+        );
         return;
       }
       if (newPw.length < 8) {
-        showWarn("Zayıf şifre", "Yeni şifre en az 8 karakter olmalıdır.");
+        showWarn(
+          t("profile.password.error.weakTitle"),
+          t("profile.password.error.weakBody")
+        );
         return;
       }
       if (newPw !== newPw2) {
-        showWarn("Eşleşmiyor", "Yeni şifreler birbiriyle aynı olmalıdır.");
+        showWarn(
+          t("profile.password.error.mismatchTitle"),
+          t("profile.password.error.mismatchBody")
+        );
         return;
       }
       setPwLoading(true);
@@ -267,11 +270,16 @@ export default function ProfileScreen() {
       setCurPw("");
       setNewPw("");
       setNewPw2("");
-      showMsg("Şifre güncellendi", "Yeni şifreniz başarıyla kaydedildi.");
+      showMsg(
+        t("profile.password.successTitle"),
+        t("profile.password.successBody")
+      );
     } catch (e: any) {
       showError(
-        "Şifre değiştirilemedi",
-        e?.response?.data?.message || e?.message || "Lütfen bilgilerinizi kontrol edip tekrar deneyin."
+        t("profile.password.errorTitle"),
+        e?.response?.data?.message ||
+          e?.message ||
+          t("profile.password.errorBody")
       );
     } finally {
       setPwLoading(false);
@@ -295,9 +303,17 @@ export default function ProfileScreen() {
       });
       setAvatarUrl(url);
       updateUser({ avatarUrl: url });
-      showMsg("Güncellendi", "Profil fotoğrafınız yenilendi.");
+      showMsg(
+        t("profile.avatar.successTitle"),
+        t("profile.avatar.successBody")
+      );
     } catch (e: any) {
-      showError("Hata", e?.response?.data?.message || e?.message || "Avatar yüklenemedi.");
+      showError(
+        t("common.error"),
+        e?.response?.data?.message ||
+          e?.message ||
+          t("profile.avatar.errorBody")
+      );
     }
   }
 
@@ -312,7 +328,10 @@ export default function ProfileScreen() {
           granted = req.status === "granted";
         }
         if (!granted) {
-          showWarn("İzin gerekli", "Push bildirimlerini açmak için bildirim izni vermelisiniz.");
+          showWarn(
+            t("profile.toast.pushPermissionTitle"),
+            t("profile.toast.pushPermissionBody")
+          );
           return;
         }
         setPrefs((p) => ({ ...p, push: true }));
@@ -326,7 +345,10 @@ export default function ProfileScreen() {
         } catch {}
       }
     } catch {
-      showError("Hata", "Bildirim tercihi güncellenemedi.");
+      showError(
+        t("profile.toast.pushPrefErrorTitle"),
+        t("profile.toast.pushPrefErrorBody")
+      );
     }
   }
 
@@ -334,7 +356,12 @@ export default function ProfileScreen() {
   async function ensureCam() {
     if (!permission?.granted) {
       const { granted } = await requestPermission();
-      if (!granted) showWarn("İzin gerekli", "QR okumak için kamera izni vermelisiniz.");
+      if (!granted) {
+        showWarn(
+          t("profile.toast.cameraPermissionTitle"),
+          t("profile.toast.cameraPermissionBody")
+        );
+      }
     }
   }
 
@@ -344,15 +371,22 @@ export default function ProfileScreen() {
       <View style={{ paddingVertical: 12, borderTopWidth: 1, borderColor: T.colors.border, gap: 6 }}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
           <Text style={{ fontWeight: "800", color: T.colors.text }}>
-            {dayjs(it.dateTimeUTC).format("DD MMM YYYY HH:mm")} • {it.partySize} kişi
+            {t("profile.reservations.itemTitle", {
+              date: dayjs(it.dateTimeUTC).format("DD MMM YYYY HH:mm"),
+              count: it.partySize,
+            })}
           </Text>
           <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: m.bg }}>
             <Text style={{ color: m.fg, fontWeight: "800", fontSize: 12 }}>{m.label}</Text>
           </View>
         </View>
-        <Text style={{ color: T.colors.textSecondary }}>{String(it?.restaurantId?.name || "Restoran")}</Text>
+        <Text style={{ color: T.colors.textSecondary }}>
+          {String(it?.restaurantId?.name || t("profile.reservations.fallbackRestaurant"))}
+        </Text>
         <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-          <Text style={{ color: T.colors.textSecondary }}>Toplam</Text>
+          <Text style={{ color: T.colors.textSecondary }}>
+            {t("profile.reservations.totalLabel")}
+          </Text>
           <Money n={it.totalPrice} />
         </View>
       </View>
@@ -385,7 +419,7 @@ export default function ProfileScreen() {
         </View>
         <View style={{ flexDirection: "row", gap: 8 }}>
           <SecondaryButton
-            title={busy ? "…" : "Kaldır"}
+            title={busy ? "…" : t("profile.favorites.remove")}
             onPress={async () => {
               if (busy) return;
               try {
@@ -393,20 +427,48 @@ export default function ProfileScreen() {
                 setFavs((prev) => prev.filter((f) => f._id !== it._id));
                 await removeFavorite(it._id);
               } catch (e: any) {
-                setFavs((prev) => (prev.some((f) => f._id === it._id) ? prev : [it, ...prev]));
-                showError("Hata", e?.response?.data?.message || e?.message || "Favori kaldırılamadı.");
+                setFavs((prev) =>
+                  prev.some((f) => f._id === it._id) ? prev : [it, ...prev]
+                );
+                showError(
+                  t("profile.toast.favoriteErrorTitle"),
+                  e?.response?.data?.message ||
+                    e?.message ||
+                    t("profile.toast.favoriteErrorBody")
+                );
               } finally {
                 setFavBusyId(null);
               }
             }}
           />
-          <PrimaryButton title="Git" onPress={() => navigation.navigate("Restoran", { id: it._id })} />
+          <PrimaryButton
+            title={t("profile.favorites.go")}
+            onPress={() => navigation.navigate("Restoran", { id: it._id })}
+          />
         </View>
       </View>
     );
   }
 
   const isRestaurant = user?.role === "restaurant";
+
+  /** durum → {label,color} */
+  const statusMeta = (s: string) => {
+    switch (String(s)) {
+      case "pending":
+        return { label: t("profile.reservations.status.pending"), bg: "#FEF3C7", fg: "#92400E" };
+      case "confirmed":
+        return { label: t("profile.reservations.status.confirmed"), bg: "#DCFCE7", fg: "#166534" };
+      case "arrived":
+        return { label: t("profile.reservations.status.arrived"), bg: "#DBEAFE", fg: "#1E40AF" };
+      case "no_show":
+        return { label: t("profile.reservations.status.noShow"), bg: "#FEE2E2", fg: "#991B1B" };
+      case "cancelled":
+        return { label: t("profile.reservations.status.cancelled"), bg: "#F3F4F6", fg: "#374151" };
+      default:
+        return { label: s, bg: "#EEE", fg: "#111" };
+    }
+  };
 
   const counts = useMemo(() => {
     const c = { upcoming: 0, confirmed: 0, cancelled: 0, total: resv.length, spending: 0 };
@@ -420,17 +482,21 @@ export default function ProfileScreen() {
   }, [resv]);
 
   function logout() {
-    Alert.alert("Çıkış yap", "Hesabından çıkmak istiyor musun?", [
-      { text: "Vazgeç", style: "cancel" },
-      {
-        text: "Evet",
-        style: "destructive",
-        onPress: async () => {
-          await clear();
-          navigation.reset({ index: 0, routes: [{ name: "TabsGuest" }] });
+    Alert.alert(
+      t("profile.logout"),
+      t("profile.logoutConfirm"),
+      [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("common.ok"),
+          style: "destructive",
+          onPress: async () => {
+            await clear();
+            navigation.reset({ index: 0, routes: [{ name: "TabsGuest" }] });
+          },
         },
-      },
-    ]);
+      ]
+    );
   }
 
   const currentRegionMeta =
@@ -472,9 +538,23 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleLangSelect = (code: LangCode) => {
+  const handleLangSelect = async (code: LangCode) => {
+    const prev = prefLang;
     setPrefLang(code);
     setLanguage(code);
+    try {
+      await patchMe({ preferredLanguage: code });
+      try {
+        updateUser({ ...(user || {}), preferredLanguage: code } as any);
+      } catch {}
+    } catch (e: any) {
+      setPrefLang(prev);
+      setLanguage(prev);
+      showError(
+        t("common.error"),
+        e?.response?.data?.message || e?.message || "Dil tercihi güncellenemedi."
+      );
+    }
   };
 
   const goTerms = () => navigation.navigate("Terms");
@@ -484,6 +564,162 @@ export default function ProfileScreen() {
   const goLicenses = () => navigation.navigate("Licenses");
   const goAbout = () => navigation.navigate("About");
   const goDelete = () => navigation.navigate("DeleteAccount");
+
+  function AppPrefs() {
+    return (
+      <Animated.View
+        style={{
+          marginTop: 4,
+          marginBottom: 10,
+          padding: 12,
+          borderRadius: 16,
+          borderWidth: 1,
+          borderColor: highlightAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [T.colors.border, T.colors.primary],
+          }),
+          backgroundColor: highlightAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: ["#F9FAFB", "#FEF3F2"],
+          }) as any,
+          shadowColor: "#000",
+          shadowOpacity: 0.06,
+          shadowRadius: 8,
+          shadowOffset: { width: 0, height: 3 },
+        }}
+      >
+        {/* Başlık */}
+        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
+          <View
+            style={{
+              width: 30,
+              height: 30,
+              borderRadius: 15,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "rgba(123,44,44,0.08)",
+              marginRight: 8,
+            }}
+          >
+            <Ionicons name="earth-outline" size={18} color={T.colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 15, fontWeight: "700", color: T.colors.text }}>
+              {t("profile.appPrefs.title")}
+            </Text>
+            <Text style={{ fontSize: 12, color: T.colors.textSecondary }}>
+              {t("profile.appPrefs.current")}: {currentRegionMeta.flag ? currentRegionMeta.flag + " " : ""}
+              {currentRegionMeta.label} • {currentLangMeta.label}
+            </Text>
+          </View>
+        </View>
+
+        {/* Bölge satırı */}
+        <TouchableOpacity
+          onPress={() => openSelector("region")}
+          activeOpacity={0.8}
+          style={{
+            paddingVertical: 10,
+            paddingHorizontal: 10,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: "#E5E7EB",
+            backgroundColor: "#FFFFFF",
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 8,
+          }}
+        >
+          <View style={{ flexDirection: "column" }}>
+            <Text
+              style={{
+                fontSize: 12,
+                fontWeight: "600",
+                color: T.colors.textSecondary,
+                marginBottom: 2,
+              }}
+            >
+              {t("profile.appPrefs.region")}
+            </Text>
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: "700",
+                color: T.colors.text,
+              }}
+            >
+              {currentRegionMeta.flag ? currentRegionMeta.flag + " " : ""}
+              {currentRegionMeta.label}
+            </Text>
+          </View>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Text
+              style={{
+                fontSize: 11,
+                color: T.colors.primary,
+                fontWeight: "500",
+              }}
+            >
+              {t("profile.appPrefs.seeAllRegions")}
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color={T.colors.primary} />
+          </View>
+        </TouchableOpacity>
+
+        {/* Dil satırı */}
+        <TouchableOpacity
+          onPress={() => openSelector("language")}
+          activeOpacity={0.8}
+          style={{
+            paddingVertical: 10,
+            paddingHorizontal: 10,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: "#E5E7EB",
+            backgroundColor: "#FFFFFF",
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <View style={{ flexDirection: "column" }}>
+            <Text
+              style={{
+                fontSize: 12,
+                fontWeight: "600",
+                color: T.colors.textSecondary,
+                marginBottom: 2,
+              }}
+            >
+              {t("profile.appPrefs.language")}
+            </Text>
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: "700",
+                color: T.colors.text,
+              }}
+            >
+              {currentLangMeta.label}
+            </Text>
+          </View>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Text
+              style={{
+                fontSize: 11,
+                color: T.colors.primary,
+                fontWeight: "500",
+              }}
+            >
+              {t("profile.appPrefs.seeAllLanguages")}
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color={T.colors.primary} />
+          </View>
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  }
 
   return (
     <ScrollView
@@ -502,7 +738,7 @@ export default function ProfileScreen() {
         }}
       >
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-          <Text style={{ color: "#fff", fontSize: 22, fontWeight: "800" }}>Profil</Text>
+          <Text style={{ color: "#fff", fontSize: 22, fontWeight: "800" }}>{t("profile.title")}</Text>
           <TouchableOpacity
             onPress={logout}
             style={{
@@ -514,7 +750,7 @@ export default function ProfileScreen() {
               borderRadius: 12,
             }}
           >
-            <Text style={{ color: "#fff", fontWeight: "700" }}>Çıkış yap</Text>
+            <Text style={{ color: "#fff", fontWeight: "700" }}>{t("profile.logout")}</Text>
           </TouchableOpacity>
         </View>
 
@@ -553,10 +789,10 @@ export default function ProfileScreen() {
             >
               <Text style={{ color: "#fff", fontWeight: "700" }}>
                 {user?.role === "customer"
-                  ? "Müşteri"
+                  ? t("profile.role.customer")
                   : user?.role === "restaurant"
-                  ? "Restoran"
-                  : "Admin"}
+                  ? t("profile.role.restaurant")
+                  : t("profile.role.admin")}
               </Text>
             </View>
           </View>
@@ -566,19 +802,19 @@ export default function ProfileScreen() {
       {/* Stat kartları */}
       {user?.role === "customer" && (
         <View style={{ paddingHorizontal: 16, marginTop: 14, flexDirection: "row", gap: 10 }}>
-          <StatCard title="Gelecek" value={String(counts.upcoming)} />
-          <StatCard title="Onaylı" value={String(counts.confirmed)} />
-          <StatCard title="İptal" value={String(counts.cancelled)} />
+          <StatCard title={t("profile.stats.upcoming")} value={String(counts.upcoming)} />
+          <StatCard title={t("profile.stats.confirmed")} value={String(counts.confirmed)} />
+          <StatCard title={t("profile.stats.cancelled")} value={String(counts.cancelled)} />
         </View>
       )}
 
       {/* Profil Bilgileri + Bildirim */}
       {user?.role === "customer" && (
-        <Section title="Profil Bilgileri">
-          <Label>Ad Soyad</Label>
+        <Section title={t("profile.section.profileInfo")}>
+          <Label>{t("profile.field.name")}</Label>
           <TextInput value={name} onChangeText={setName} style={inputStyle} />
 
-          <Label>E-posta</Label>
+          <Label>{t("profile.field.email")}</Label>
           <TextInput
             value={email}
             onChangeText={setEmail}
@@ -587,7 +823,7 @@ export default function ProfileScreen() {
             autoCapitalize="none"
           />
 
-          <Label>Telefon</Label>
+          <Label>{t("profile.field.phone")}</Label>
           <TextInput
             value={phone}
             onChangeText={setPhone}
@@ -603,21 +839,21 @@ export default function ProfileScreen() {
               color: T.colors.text,
             }}
           >
-            Bildirim Tercihleri
+            {t("profile.section.notificationPrefs")}
           </Text>
           <Toggle
-            label="Anlık Bildirimler"
+            label={t("profile.notify.push")}
             value={!!prefs.push}
             onChange={togglePushPref}
           />
           <Toggle
-            label="SMS (yakında)"
+            label={t("profile.notify.sms")}
             value={!!prefs.sms}
             onChange={() => {}}
             disabled
           />
           <Toggle
-            label="E-posta (yakında)"
+            label={t("profile.notify.email")}
             value={!!prefs.email}
             onChange={() => {}}
             disabled
@@ -633,175 +869,20 @@ export default function ProfileScreen() {
               color: T.colors.text,
             }}
           >
-            Uygulama Tercihleri
+            {t("profile.section.appPrefs")}
           </Text>
-
-          <Animated.View
-            style={{
-              marginTop: 4,
-              marginBottom: 10,
-              padding: 12,
-              borderRadius: 16,
-              borderWidth: 1,
-              borderColor: highlightAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [T.colors.border, T.colors.primary],
-              }),
-              backgroundColor: highlightAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: ["#F9FAFB", "#FEF3F2"],
-              }) as any,
-              shadowColor: "#000",
-              shadowOpacity: 0.06,
-              shadowRadius: 8,
-              shadowOffset: { width: 0, height: 3 },
-            }}
-          >
-            {/* Başlık */}
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginBottom: 10,
-              }}
-            >
-              <View
-                style={{
-                  width: 30,
-                  height: 30,
-                  borderRadius: 15,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor: "rgba(123,44,44,0.08)",
-                  marginRight: 8,
-                }}
-              >
-                <Ionicons
-                  name="earth-outline"
-                  size={18}
-                  color={T.colors.primary}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    fontSize: 15,
-                    fontWeight: "700",
-                    color: T.colors.text,
-                  }}
-                >
-                  Bölge &amp; Dil
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 12,
-                    color: T.colors.textSecondary,
-                  }}
-                >
-                  Şu an: {currentRegionMeta.flag ? currentRegionMeta.flag + " " : ""}
-                  {currentRegionMeta.label} • {currentLangMeta.label}
-                </Text>
-              </View>
-            </View>
-
-            {/* Bölge seçimi - yatay kaydırılabilir */}
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 6,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 12,
-                  fontWeight: "600",
-                  color: T.colors.textSecondary,
-                }}
-              >
-                Bölge
-              </Text>
-              <TouchableOpacity onPress={() => openSelector("region")}>
-                <Text
-                  style={{
-                    fontSize: 11,
-                    color: T.colors.primary,
-                    fontWeight: "600",
-                  }}
-                >
-                  Tüm bölgeleri gör
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 8, paddingVertical: 2 }}
-            >
-              {REGION_OPTIONS.map((r) => (
-                <Pill
-                  key={r.code}
-                  label={`${r.flag ? r.flag + " " : ""}${r.label}`}
-                  active={prefRegion === r.code}
-                  onPress={() => handleRegionSelect(r.code)}
-                />
-              ))}
-            </ScrollView>
-
-            {/* Dil seçimi - yatay kaydırılabilir */}
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginTop: 10,
-                marginBottom: 4,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 12,
-                  fontWeight: "600",
-                  color: T.colors.textSecondary,
-                }}
-              >
-                Dil
-              </Text>
-              <TouchableOpacity onPress={() => openSelector("language")}>
-                <Text
-                  style={{
-                    fontSize: 11,
-                    color: T.colors.primary,
-                    fontWeight: "600",
-                  }}
-                >
-                  Tüm dilleri gör
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 8, paddingVertical: 2 }}
-            >
-              {LANGUAGE_OPTIONS.map((l) => (
-                <Pill
-                  key={l.code}
-                  label={l.label}
-                  active={prefLang === l.code}
-                  onPress={() => handleLangSelect(l.code)}
-                />
-              ))}
-            </ScrollView>
-          </Animated.View>
-
+          <AppPrefs />
           <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>
             <PrimaryButton
-              title={loading ? "Kaydediliyor..." : "Kaydet"}
+              title={loading ? t("common.saving") : t("common.save")}
               onPress={onSave}
             />
           </View>
+        </Section>
+      )}
+      {(user?.role === "admin" || user?.role === "restaurant") && (
+        <Section title={t("profile.section.appPrefs")}>
+          <AppPrefs />
         </Section>
       )}
       {/* Bölge / Dil seçim bottom sheet */}
@@ -850,8 +931,8 @@ export default function ProfileScreen() {
                 }}
               >
                 {selectorOpen === "region"
-                  ? "Bölge Seç"
-                  : "Dil Seç"}
+                  ? t("profile.appPrefs.selectRegion")
+                  : t("profile.appPrefs.selectLanguage")}
               </Text>
               {(selectorOpen === "region"
                 ? REGION_OPTIONS
@@ -915,9 +996,9 @@ export default function ProfileScreen() {
 
       {/* Şifre Değiştirme */}
       {providers?.includes("password") && (
-        <Section title="Şifre Değiştirme">
+        <Section title={t("profile.section.password")}>
           {/* mevcut */}
-          <Label>Mevcut Şifre</Label>
+          <Label>{t("profile.password.current")}</Label>
           <View style={{ position: "relative" }}>
             <TextInput
               value={curPw}
@@ -939,7 +1020,7 @@ export default function ProfileScreen() {
           </View>
 
           {/* yeni */}
-          <Label>Yeni Şifre</Label>
+          <Label>{t("profile.password.new")}</Label>
           <View style={{ position: "relative" }}>
             <TextInput
               value={newPw}
@@ -961,7 +1042,7 @@ export default function ProfileScreen() {
           </View>
 
           {/* tekrar */}
-          <Label>Yeni Şifre (Tekrar)</Label>
+          <Label>{t("profile.password.newConfirm")}</Label>
           <View style={{ position: "relative" }}>
             <TextInput
               value={newPw2}
@@ -984,7 +1065,7 @@ export default function ProfileScreen() {
 
           <View style={{ flexDirection: "row", gap: 10, marginTop: 12 }}>
             <PrimaryButton
-              title={pwLoading ? "Güncelleniyor..." : "Şifreyi Güncelle"}
+              title={pwLoading ? t("common.saving") : t("profile.password.update")}
               onPress={onChangePassword}
             />
           </View>
@@ -993,7 +1074,7 @@ export default function ProfileScreen() {
 
       {/* Favorilerim */}
       {user?.role === "customer" && (
-        <Section title="Favorilerim">
+        <Section title={t("profile.section.favorites")}>
           {favs?.length ? (
             <>
               <View
@@ -1003,7 +1084,7 @@ export default function ProfileScreen() {
                   marginBottom: 6,
                 }}
               >
-                <Text style={{ color: T.colors.textSecondary }}>Toplam</Text>
+                <Text style={{ color: T.colors.textSecondary }}>{t("profile.favorites.total")}</Text>
                 <Text
                   style={{ fontWeight: "700", color: T.colors.text }}
                 >
@@ -1016,7 +1097,7 @@ export default function ProfileScreen() {
             </>
           ) : (
             <Text style={{ color: T.colors.textSecondary }}>
-              Henüz favori eklemediniz.
+              {t("profile.favorites.empty")}
             </Text>
           )}
         </Section>
@@ -1024,7 +1105,7 @@ export default function ProfileScreen() {
 
       {/* Rezervasyonlarım */}
       {user?.role === "customer" && (
-        <Section title="Rezervasyonlarım">
+        <Section title={t("profile.section.reservations")}>
           {resv?.length ? (
             <>
               <View
@@ -1035,7 +1116,7 @@ export default function ProfileScreen() {
                   alignItems: "center",
                 }}
               >
-                <Text style={{ color: T.colors.textSecondary }}>Toplam</Text>
+                <Text style={{ color: T.colors.textSecondary }}>{t("profile.reservations.total")}</Text>
                 <Text
                   style={{ fontWeight: "700", color: T.colors.text }}
                 >
@@ -1050,7 +1131,7 @@ export default function ProfileScreen() {
                 }}
               >
                 <Text style={{ color: T.colors.textSecondary }}>
-                  Toplam Harcama
+                  {t("profile.reservations.totalSpent")}
                 </Text>
                 <Money n={counts.spending} />
               </View>
@@ -1060,7 +1141,7 @@ export default function ProfileScreen() {
             </>
           ) : (
             <Text style={{ color: T.colors.textSecondary }}>
-              Henüz rezervasyon yok.
+              {t("profile.reservations.empty")}
             </Text>
           )}
         </Section>
@@ -1068,11 +1149,11 @@ export default function ProfileScreen() {
 
       {/* Yönetim Kısayolları */}
       {(user?.role === "restaurant" || user?.role === "admin") && (
-        <Section title="Yönetim Kısayolları">
+        <Section title={t("profile.section.adminShortcuts")}>
           <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap" }}>
             {user?.role === "restaurant" && (
               <PrimaryButton
-                title="Restoran Paneli"
+                title={t("profile.shortcuts.restaurantPanel")}
                 onPress={() =>
                   navigation.navigate("RestaurantPanel", {
                     screen: "RestaurantHub",
@@ -1083,7 +1164,7 @@ export default function ProfileScreen() {
             )}
             {user?.role === "admin" && (
               <PrimaryButton
-                title="Admin Paneli"
+                title={t("profile.shortcuts.adminPanel")}
                 onPress={() => navigation.navigate("AdminPanel")}
               />
             )}
@@ -1091,14 +1172,14 @@ export default function ProfileScreen() {
             {isRestaurant && (
               <>
                 <PrimaryButton
-                  title="QR Tara"
+                  title={t("profile.shortcuts.scanQR")}
                   onPress={async () => {
                     await ensureCam();
                     setQrOpen(true);
                   }}
                 />
                 <SecondaryButton
-                  title="Manuel Check-in"
+                  title={t("profile.shortcuts.manualCheckin")}
                   onPress={() => {
                     setManualRid("");
                     setManualArrived("");
@@ -1112,47 +1193,47 @@ export default function ProfileScreen() {
       )}
 
       {/* Yasal & Destek */}
-      <Section title="Yasal ve Destek">
+      <Section title={t("profile.section.legalSupport")}>
         <ListCard>
           <ListRow
             icon="file-document-outline"
-            label="Kullanım Koşulları"
+            label={t("profile.legal.terms")}
             onPress={goTerms}
           />
           <Divider />
           <ListRow
             icon="shield-lock-outline"
-            label="Gizlilik Politikası"
+            label={t("profile.legal.privacy")}
             onPress={goPrivacy}
           />
           <Divider />
           <ListRow
             icon="lifebuoy"
-            label="Yardım & Destek"
+            label={t("profile.legal.help")}
             onPress={goSupport}
           />
           <Divider />
           <ListRow
             icon="email-outline"
-            label="İletişim"
+            label={t("profile.legal.contact")}
             onPress={goContact}
           />
           <Divider />
           <ListRow
             icon="certificate-outline"
-            label="Lisanslar"
+            label={t("profile.legal.licenses")}
             onPress={goLicenses}
           />
           <Divider />
           <ListRow
             icon="information-outline"
-            label="Hakkında"
+            label={t("profile.legal.about")}
             onPress={goAbout}
           />
           <Divider />
           <ListRow
             icon="trash-can-outline"
-            label="Hesabı Sil"
+            label={t("profile.legal.deleteAccount")}
             destructive
             onPress={goDelete}
           />
@@ -1161,11 +1242,231 @@ export default function ProfileScreen() {
 
       {/* Alt Çıkış */}
       <View style={{ paddingHorizontal: 16, marginTop: 8, marginBottom: 20 }}>
-        <SecondaryButton title="Çıkış yap" onPress={logout} />
+        <SecondaryButton title={t("profile.logout")} onPress={logout} />
       </View>
 
-      {/* QR, Manuel Check-in, Mesaj modalları: mevcut hâliyle bırakıldı (yukarıdaki kodun) */}
-      {/* ... (QR ve msg modalları senin mevcut sürümünle aynı, yukarıda zaten duruyor) */}
+
+      {/* QR Kamera Modalı */}
+      <Modal visible={qrOpen} animationType="slide" onRequestClose={() => setQrOpen(false)}>
+        <View style={{ flex: 1, backgroundColor: "#000" }}>
+          <CameraView
+            style={{ flex: 1 }}
+            barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+            onBarcodeScanned={async (ev: any) => {
+              try {
+                const data = ev?.data || "";
+                setQrOpen(false);
+                setQrPayload(data);
+                setQrArrivedInput("");
+                setQrArrivedOpen(true);
+              } catch (e: any) {
+                setQrOpen(false);
+                showError(
+                  t("profile.toast.invalidQRTitle"),
+                  e?.response?.data?.message ||
+                    e?.message ||
+                    t("profile.toast.invalidQRBody"),
+                  () => {
+                    // tekrar tarama
+                    setQrOpen(true);
+                  },
+                  t("profile.toast.qrRetryLabel")
+                );
+              }
+            }}
+          />
+          <View style={{ position: "absolute", top: 40, left: 20 }}>
+            <SecondaryButton
+              title={t("profile.modal.close")}
+              onPress={() => setQrOpen(false)}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* QR sonrası Gelen Kişi Sayısı Modalı */}
+      <Modal
+        visible={qrArrivedOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setQrArrivedOpen(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.6)",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 20,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: 14,
+              width: "100%",
+              padding: 16,
+              borderWidth: 1,
+              borderColor: T.colors.border,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: "800",
+                color: T.colors.text,
+                marginBottom: 10,
+              }}
+            >
+              {t("profile.qr.arrivedCountTitle")}
+            </Text>
+            <Text style={{ color: T.colors.textSecondary, marginBottom: 6 }}>
+              {t("profile.qr.arrivedCountDescription")}
+            </Text>
+            <TextInput
+              value={qrArrivedInput}
+              onChangeText={setQrArrivedInput}
+              placeholder={t("profile.qr.arrivedCountPlaceholder")}
+              keyboardType={Platform.select({ ios: "number-pad", android: "numeric" }) as any}
+              style={inputStyle}
+            />
+            <View style={{ flexDirection: "row", gap: 10, marginTop: 8 }}>
+              <SecondaryButton
+                title={t("common.cancel")}
+                onPress={() => setQrArrivedOpen(false)}
+              />
+              <PrimaryButton
+                title={t("profile.modal.confirm")}
+                onPress={async () => {
+                  const n = Number(qrArrivedInput.trim());
+                  if (!Number.isFinite(n) || n < 0) {
+                    showWarn(
+                      t("profile.toast.invalidNumberTitle"),
+                      t("profile.toast.invalidNumberBody")
+                    );
+                    return;
+                  }
+                  try {
+                    await checkinByQR(qrPayload, n);
+                    setQrArrivedOpen(false);
+                    setQrPayload(null);
+                    setQrArrivedInput("");
+                    showMsg(
+                      t("profile.toast.checkinSuccessTitle"),
+                      t("profile.toast.checkinSuccessBody")
+                    );
+                  } catch (e: any) {
+                    showError(
+                      t("profile.toast.checkinFailedTitle"),
+                      e?.response?.data?.message ||
+                        e?.message ||
+                        t("profile.toast.checkinFailedBody")
+                    );
+                  }
+                }}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Manuel Check-in Modal (arrived zorunlu) */}
+      <Modal
+        visible={manualOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setManualOpen(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.6)",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 20,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: 14,
+              width: "100%",
+              padding: 16,
+              borderWidth: 1,
+              borderColor: T.colors.border,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: "800",
+                color: T.colors.text,
+                marginBottom: 10,
+              }}
+            >
+              {t("profile.checkin.manualTitle")}
+            </Text>
+            <Label>{t("profile.checkin.ridLabel")}</Label>
+            <TextInput
+              value={manualRid}
+              onChangeText={setManualRid}
+              placeholder={t("profile.checkin.ridPlaceholder")}
+              autoCapitalize="none"
+              style={inputStyle}
+            />
+            <Label>{t("profile.checkin.arrivedLabel")}</Label>
+            <TextInput
+              value={manualArrived}
+              onChangeText={setManualArrived}
+              placeholder={t("profile.checkin.arrivedPlaceholder")}
+              keyboardType={Platform.select({ ios: "number-pad", android: "numeric" }) as any}
+              style={inputStyle}
+            />
+
+            <View style={{ flexDirection: "row", gap: 10, marginTop: 8 }}>
+              <SecondaryButton
+                title={t("common.cancel")}
+                onPress={() => setManualOpen(false)}
+              />
+              <PrimaryButton
+                title={t("profile.checkin.submit")}
+                onPress={async () => {
+                  if (!manualRid.trim()) {
+                    showWarn(
+                      t("profile.toast.ridRequiredTitle"),
+                      t("profile.toast.ridRequiredBody")
+                    );
+                    return;
+                  }
+                  const n = Number(manualArrived.trim());
+                  if (!Number.isFinite(n) || n < 0) {
+                    showWarn(
+                      t("profile.toast.invalidNumberTitle"),
+                      t("profile.toast.invalidNumberBody")
+                    );
+                    return;
+                  }
+                  try {
+                    await checkinManual(String(manualRid.trim()), n);
+                    setManualOpen(false);
+                    showMsg(
+                      t("profile.toast.checkinSuccessTitle"),
+                      t("profile.toast.checkinSuccessBody")
+                    );
+                  } catch (e: any) {
+                    showError(
+                      t("profile.toast.checkinManualFailedTitle"),
+                      e?.response?.data?.message ||
+                        e?.message ||
+                        t("profile.toast.checkinManualFailedBody")
+                    );
+                  }
+                }}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Mesaj Modalı */}
       <Modal
@@ -1213,10 +1514,10 @@ export default function ProfileScreen() {
             >
               {msgTitle ||
                 (msgKind === "error"
-                  ? "Hata"
+                  ? t("common.error")
                   : msgKind === "warn"
-                  ? "Uyarı"
-                  : "Bilgi")}
+                  ? t("common.warning")
+                  : t("common.info"))}
             </Text>
             {!!msgBody && (
               <Text
@@ -1236,12 +1537,12 @@ export default function ProfileScreen() {
               }}
             >
               <SecondaryButton
-                title="Kapat"
+                title={t("profile.modal.close")}
                 onPress={() => setMsgOpen(false)}
               />
               {msgOnRetry ? (
                 <PrimaryButton
-                  title={msgRetryLabel || "Tekrar Dene"}
+                  title={msgRetryLabel || t("profile.modal.retry")}
                   onPress={() => {
                     const cb = msgOnRetry;
                     setMsgOpen(false);
@@ -1251,7 +1552,7 @@ export default function ProfileScreen() {
                 />
               ) : (
                 <PrimaryButton
-                  title="Tamam"
+                  title={t("profile.modal.confirm")}
                   onPress={() => setMsgOpen(false)}
                 />
               )}

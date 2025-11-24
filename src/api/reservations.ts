@@ -54,6 +54,21 @@ export async function createReservation(
   return unwrap(api.post<Reservation>("/reservations", body));
 }
 
+/** ✅ Stripe PaymentIntent (depozito için) */
+export type CreateStripePaymentIntentPayload = {
+  saveCard?: boolean;
+};
+
+export async function createStripePaymentIntent(
+  reservationId: string,
+  payload: CreateStripePaymentIntentPayload = {}
+): Promise<any> {
+  const rid = normalizeMongoId(reservationId);
+  return unwrap(
+    api.post<any>(`/reservations/${rid}/stripe-intent`, payload)
+  );
+}
+
 export async function fetchReservationsByRestaurant(
   restId: string
 ): Promise<Reservation[]> {

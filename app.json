@@ -65,6 +65,7 @@
       "expo-web-browser"
     ],
     "extra": {
+     "EXPO_PUBLIC_STRIPE_PK": "pk_live_51SVWgyGwmM7e2NWE4qENGfGpXCQCfFTng1csChRVGe9toXDsrEONRi66Xg98XJrzlZWkfkl3n5TeaBMkICF0SI7f00yEFrQcRE",
       "googleClientIdAndroid": "323726747494-vdkp19mnbd5u77pb45snhnr6o1ud56pi.apps.googleusercontent.com",
       "googleClientIdIos": "323726747494-t73o6ohon3t92ehph4hid5tls2t2dsv6.apps.googleusercontent.com",
       "googleClientIdWeb": "323726747494-2cklvj30io6vikju83jpvg9uho4md4tq.apps.googleusercontent.com",

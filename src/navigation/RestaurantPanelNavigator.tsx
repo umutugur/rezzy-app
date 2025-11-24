@@ -9,7 +9,7 @@ import RP_Menus from "../screens/RestaurantPanel/RP_Menus";
 import RP_Tables from "../screens/RestaurantPanel/RP_Tables";
 import RP_Hours from "../screens/RestaurantPanel/RP_Hours";
 import RP_Policies from "../screens/RestaurantPanel/RP_Policies";
-
+import RP_MenuManager from "../screens/RestaurantPanel/RP_MenuManager";
 export type RestaurantPanelParams = {
   RestaurantHub: { restaurantId: string };
   Dashboard: { restaurantId: string };
@@ -17,6 +17,7 @@ export type RestaurantPanelParams = {
   General: { restaurantId: string };
   Photos: { restaurantId: string };
   Menus: { restaurantId: string };
+  MenuManager: { restaurantId: string };  // ✅ YENİ kategori/ürün yönetimi
   Tables: { restaurantId: string };
   Hours: { restaurantId: string };
   Policies: { restaurantId: string };
@@ -37,6 +38,7 @@ export default function RestaurantPanelNavigator() {
       <Stack.Screen name="General" component={RP_General} options={{ title: "Genel Bilgiler" }} />
       <Stack.Screen name="Photos" component={RP_Photos} options={{ title: "Fotoğraflar" }} />
       <Stack.Screen name="Menus" component={RP_Menus} options={{ title: "Menüler" }} />
+      <Stack.Screen name="MenuManager" component={RP_MenuManager} options={{ title: "Menü Yönetimi" }}/>
       <Stack.Screen name="Tables" component={RP_Tables} options={{ title: "Masalar" }} />
       <Stack.Screen name="Hours" component={RP_Hours} options={{ title: "Çalışma Saatleri" }} />
       <Stack.Screen name="Policies" component={RP_Policies} options={{ title: "Rezervasyon Politikaları" }} />

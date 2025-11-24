@@ -36,53 +36,74 @@ function approxSize(data: any): string {
   }
 }
 
-// İstek süresi ölçümü için metadata’yı config üstüne ekleyeceğiz
+// İstek süresi ölçümü için metadata
 type TimedConfig = InternalAxiosRequestConfig & { metadata?: { start: number } };
 
 export const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 30000,
+  timeout: 60000,
 });
 
 // === Request Interceptor ===
 api.interceptors.request.use((config: TimedConfig): TimedConfig => {
   const { token } = useAuth.getState();
 
-  // cache-buster en sonda
-  const origUrl = config.url || "";
-  const hasQuery = origUrl.includes("?");
-  const sep = hasQuery ? "&" : "?";
-  config.url = `${origUrl}${sep}_cb=${Date.now()}`;
-
   // headers hiçbir zaman undefined kalmasın
   config.headers = (config.headers ?? {}) as AxiosRequestHeaders;
 
-  // token
+  // Auth
   if (token) {
     (config.headers as any).Authorization = `Bearer ${token}`;
   }
 
-  // süre ölçümü
+  // SÜRE ÖLÇÜMÜ
   config.metadata = { start: Date.now() };
 
-  if (__DEV__) {
-    const method = (config.method || "get").toUpperCase();
-    const ct =
-      (config.headers as any)?.["Content-Type"] ||
-      (config.headers as any)?.["content-type"] ||
-      (isFormDataLike(config.data) ? "multipart/form-data" : "application/json");
+  // ---- CACHE BUSTER: SADECE GET ----
+  const method = (config.method || "get").toLowerCase();
+  if (method === "get") {
+    const origUrl = config.url || "";
+    const hasQuery = origUrl.includes("?");
+    const sep = hasQuery ? "&" : "?";
+    config.url = `${origUrl}${sep}_cb=${Date.now()}`;
+  }
 
-    const absUrl = (config.baseURL ? config.baseURL.replace(/\/+$/, "") : "") + (config.url || "");
-    console.log("[api:req]", method, absUrl);
+  // ---- CONTENT-TYPE YÖNETİMİ ----
+  // FormData ise Content-Type'ı ASLA elle set etme (RN boundary ekler)
+  const isFD = isFormDataLike(config.data);
+  if (isFD) {
+    if (config.headers) {
+      delete (config.headers as any)["Content-Type"];
+      delete (config.headers as any)["content-type"];
+    }
+  } else {
+    // JSON ise Content-Type yoksa ekle
+    const hasCT =
+      (config.headers as any)["Content-Type"] ||
+      (config.headers as any)["content-type"];
+    if (!hasCT) {
+      (config.headers as any)["Content-Type"] = "application/json";
+    }
+  }
+
+  if (__DEV__) {
+    const ctLog =
+      (config.headers as any)["Content-Type"] ||
+      (config.headers as any)["content-type"] ||
+      (isFD ? "(auto by RN at runtime)" : "application/json");
+    const absUrl =
+      (config.baseURL ? config.baseURL.replace(/\/+$/, "") : "") +
+      (config.url || "");
+    console.log("[api:req]", (config.method || "get").toUpperCase(), absUrl);
     console.log("[api:req] hdr", {
-      "Content-Type": ct,
+      "Content-Type": ctLog,
       Authorization: token ? `Bearer ${maskToken(token)}` : "∅",
     });
     if (config.params) console.log("[api:req] params", config.params);
     if (config.data !== undefined) {
       console.log(
         "[api:req] body",
-        isFormDataLike(config.data) ? "FormData" : "JSON",
+        isFD ? "FormData" : "JSON",
         approxSize(config.data)
       );
     }
@@ -111,7 +132,8 @@ api.interceptors.response.use(
     if (__DEV__) {
       const cfg = (r.config || {}) as TimedConfig;
       const dur = cfg.metadata?.start ? Date.now() - cfg.metadata.start : undefined;
-      const absUrl = (cfg.baseURL ? cfg.baseURL.replace(/\/+$/, "") : "") + (cfg.url || "");
+      const absUrl =
+        (cfg.baseURL ? cfg.baseURL.replace(/\/+$/, "") : "") + (cfg.url || "");
       console.log("[api:res]", r.status, absUrl, dur != null ? `${dur}ms` : "");
     }
     return r;
@@ -131,7 +153,6 @@ api.interceptors.response.use(
         (error as any)?.toJSON?.() ??
         (error as any)?.message ??
         error;
-
       console.log("[api:err]", {
         status: status ?? "∅",
         net: netErr ? "yes" : "no",
@@ -177,4 +198,5 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
 export const API_BASE_URL = BASE_URL;

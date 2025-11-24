@@ -7,10 +7,15 @@ export type OpeningHour = {
   isClosed: boolean;
 };
 
+/**
+ * Parameters for listing restaurants.  Region has been widened to `string`
+ * to support any ISO country code.  Consumers should pass a valid
+ * two‑letter country code (e.g. "TR", "US").
+ */
 export type ListRestaurantsParams = {
   city?: string;
   query?: string;
-  region?: "CY" | "UK";
+  region?: string;
   lat?: number;
   lng?: number;
   limit?: number;
@@ -20,7 +25,9 @@ export type ListRestaurantsParams = {
 export interface Restaurant {
   _id: string;
   name: string;
-  region?: "CY" | "UK";
+  /** ISO country code of the restaurant's region. */
+  region?: string;
+  preferredLanguage?: string;
   city?: string;
   address?: string;
   phone?: string;
@@ -49,7 +56,12 @@ export interface Restaurant {
 }
 
 export type TableItem = { name: string; capacity: number; isActive?: boolean };
-
+export type AvailabilitySlot = {
+  timeISO: string;
+  label: string;
+  isAvailable: boolean;
+  _fallback?: boolean;
+};
 // ---- helpers ----
 async function unwrap<T>(promise: Promise<{ data: T }>): Promise<T> {
   const res = await promise;
@@ -73,21 +85,7 @@ const toYMD = (d: Date) =>
     d.getDate()
   ).padStart(2, "0")}`;
 
-// ---------- Availability tipleri ----------
-export type AvailabilitySlot = {
-  timeISO: string;
-  label: string;
-  isAvailable: boolean;
-  _fallback?: boolean;
-};
-export type AvailabilityResponse = {
-  date: string;
-  partySize: number;
-  slots: AvailabilitySlot[];
-  debug?: any;
-};
-
-// ---------- REST çağrıları ----------
+// ---------- REST calls ----------
 export async function listRestaurants(
   params: ListRestaurantsParams = {}
 ): Promise<Restaurant[]> {
@@ -115,6 +113,7 @@ export async function updateRestaurant(id: string, form: any): Promise<Restauran
     "mapAddress",
     "googleMapsUrl",
     "region",
+    "preferredLanguage",
   ] as const;
 
   const payload: any = {};
@@ -194,6 +193,26 @@ export async function addPhoto(
   );
 }
 
+export async function addPhotoMultipart(
+  id: string,
+  localUri: string,
+  fileName: string,
+  mimeType: string
+): Promise<any> {
+  const rid = normalizeMongoId(id);
+  const form = new FormData();
+
+  // RN/Expo için file objesi:
+  form.append("file", {
+    uri: localUri,
+    name: fileName,
+    type: mimeType,
+  } as any);
+
+  const { data } = await api.post(`/restaurants/${rid}/photos`, form);
+  return data;
+}
+
 export async function removePhoto(
   id: string,
   url: string
@@ -212,7 +231,13 @@ export async function getAvailability(
   input: { id: string; date: string | Date; partySize: number } | string,
   dateMaybe?: string | Date,
   partySizeMaybe?: number
-): Promise<AvailabilityResponse> {
+): Promise<{
+  date: string;
+  partySize: number;
+  slots: AvailabilitySlot[];
+  debug?: any;
+}> {
+  // ...
   let id: string;
   let dateVal: string | Date;
   let partySizeVal: number;
@@ -233,15 +258,17 @@ export async function getAvailability(
       ? dateVal.slice(0, 10)
       : toYMD(dateVal);
 
-  const res = await api.get<AvailabilityResponse>(
-    `/restaurants/${rid}/availability`,
-    {
-      params: {
-        date: dateStr,
-        partySize: Math.max(1, Number(partySizeVal) || 1),
-      },
-    }
-  );
+    const res = await api.get<{
+    date: string;
+    partySize: number;
+    slots: AvailabilitySlot[];
+    debug?: any;
+  }>(`/restaurants/${rid}/availability`, {
+    params: {
+      date: dateStr,
+      partySize: Math.max(1, Number(partySizeVal) || 1),
+    },
+  });
 
   return res.data;
 }

@@ -10,6 +10,8 @@ import { useAuth } from "./src/store/useAuth";
 import { useRegion } from "./src/store/useRegion";
 import { registerPushToken, attachDeviceAfterLogin } from "./src/hooks/usePushToken";
 import InAppToast from "./src/components/InAppToast";
+import { StripeProvider } from "@stripe/stripe-react-native";
+import Constants from "expo-constants";
 
 // Global font scale
 if ((Text as any).defaultProps == null) (Text as any).defaultProps = {};
@@ -35,6 +37,13 @@ async function ensureAndroidChannel() {
     importance: Notifications.AndroidImportance.MAX,
   });
 }
+
+// ✅ Publishable key'i config'den çek
+const publishableKey =
+  (Constants.expoConfig?.extra as any)?.EXPO_PUBLIC_STRIPE_PK ||
+  (Constants.manifest?.extra as any)?.EXPO_PUBLIC_STRIPE_PK ||
+  process.env.EXPO_PUBLIC_STRIPE_PK ||
+  "";
 
 export default function App() {
   const hydrateAuth = useAuth((s: any) => s.hydrate);
@@ -109,9 +118,15 @@ export default function App() {
 
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-      <StatusBar style="dark" />
-      <RootNavigator />
-      <InAppToast />
+      <StripeProvider
+        publishableKey={publishableKey}
+        merchantIdentifier="com.umutugur.rezzy" // Apple Pay için
+        urlScheme="com.rezzy.app"              // expo scheme ile aynı
+      >
+        <StatusBar style="dark" />
+        <RootNavigator />
+        <InAppToast />
+      </StripeProvider>
     </SafeAreaProvider>
   );
 }

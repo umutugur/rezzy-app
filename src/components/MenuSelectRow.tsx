@@ -2,6 +2,7 @@
 import React from "react";
 import { View, TouchableOpacity } from "react-native";
 import { Text } from "./Themed";
+import { useI18n } from "../i18n";
 
 type Menu = { id: string; name: string; price: number };
 
@@ -16,10 +17,12 @@ export default function MenuSelectRow({
   selected?: string;
   onSelect: (menuId: string) => void;
 }) {
+  const { t } = useI18n();
+
   if (!menus?.length) {
     return (
       <View style={{ paddingVertical: 8 }}>
-        <Text secondary>Bu restoran için menü bulunamadı.</Text>
+        <Text secondary>{t("restaurant.noMenus")}</Text>
       </View>
     );
   }

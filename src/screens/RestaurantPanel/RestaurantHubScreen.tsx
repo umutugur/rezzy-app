@@ -42,7 +42,8 @@ export default function RestaurantHubScreen({ navigation, route }: Props) {
     { label: "Rezervasyonlar", icon: "calendar-outline", route: "Reservations" },
     { label: "Genel Bilgiler", icon: "information-circle-outline", route: "General" },
     { label: "Fotoğraflar", icon: "images-outline", route: "Photos" },
-    { label: "Menüler", icon: "restaurant-outline", route: "Menus" },
+    { label: "Fix Menüler", icon: "restaurant-outline", route: "Menus" },
+    { label: "Menü Yönetimi", icon: "list-outline", route: "MenuManager" }, // ✅ yeni
     { label: "Masalar", icon: "grid-outline", route: "Tables" },
     { label: "Çalışma Saatleri", icon: "time-outline", route: "Hours" },
     { label: "Politikalar", icon: "shield-checkmark-outline", route: "Policies" },

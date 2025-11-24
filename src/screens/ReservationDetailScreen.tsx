@@ -29,6 +29,7 @@ import { formatDateTime } from "../utils/format";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { buildMapsUrl, openInMaps } from "../utils/maps";
+import { useI18n } from "../i18n";
 
 /* ---------- Renk Paleti (Rezzy) ---------- */
 const REZZY = {
@@ -55,20 +56,13 @@ const formatTL = (n: number) =>
     maximumFractionDigits: 0,
   }).format(isFinite(n) ? n : 0);
 
-const TR_STATUS_LABEL: Record<NonNullable<Reservation["status"]>, string> = {
-  pending: "Beklemede",
-  confirmed: "Onaylandı",
-  arrived: "Giriş Yapıldı",
-  "no_show": "Gelmedi",
-  cancelled: "İptal Edildi",
-};
-
-const STATUS_HELPER_TEXT: Record<NonNullable<Reservation["status"]>, string> = {
-  pending: "Rezervasyonunuz alınmıştır. Onaylandığında bilgilendirileceksiniz.",
-  confirmed: "Rezervasyonunuz onaylandı. İyi eğlenceler!",
-  arrived: "Mekâna giriş yapıldı. Keyifli bir zaman geçirin!",
-  "no_show": "Rezervasyona gelinmedi.",
-  cancelled: "Rezervasyon iptal edildi.",
+// Status helper metinleri için i18n key map'i
+const STATUS_HELPER_KEY: Record<NonNullable<Reservation["status"]>, string> = {
+  pending: "reservationDetail.helper.pending",
+  confirmed: "reservationDetail.helper.confirmed",
+  arrived: "reservationDetail.helper.arrived",
+  "no_show": "reservationDetail.helper.no_show",
+  cancelled: "reservationDetail.helper.cancelled",
 };
 
 type Selection = { person: number; menuId: string; price: number };
@@ -85,6 +79,8 @@ type InfoModalState = {
 export default function ReservationDetailScreen() {
   const route = useRoute<any>();
   const { id } = route.params as { id: string };
+
+  const { t } = useI18n();
 
   const { data: r, loading, error, refetch, setData } = useReservationDetail(id, 5000);
 
@@ -110,11 +106,11 @@ export default function ReservationDetailScreen() {
       ]).start();
 
       if (infoModal.autoClose) {
-        const t = setTimeout(() => setInfoModal(null), 1500);
-        return () => clearTimeout(t);
+        const tmr = setTimeout(() => setInfoModal(null), 1500);
+        return () => clearTimeout(tmr);
       }
     }
-  }, [infoModal?.visible]);
+  }, [infoModal?.visible, infoModal?.autoClose, modalOpacity, modalScale]);
 
   React.useEffect(() => {
     if (!loading && r) {
@@ -124,7 +120,7 @@ export default function ReservationDetailScreen() {
         useNativeDriver: true,
       }).start();
     }
-  }, [loading, r]);
+  }, [loading, r, fadeAnim]);
 
   // Derivations
   const restaurantObj: any =
@@ -157,7 +153,7 @@ export default function ReservationDetailScreen() {
       const key = s.menuId || "_unknown";
       const info = menuMap.get(String(key));
       const unit = Number(s.price || info?.pricePerPerson || 0);
-      const name = info?.name || "Menü";
+      const name = info?.name || t("reservationDetail.menuFallback");
 
       if (!acc[key]) acc[key] = { name, unit, count: 0, subtotal: 0 };
       const addCount = selectionMode === "index" ? 1 : Math.max(0, Number(s.person) || 0);
@@ -165,7 +161,7 @@ export default function ReservationDetailScreen() {
       acc[key].subtotal = acc[key].unit * acc[key].count;
     }
     return acc;
-  }, [selections, menuMap, selectionMode]);
+  }, [selections, menuMap, selectionMode, t]);
 
   const canCancel = status === "pending";
   const canShowQR = status === "confirmed" || status === "arrived";
@@ -185,9 +181,12 @@ export default function ReservationDetailScreen() {
       setData((prev: any) =>
         prev ? { ...prev, receiptUrl: res.receiptUrl, status: res.status as any } : prev
       );
-      showSuccess("Başarılı", "Dekont yüklendi.");
+      showSuccess(
+        t("reservationDetail.uploadSuccessTitle"),
+        t("reservationDetail.uploadSuccessBody"),
+      );
     } catch (e: any) {
-      showError("Hata", e?.message ?? "Yükleme başarısız");
+      showError(t("common.error"), e?.message ?? t("reservationDetail.uploadError"));
     } finally {
       setUploading(false);
     }
@@ -195,25 +194,32 @@ export default function ReservationDetailScreen() {
 
   const onCancelPress = () => {
     if (!r) return;
-    Alert.alert("Rezervasyonu iptal et", "İptal etmek istediğinize emin misiniz?", [
-      { text: "Vazgeç", style: "cancel" },
-      {
-        text: "Evet, iptal et",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            setCanceling(true);
-            const out = await cancelReservation(id);
-            setData((prev: any) => (prev ? { ...prev, status: out.status as any } : prev));
-            showSuccess("İptal edildi", "Rezervasyonunuz iptal edildi.");
-          } catch (e: any) {
-            showError("Hata", e?.message ?? "İptal edilemedi.");
-          } finally {
-            setCanceling(false);
-          }
+    Alert.alert(
+      t("reservationDetail.cancelConfirmTitle"),
+      t("reservationDetail.cancelConfirmMessage"),
+      [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("reservationDetail.cancelConfirmOk"),
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setCanceling(true);
+              const out = await cancelReservation(id);
+              setData((prev: any) => (prev ? { ...prev, status: out.status as any } : prev));
+              showSuccess(
+                t("reservationDetail.cancelSuccessTitle"),
+                t("reservationDetail.cancelSuccessBody"),
+              );
+            } catch (e: any) {
+              showError(t("common.error"), e?.message ?? t("reservationDetail.cancelError"));
+            } finally {
+              setCanceling(false);
+            }
+          },
         },
-      },
-    ]);
+      ],
+    );
   };
 
   const onOpenQR = async () => {
@@ -223,7 +229,7 @@ export default function ReservationDetailScreen() {
       setQrUrl(url);
       setQrOpen(true);
     } catch (e: any) {
-      showError("Hata", e?.message ?? "QR alınamadı.");
+      showError(t("common.error"), e?.message ?? t("reservationDetail.qrError"));
     } finally {
       setQrLoading(false);
     }
@@ -244,7 +250,10 @@ export default function ReservationDetailScreen() {
           const can = await Linking.canOpenURL(gmUrl);
           if (can) return Linking.openURL(gmUrl);
         }
-        showError("Konum bulunamadı", "Restoran konumu mevcut değil.");
+        showError(
+          t("reservationDetail.locationErrorTitle"),
+          t("reservationDetail.locationErrorBody"),
+        );
         return;
       }
 
@@ -292,7 +301,10 @@ export default function ReservationDetailScreen() {
         return;
       }
     } catch (e) {
-      showError("Yönlendirme açılamadı", "Cihazda harita uygulaması açılamadı.");
+      showError(
+        t("reservationDetail.directionsErrorTitle"),
+        t("reservationDetail.directionsErrorBody"),
+      );
     }
   };
 
@@ -314,7 +326,9 @@ export default function ReservationDetailScreen() {
     return (
       <LinearGradient colors={config.colors} style={styles.statusBadge} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
         <Ionicons name={config.icon as any} size={18} color={config.textColor} />
-        <Text style={[styles.statusText, { color: config.textColor }]}>{TR_STATUS_LABEL[status]}</Text>
+        <Text style={[styles.statusText, { color: config.textColor }]}>
+          {t(`status.${status}`)}
+        </Text>
       </LinearGradient>
     );
   };
@@ -340,7 +354,7 @@ export default function ReservationDetailScreen() {
       <Screen topPadding="none">
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={REZZY.primary} />
-          <Text style={styles.loadingText}>Yükleniyor…</Text>
+          <Text style={styles.loadingText}>{t("reservationDetail.loading")}</Text>
         </View>
       </Screen>
     );
@@ -351,9 +365,9 @@ export default function ReservationDetailScreen() {
       <Screen topPadding="none">
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle-outline" size={64} color={REZZY.danger} />
-          <Text style={styles.errorTitle}>Bir Hata Oluştu</Text>
-          <Text style={styles.errorText}>{error ?? "Rezervasyon bulunamadı"}</Text>
-          <Button title="Tekrar Dene" onPress={refetch} />
+          <Text style={styles.errorTitle}>{t("reservationDetail.errorTitle")}</Text>
+          <Text style={styles.errorText}>{error ?? t("reservationDetail.notFound")}</Text>
+          <Button title={t("common.retry")} onPress={refetch} />
         </View>
       </Screen>
     );
@@ -381,15 +395,17 @@ export default function ReservationDetailScreen() {
           </LinearGradient>
 
           {/* Info Banner */}
-          <InfoCard icon="information-circle-outline" text={STATUS_HELPER_TEXT[status]} />
+          <InfoCard icon="information-circle-outline" text={t(STATUS_HELPER_KEY[status])} />
 
           {/* Summary Card */}
           <View style={styles.card}>
-            <SectionHeader icon="document-text-outline" title="Rezervasyon Özeti" />
+            <SectionHeader icon="document-text-outline" title={t("reservationDetail.summaryTitle")} />
 
             <View style={styles.partySizeRow}>
               <Ionicons name="people" size={20} color={REZZY.primary} />
-              <Text style={styles.partySizeText}>{partySize} Kişi</Text>
+              <Text style={styles.partySizeText}>
+                {partySize} {t("reservationDetail.personLabel")}
+              </Text>
             </View>
 
             {selections.length > 0 ? (
@@ -404,7 +420,9 @@ export default function ReservationDetailScreen() {
                         </View>
                         <View>
                           <Text style={styles.menuName}>{g.name}</Text>
-                          <Text style={styles.menuUnit}>{formatTL(g.unit)} / kişi</Text>
+                          <Text style={styles.menuUnit}>
+                            {formatTL(g.unit)} / {t("reservationDetail.personShort")}
+                          </Text>
                         </View>
                       </View>
                       <Text style={styles.menuPrice}>{formatTL(g.subtotal)}</Text>
@@ -413,20 +431,20 @@ export default function ReservationDetailScreen() {
                 ))}
               </View>
             ) : (
-              <Text style={styles.noMenuText}>Menü seçimleri bulunamadı.</Text>
+              <Text style={styles.noMenuText}>{t("reservationDetail.noMenu")}</Text>
             )}
 
             <View style={styles.totalSection}>
               <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Ara Toplam</Text>
+                <Text style={styles.totalLabel}>{t("reservationDetail.subtotal")}</Text>
                 <Text style={styles.totalValue}>{formatTL(totalPrice)}</Text>
               </View>
               <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Kapora</Text>
+                <Text style={styles.totalLabel}>{t("reservationDetail.deposit")}</Text>
                 <Text style={styles.totalValue}>{formatTL(depositAmount)}</Text>
               </View>
               <View style={styles.grandTotalRow}>
-                <Text style={styles.grandTotalLabel}>Genel Toplam</Text>
+                <Text style={styles.grandTotalLabel}>{t("reservationDetail.grandTotal")}</Text>
                 <Text style={styles.grandTotalValue}>{formatTL(totalPrice)}</Text>
               </View>
             </View>
@@ -434,7 +452,7 @@ export default function ReservationDetailScreen() {
 
           {/* Receipt Card */}
           <View style={styles.card}>
-            <SectionHeader icon="receipt-outline" title="Dekont" />
+            <SectionHeader icon="receipt-outline" title={t("reservationDetail.receiptSectionTitle")} />
             <ReceiptCard
               url={(r as any)?.receiptUrl}
               onReplace={handleReplace}
@@ -445,17 +463,17 @@ export default function ReservationDetailScreen() {
 
           {/* Directions */}
           <View style={styles.card}>
-            <SectionHeader icon="navigate-outline" title="Yol Tarifi" />
+            <SectionHeader icon="navigate-outline" title={t("reservationDetail.directionsSectionTitle")} />
             <Pressable style={styles.directionsButton} onPress={onDirections}>
               <Ionicons name="map" size={24} color={REZZY.primary} />
-              <Text style={styles.directionsText}>Yol Tarifi Al</Text>
+              <Text style={styles.directionsText}>{t("reservationDetail.directionsButton")}</Text>
               <Ionicons name="chevron-forward" size={20} color={REZZY.textMuted} />
             </Pressable>
           </View>
 
           {/* QR Code */}
           <View style={styles.card}>
-            <SectionHeader icon="qr-code-outline" title="Giriş QR Kodu" />
+            <SectionHeader icon="qr-code-outline" title={t("reservationDetail.qrSectionTitle")} />
             {canShowQR ? (
               <Pressable
                 style={[styles.qrButton, qrLoading && styles.qrButtonDisabled]}
@@ -467,12 +485,15 @@ export default function ReservationDetailScreen() {
                 ) : (
                   <>
                     <Ionicons name="qr-code" size={24} color="#fff" />
-                    <Text style={styles.qrButtonText}>QR Kodumu Göster</Text>
+                    <Text style={styles.qrButtonText}>{t("reservationDetail.qrButton")}</Text>
                   </>
                 )}
               </Pressable>
             ) : (
-              <InfoCard icon="lock-closed-outline" text="Onaylandığında giriş için QR kod burada görünecek." />
+              <InfoCard
+                icon="lock-closed-outline"
+                text={t("reservationDetail.qrLocked")}
+              />
             )}
           </View>
 
@@ -488,7 +509,9 @@ export default function ReservationDetailScreen() {
               ) : (
                 <>
                   <Ionicons name="close-circle-outline" size={22} color={REZZY.danger} />
-                  <Text style={styles.cancelButtonText}>Rezervasyonu İptal Et</Text>
+                  <Text style={styles.cancelButtonText}>
+                    {t("reservationDetail.cancelButton")}
+                  </Text>
                 </>
               )}
             </Pressable>
@@ -508,7 +531,7 @@ export default function ReservationDetailScreen() {
             >
               <Ionicons name="lock-closed-outline" size={18} color={REZZY.danger} />
               <Text style={{ color: REZZY.danger, fontWeight: "600" }}>
-                Bu rezervasyon iptal edilemez.
+                {t("reservationDetail.cannotCancel")}
               </Text>
             </View>
           )}
@@ -520,7 +543,7 @@ export default function ReservationDetailScreen() {
         <Pressable style={styles.modalOverlay} onPress={() => setQrOpen(false)}>
           <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Giriş QR Kodu</Text>
+              <Text style={styles.modalTitle}>{t("reservationDetail.qrModalTitle")}</Text>
               <Pressable onPress={() => setQrOpen(false)} style={styles.closeButton}>
                 <Ionicons name="close" size={24} color={REZZY.textMuted} />
               </Pressable>
@@ -533,7 +556,7 @@ export default function ReservationDetailScreen() {
             ) : (
               <View style={styles.qrImageContainer}>
                 <Image source={{ uri: qrUrl }} style={styles.qrImage} resizeMode="contain" />
-                <Text style={styles.qrHelperText}>Bu kodu restoran girişinde gösterin</Text>
+                <Text style={styles.qrHelperText}>{t("reservationDetail.qrHelper")}</Text>
               </View>
             )}
           </Pressable>
@@ -574,7 +597,10 @@ export default function ReservationDetailScreen() {
                 infoModal?.type === "success" ? { color: "#166534" } : { color: "#991B1B" },
               ]}
             >
-              {infoModal?.title}
+              {infoModal?.title ||
+                (infoModal?.type === "error"
+                  ? t("common.error")
+                  : t("common.info"))}
             </Text>
 
             <Text style={{ color: REZZY.textMuted, marginVertical: 10, textAlign: "center" }}>
@@ -586,7 +612,7 @@ export default function ReservationDetailScreen() {
                 style={[styles.qrButton, { alignSelf: "center", backgroundColor: REZZY.danger }]}
                 onPress={() => setInfoModal(null)}
               >
-                <Text style={styles.qrButtonText}>Tamam</Text>
+                <Text style={styles.qrButtonText}>{t("common.ok")}</Text>
               </TouchableOpacity>
             )}
           </Animated.View>

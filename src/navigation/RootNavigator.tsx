@@ -36,6 +36,8 @@ import { useNotifications } from "../store/useNotifications";
 import AppHeaderTitle from "../components/AppHeaderTitle";
 import AdminPanelNavigator from "./AdminPanelNavigator";
 
+import { useI18n } from "../i18n";
+
 const Stack = createStackNavigator();
 const Tabs = createBottomTabNavigator();
 
@@ -80,12 +82,49 @@ function useTabScreenOptions(headerBellPress: () => void) {
   const bottomPad = Math.max(insets.bottom, 8);
   const barHeight = 56 + bottomPad;
 
+  // Use i18n hook so that tab labels track the actual app language
+  const { t, language } = useI18n();
+
   return ({ route }: any): BottomTabNavigationOptions => {
-    const iconMap: any = {
-      Keşfet: "compass-outline",
-      Rezervasyonlar: "calendar-outline",
-      Profil: "person-circle-outline",
+    let iconName: any = "ellipse-outline";
+    let label: string = route.name;
+
+    let lang: "tr" | "en" | "ru" | "el" =
+      (["tr", "en", "ru", "el"].includes(language)
+        ? language
+        : "en") as "tr" | "en" | "ru" | "el";
+
+    const labels = {
+      explore: {
+        tr: "Keşfet",
+        en: "Explore",
+        ru: "Исследовать",
+        el: "Εξερεύνηση",
+      },
+      reservations: {
+        tr: "Rezervasyonlarım",
+        en: "My Reservations",
+        ru: "Бронирования",
+        el: "Κρατήσεις",
+      },
+      profile: {
+        tr: "Profil",
+        en: "Profile",
+        ru: "Профиль",
+        el: "Προφίλ",
+      }
     };
+
+    if (route.name === "Keşfet") {
+      iconName = "compass-outline";
+      label = labels.explore[lang];
+    } else if (route.name === "Rezervasyonlar") {
+      iconName = "calendar-outline";
+      label = labels.reservations[lang];
+    } else if (route.name === "Profil") {
+      iconName = "person-circle-outline";
+      label = labels.profile[lang];
+    }
 
     return {
       headerTitle: () => <AppHeaderTitle />,
@@ -103,8 +142,9 @@ function useTabScreenOptions(headerBellPress: () => void) {
         borderTopWidth: 0.5,
         backgroundColor: "#fff",
       },
+      tabBarLabel: label,
       tabBarIcon: ({ color, size }) => (
-        <Ionicons name={iconMap[route.name]} size={size} color={color} />
+        <Ionicons name={iconName} size={size} color={color} />
       ),
       headerRight: () => <Bell onPress={headerBellPress} />,
     };

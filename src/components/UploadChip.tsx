@@ -2,11 +2,12 @@
 import React from "react";
 import Chip from "./Chip";
 import * as ImagePicker from "expo-image-picker";
+import { useI18n } from "../i18n";
 
 type FileParam = { uri: string; name: string; type: string };
 
 export default function UploadChip({
-  title = "Dekont Yükle",
+  title,
   onPicked,
   disabled,
 }: {
@@ -14,6 +15,10 @@ export default function UploadChip({
   onPicked: (file: FileParam) => void | Promise<void>;
   disabled?: boolean;
 }) {
+  const { t } = useI18n();
+
+  const label = title ?? t("upload.receipt.button");
+
   const pick = async () => {
     // ——— İzin kontrolü (sessiz) ———
     try {
@@ -84,5 +89,5 @@ const res = await ImagePicker.launchImageLibraryAsync({
     });
   };
 
-  return <Chip title={title} onPress={pick} disabled={disabled} />;
+  return <Chip title={label} onPress={pick} disabled={disabled} />;
 }

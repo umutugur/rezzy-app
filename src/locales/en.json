@@ -1,0 +1,610 @@
+{
+  "common": {
+    "save": "Save",
+    "saving": "Saving...",
+    "ok": "OK",
+    "cancel": "Cancel",
+    "close": "Close",
+    "retry": "Retry",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Info",
+    "noResults": "No results found."
+  },
+  "profile": {
+    "title": "Profile",
+    "logout": "Logout",
+    "role": {
+      "customer": "Customer",
+      "restaurant": "Restaurant",
+      "admin": "Admin"
+    },
+    "stats": {
+      "upcoming": "Upcoming",
+      "confirmed": "Confirmed",
+      "cancelled": "Cancelled"
+    },
+    "section": {
+      "profileInfo": "Profile Information",
+      "notificationPrefs": "Notification Preferences",
+      "appPrefs": "App Preferences",
+      "password": "Change Password",
+      "favorites": "Favorites",
+      "reservations": "My Reservations",
+      "adminShortcuts": "Management Shortcuts",
+      "legalSupport": "Legal and Support"
+    },
+    "field": {
+      "name": "Name Surname",
+      "email": "Email",
+      "phone": "Phone"
+    },
+    "notify": {
+      "push": "Push Notifications",
+      "sms": "SMS (coming soon)",
+      "email": "Email (coming soon)"
+    },
+    "appPrefs": {
+      "title": "Region & Language",
+      "current": "Current",
+      "region": "Region",
+      "seeAllRegions": "See all regions",
+      "language": "Language",
+      "seeAllLanguages": "See all languages",
+      "selectRegionTitle": "Choose Region",
+      "selectLanguageTitle": "Choose Language",
+      "selectRegion": "Select region",
+      "selectLanguage": "Select language"
+    },
+    "password": {
+      "current": "Current Password",
+      "new": "New Password",
+      "newConfirm": "New Password (Repeat)",
+      "update": "Update Password",
+      "error": {
+        "missingTitle": "Missing information",
+        "missingBody": "Please fill in all password fields.",
+        "weakTitle": "Weak password",
+        "weakBody": "The new password must be at least 8 characters long.",
+        "mismatchTitle": "Passwords don't match",
+        "mismatchBody": "The new passwords must match."
+      },
+      "successTitle": "Password updated",
+      "successBody": "Your new password has been saved.",
+      "errorTitle": "Password could not be changed",
+      "errorBody": "Please check your details and try again."
+    },
+    "avatar": {
+      "successTitle": "Updated",
+      "successBody": "Your profile photo has been updated.",
+      "errorBody": "Avatar could not be uploaded."
+    },
+    "favorites": {
+      "total": "Total",
+      "empty": "You haven't added any favorites yet.",
+      "remove": "Remove",
+      "go": "Go"
+    },
+    "reservations": {
+      "total": "Total",
+      "totalSpent": "Total Spending",
+      "empty": "No reservations yet.",
+      "restaurantFallback": "Restaurant",
+      "totalLabel": "Total",
+      "itemTitle": "{{date}} • {{count}} guests",
+      "fallbackRestaurant": "Restaurant",
+      "status": {
+        "pending": "Pending",
+        "confirmed": "Confirmed",
+        "arrived": "Arrived",
+        "noShow": "No Show",
+        "cancelled": "Cancelled"
+      }
+    },
+    "shortcuts": {
+      "restaurantPanel": "Restaurant Panel",
+      "adminPanel": "Admin Panel",
+      "scanQR": "Scan QR",
+      "manualCheckin": "Manual Check-in"
+    },
+    "legal": {
+      "terms": "Terms of Use",
+      "privacy": "Privacy Policy",
+      "help": "Help & Support",
+      "contact": "Contact",
+      "licenses": "Licenses",
+      "about": "About",
+      "deleteAccount": "Delete Account"
+    },
+    "selector": {
+      "chooseRegion": "Choose Region",
+      "chooseLanguage": "Choose Language"
+    },
+    "modal": {
+      "close": "Close",
+      "confirm": "OK",
+      "retry": "Retry"
+    },
+    "toast": {
+      "pushPermissionTitle": "Permission required",
+      "pushPermissionBody": "You must grant notification permission to enable push notifications.",
+      "pushPrefErrorTitle": "Error",
+      "pushPrefErrorBody": "Notification preference could not be updated.",
+      "cameraPermissionTitle": "Permission required",
+      "cameraPermissionBody": "You must grant camera permission to scan QR codes.",
+      "favoriteErrorTitle": "Error",
+      "favoriteErrorBody": "Favorite could not be removed.",
+      "invalidQRTitle": "Invalid QR",
+      "invalidQRBody": "The QR code could not be verified.",
+      "qrRetryLabel": "Scan again",
+      "invalidNumberTitle": "Warning",
+      "invalidNumberBody": "Please enter a valid number (0 or greater).",
+      "checkinSuccessTitle": "Check-in complete",
+      "checkinSuccessBody": "Entry has been recorded successfully.",
+      "checkinFailedTitle": "Check-in failed",
+      "checkinFailedBody": "The operation could not be completed.",
+      "ridRequiredTitle": "Warning",
+      "ridRequiredBody": "Reservation ID is required.",
+      "checkinManualFailedTitle": "Error",
+      "checkinManualFailedBody": "Manual check-in could not be completed.",
+      "saveSuccessTitle": "Saved",
+      "saveSuccessBody": "Your profile and app preferences have been updated.",
+      "saveErrorTitle": "Update failed",
+      "saveErrorBody": "Please try again."
+    },
+    "logoutConfirm": "Do you want to log out of your account?",
+    "messages": {
+      "savedTitle": "Saved",
+      "savedBody": "Your profile and app preferences have been updated.",
+      "avatarUpdatedTitle": "Updated",
+      "avatarUpdatedBody": "Your profile photo has been updated.",
+      "passwordUpdatedTitle": "Password updated",
+      "passwordUpdatedBody": "Your new password has been saved.",
+      "checkinSuccessTitle": "Check-in complete",
+      "checkinSuccessBody": "Entry has been recorded successfully."
+    },
+    "errors": {
+      "generic": "Something went wrong. Please try again.",
+      "updateFailedTitle": "Update failed",
+      "updateFailedBody": "Please try again.",
+      "passwordChangeFailedTitle": "Password could not be changed",
+      "passwordChangeFailedBody": "Please check your details and try again.",
+      "avatarUploadTitle": "Error",
+      "avatarUploadBody": "Avatar could not be uploaded.",
+      "notificationPrefTitle": "Error",
+      "notificationPrefBody": "Notification preference could not be updated.",
+      "qrInvalidTitle": "Invalid QR",
+      "qrInvalidBody": "The QR code could not be verified.",
+      "checkinFailedTitle": "Check-in failed",
+      "checkinFailedBody": "The operation could not be completed."
+    },
+    "warnings": {
+      "missingFieldsTitle": "Missing information",
+      "missingFieldsBody": "Please fill in all required fields.",
+      "weakPasswordTitle": "Weak password",
+      "weakPasswordBody": "The new password must be at least 8 characters long.",
+      "passwordMismatchTitle": "Passwords don't match",
+      "passwordMismatchBody": "The new passwords must match.",
+      "permissionRequiredTitle": "Permission required",
+      "pushPermissionBody": "You must grant notification permission to enable push notifications.",
+      "cameraPermissionBody": "You must grant camera permission to scan QR codes.",
+      "invalidNumberBody": "Please enter a valid number (0 or greater).",
+      "ridRequiredBody": "Reservation ID is required."
+    },
+    "qr": {
+      "arrivedCountTitle": "Number of guests arrived",
+      "arrivedCountDescription": "QR has been scanned. Please enter the number of guests who arrived (required).",
+      "arrivedCountPlaceholder": "E.g.: 5"
+    },
+    "checkin": {
+      "manualTitle": "Manual Check-in",
+      "ridLabel": "Reservation ID (RID)",
+      "ridPlaceholder": "Mongo ObjectId, e.g. 64b7…",
+      "arrivedLabel": "Number of guests arrived (required)",
+      "arrivedPlaceholder": "E.g.: 4",
+      "submit": "Check-in"
+    }
+  },
+  "status": {
+    "pending": "Pending",
+    "confirmed": "Confirmed",
+    "arrived": "Arrived",
+    "no_show": "No Show",
+    "cancelled": "Cancelled",
+    "rejected": "Rejected",
+    "unknown": "Unknown"
+  },
+  "home": {
+    "loading": "Loading...",
+    "error": "Connection error",
+    "noResults": "No results found. Try clearing filters and search again.",
+    "explore":"Explore"
+  },
+  "bookings": {
+     "receipt": {
+    "upload": "Upload receipt",
+    "uploading": "Uploading…",
+    "acceptedFormats": "Accepted: JPG/PNG",
+    "view": "View",
+    "replace": "Replace",
+    "share": "Share",
+    "tapToClose": "Tap to close"
+  },
+  "title": "My Reservations",
+  "guest": {
+    "title": "Your Reservations",
+    "subtitle": "Log in to view and manage all your reservations in one place.",
+    "login": "Log In"
+  },
+  "loading": "Loading reservations...",
+  "loadError": "Reservations could not be loaded.",
+  "errorPrefix": "Error:",
+  "emptyTitle": "No results",
+  "emptySubtitle": "No reservations found for this filter.",
+  "restaurantFallback": "Restaurant"
+},
+ "filters": { 
+    "all": "All", 
+    "active": "Active", 
+    "past": "Past", 
+    "advanced": "Advanced Filter", 
+    "byStatus": "Filter by Status" 
+  },
+  "time": { "all": "All", 
+  "today": "Today", 
+  "week": "This Week", 
+  "custom": "Custom", 
+  "rangeTitle": "Select Date Range", 
+  "apply": "Apply", 
+  "clear": "Clear", 
+  "start": "Start", 
+  "end": "End" }
+  ,
+  "search": { "placeholder": "Search restaurants..." },
+"reservationDetail": {
+  "loading": "Loading…",
+  "errorTitle": "Something went wrong",
+  "notFound": "Reservation could not be found.",
+  "summaryTitle": "Reservation Summary",
+  "personLabel": "Guests",
+  "personShort": "person",
+  "menuFallback": "Menu",
+  "noMenu": "No menu selections found.",
+  "subtotal": "Subtotal",
+  "deposit": "Deposit",
+  "grandTotal": "Total",
+  "receiptSectionTitle": "Receipt",
+  "directionsSectionTitle": "Directions",
+  "directionsButton": "Get Directions",
+  "qrSectionTitle": "Entry QR Code",
+  "qrButton": "Show my QR code",
+  "qrLocked": "Your QR code will appear here once the reservation is confirmed.",
+  "cancelButton": "Cancel Reservation",
+  "cannotCancel": "This reservation cannot be cancelled.",
+  "qrModalTitle": "Entry QR Code",
+  "qrHelper": "Show this code at the restaurant entrance.",
+  "uploadSuccessTitle": "Success",
+  "uploadSuccessBody": "Receipt uploaded.",
+  "uploadError": "Upload failed.",
+  "cancelConfirmTitle": "Cancel reservation",
+  "cancelConfirmMessage": "Are you sure you want to cancel this reservation?",
+  "cancelConfirmOk": "Yes, cancel",
+  "cancelSuccessTitle": "Reservation cancelled",
+  "cancelSuccessBody": "Your reservation has been cancelled.",
+  "cancelError": "Reservation could not be cancelled.",
+  "qrError": "QR code could not be fetched.",
+  "locationErrorTitle": "Location not found",
+  "locationErrorBody": "Restaurant location is not available.",
+  "directionsErrorTitle": "Could not open directions",
+  "directionsErrorBody": "Maps application could not be opened on this device.",
+  "helper": {
+    "pending": "We received your reservation. You will be notified once it is confirmed.",
+    "confirmed": "Your reservation is confirmed. Have a great time!",
+    "arrived": "You have checked in to the venue. Enjoy your time!",
+    "no_show": "You did not show up for this reservation.",
+    "cancelled": "This reservation was cancelled."
+  }
+},
+  "restaurantDetail": {
+    "loading": "Loading…",
+    "notFoundTitle": "Restaurant Not Found",
+    "notFoundText": "This restaurant does not exist or has been removed.",
+    "back": "Go Back",
+
+    "aboutTab": "About",
+    "menuTab": "Menu",
+    "menuTitle": "Menu",
+    "menuComingSoon": "This venue hasn’t shared its menu yet.",
+    "noAbout": "No description for this venue.",
+
+    "noPhoto": "No photos available",
+
+    "fixedMenus": "Fixed Menus",
+    "noMenu": "No menu found for this restaurant.",
+    "perPerson": "per person",
+    "expandAll": "Expand All",
+    "collapseAll": "Collapse All",
+    "menuLoading": "Loading menu...",
+
+
+    "findSlot": "Find Available Time",
+    "date": "Date",
+    "partySize": "Party Size",
+    "slotsSearching": "Searching for available times…",
+    "noSlots": "No available times found.",
+
+    "about": "About",
+    "contact": "Contact",
+    "noPhone": "No phone information",
+    "noAddress": "No address information",
+
+    "ctaSelectDateTime": "Select Date & Time",
+    "ctaPeople": "{{count}} People",
+    "ctaContinue": "Continue",
+
+    "pastTimeTitle": "Past time",
+    "pastTimeBody": "You cannot make a reservation for a past date/time.",
+    "pastDateTimeTitle": "Past date/time",
+    "pastDateTimeBody": "Please choose a future date and time.",
+
+    "loginRequiredTitle": "Login required",
+    "loginRequiredBodyReservation": "You must be logged in to create a reservation.",
+    "loginRequiredBodyFavorite": "You must be logged in to add favorites.",
+
+    "loadError": "Failed to load restaurant",
+    "favoriteError": "Favorite operation failed"
+  },
+   "reservationStep2": {
+    "title": "Guest & Menu Selection",
+    "subtitle": "Choose one menu for each guest.",
+    "loading": "Loading menus…",
+    "loadError": "Menus could not be loaded.",
+    "emptyMenus": "No menu has been defined for this restaurant.",
+    "personTitle": "Guest {{index}}",
+    "toastAllRequired": "Please select a menu for each guest.",
+    "missingTitle": "Missing selection",
+    "ctaContinue": "Continue",
+     "skipFixedMenus": "I don’t want a fixed menu",
+    "skipFixedMenusHelp": "You can continue without selecting a fixed menu.",
+    "skipInfo": "You are continuing without a fixed menu. No fixed-menu fee will be added in the summary."
+  },
+  "reservationStep3": {
+  "title": "Reservation Summary",
+  "dateTimeLabel": "Date & Time",
+  "partySizeLabel": "Guests",
+  "selectedMenusTitle": "Selected Menus",
+  "subtotalLabel": "Subtotal",
+  "depositLabel": "Deposit",
+  "totalLabel": "Total",
+  "noMenus": "No menu selection found.",
+  "paymentInfoTitle": "Payment Details",
+  "bankLabel": "Bank",
+  "ibanNameLabel": "Account Name",
+  "ibanLabel": "IBAN",
+  "depositHint": "After paying the deposit, please upload your receipt.",
+  "receiptTitle": "Receipt",
+  "ctaCreating": "Creating...",
+  "ctaCreate": "Create Reservation",
+  "ctaPickReceipt": "Select Receipt",
+  "toastCopied": "Copied",
+  "toastReceiptSelected": "Receipt selected",
+  "toastMissing": "Missing information",
+  "toastNoId": "Reservation ID could not be retrieved",
+  "toastCreateError": "Reservation/receipt error",
+  "fallbackMenuName": "Menu",
+  "paymentMethodTitle": "Payment method",
+  "methodBankTransfer": "Bank transfer / IBAN",
+  "methodCard": "Card / Apple / Google Pay",
+  "copy": "Copy",
+
+  "noFixedMenusSelected": "No fixed menu selected.",
+
+
+  "receiptInfoForCard": "If you pay by card, you won’t need to upload a receipt.",
+
+  "ctaStripeProcessing": "Processing payment...",
+  "ctaStripePay": "Pay with card / Apple / Google Pay",
+
+  "toastNoDepositForCard": "This restaurant has no deposit configured.",
+  "toastStripeInitError": "Could not start the payment. Please try again.",
+  "toastStripePaymentError": "Payment could not be completed. Please try again.",
+  "toastStripeSuccess": "Payment completed successfully.",
+  "methodCardShort": "Pay by card",
+  "ctaStripePayWithAmount": "Pay {{amount}}",
+  "paySuffix": "pay"
+},
+"restaurant": {
+  "noMenus": "No menus available for this restaurant."
+},
+"upload": {
+  "receipt": {
+    "button": "Upload Receipt",
+    "permissionTitle": "Permission required",
+    "permissionMessage": "Access to the photo library was not granted.",
+    "errorTitle": "Error",
+    "errorMessage": "An error occurred while selecting the file.",
+    "acceptedTypes": "Accepted: JPG/PNG"
+  }
+},
+"about": {
+  "title": "About",
+  "subtitle": "Designed to make restaurant reservations fair, transparent and effortless for both guests and venues.",
+  "headline": "We make reservations smarter and safer.",
+  "description": "Rezzy combines deposits, QR check-in and real-time occupancy tracking. Guests enjoy a smooth experience while venues keep full control over their night.",
+  "features": {
+    "smartBooking": {
+      "title": "Smart booking flow",
+      "desc": "Table, party size, date and time selections are suggested in line with the venue’s opening hours and capacity."
+    },
+    "deposit": {
+      "title": "Deposit & reliability",
+      "desc": "Reduces no-show risk for venues while giving guests confidence that their table is truly reserved."
+    },
+    "qr": {
+      "title": "Fast QR check-in",
+      "desc": "Reservations are verified at the door by scanning a QR code and actual arrivals are recorded instantly."
+    },
+    "transparency": {
+      "title": "Transparent performance",
+      "desc": "Reservation history, cancellation rates and occupancy metrics are visible to venues in a single view."
+    }
+  },
+  "meta": {
+    "title": "App information",
+    "version": "Version",
+    "regions": "Active regions",
+    "regionsValue": "United Kingdom & North Cyprus (pilot)",
+    "contact": "Contact"
+  }
+},
+
+  "contact": {
+    "title": "Contact",
+    "subtitle": "You can reach out to us so we can assist you as quickly and accurately as possible.",
+
+    "emailTitle": "Support via Email",
+    "emailDesc": "You can send us an email for any questions, feedback, or support requests.",
+
+    "workHoursTitle": "Working Hours",
+    "workdays": "Weekdays",
+    "workhours": "09:00 — 18:00",
+
+    "moreInfo": "More Information",
+    "moreInfoDesc": "Soon you will find more information and support channels about Rezzy right here."
+  },
+  "deleteAccount": {
+    "title": "Delete Account",
+    "subtitle": "You can permanently delete your Rezzy account and related data.",
+    "sectionTitle": "Before you delete your account",
+    "descriptionMain": "When you delete your account, your reservation history and personal data will be removed permanently. Please make sure you have saved any important information before continuing.",
+    "dataTitle": "Data that will be removed:",
+    "dataItemReservations": "Your past and upcoming reservation records",
+    "dataItemProfile": "Your profile details and communication preferences",
+    "dataItemAnalytics": "Usage data that can be linked to your profile",
+    "warningTitle": "This action cannot be undone",
+    "warningText": "After your account is deleted, you will need to create a new account to sign in again with the same email address.",
+    "buttonLabel": "Permanently delete my account",
+    "buttonLoading": "Deleting your account...",
+    "successTitle": "Account deleted",
+    "successMessage": "Your account and personal data have been successfully deleted.",
+    "errorGeneric": "An error occurred while deleting your account."
+  },
+  "helpSupport": {
+  "title": "Help & Support",
+  "subtitle": "Quickly review the most common questions about reservations, notifications and using the app.",
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "subtitle": "We have collected the most common topics for you.",
+    "q1": "How do I make a reservation?",
+    "q2": "How can I cancel my reservation?",
+    "q3": "How do I track the status of my reservation?",
+    "q4": "Why am I not receiving notifications?",
+     "a1": "With Rezzy you can quickly book tables at partner restaurants, securely pay any required deposit, and verify your reservation in seconds using a QR check-in.",
+    "a2": "You can track your reservation status, cancellations and check-in records on the reservation detail screen and via in-app notifications.",
+    "a3": "Cancellation rules may vary by restaurant. The policy shown while creating the reservation is the one that applies.",
+    "a4": "You can reach us through the Help & Support section in the app or by sending an email to our contact address."
+  },
+  "tips": {
+    "title": "Quick Tips",
+    "subtitle": "Check these steps first to avoid most issues.",
+    "item1": "Make sure notification permission is granted and your internet connection is stable.",
+    "item2": "Ensure you are using the latest version of the Rezzy app.",
+    "item3": "If the issue continues, try closing and reopening the app or logging out and back in."
+  },
+  "contact": {
+    "title": "Still need help?",
+    "subtitle": "You can reach out to us anytime. We’ll get back to you as soon as possible.",
+    "button": "Contact us"
+  }
+},
+"licenses": {
+  "title": "Open Source Licenses",
+  "subtitle": "Rezzy relies on many open source libraries for performance, security and a smooth user experience.",
+  "section": {
+    "overviewTitle": "Why open source?",
+    "overviewBody1": "Rezzy is built on top of modern web and mobile open source libraries. These projects help us ship faster while keeping performance and security standards high.",
+    "overviewBody2": "Below is a grouped overview of some of the main libraries used in the app and their license types. For full license texts, please refer to each project’s GitHub repository.",
+    "coreTitle": "Core & Infrastructure",
+    "uiTitle": "UI & Interaction",
+    "toolingTitle": "Tooling & Utilities",
+    "noteTitle": "Important Note",
+    "noteBody1": "This list summarizes the most frequently used core libraries in the project. There may be additional helper packages and development tools in use.",
+    "noteBody2": "All libraries are used in accordance with their own license terms. We respect the work of the maintainers and are grateful to the open source community."
+  }
+},
+"privacy": {
+    "title": "Privacy Policy",
+    "subtitle": "Your privacy is important to us. Below you can find details about how Rezzy collects, uses and protects your data.",
+
+    "collected": "Data We Collect",
+    "collected_id": "Identification information (name, email, phone)",
+    "collected_usage": "Reservation and app usage details",
+    "collected_device": "Device information (model, OS version, region/language)",
+
+    "usage": "How We Use Your Data",
+    "usage_reservation": "To manage your reservations and provide accurate service",
+    "usage_notifications": "To send important updates and notifications",
+    "usage_security": "To improve security and prevent misuse",
+
+    "sharing": "Data Sharing",
+    "sharing_restaurants": "Reservation data may be shared with relevant restaurants",
+    "sharing_law": "Data may be shared if required by law or for safety",
+
+    "retention": "Data Retention",
+    "retention_text": "Your data is stored only as long as necessary for operational, legal and security requirements.",
+
+    "rights": "Your Rights",
+    "rights_text": "You may request access, correction or deletion of your personal data at any time.",
+
+    "cookies": "Cookies",
+    "cookies_text": "Rezzy uses essential cookies to improve performance and personalize your experience.",
+
+    "contact": "Contact",
+    "contact_text": "You can contact us for any questions, feedback, or requests regarding our privacy policy.",
+    "disclaimer": "This privacy policy may be updated periodically to improve transparency and compliance."
+  },
+  "terms": {
+    "title": "Terms of Use",
+    "subtitle": "By using Rezzy, you agree to the following terms and conditions.",
+    "accountTitle": "Account & Security",
+    "accountText": "You are responsible for keeping your account secure and your login details confidential. Any activity carried out via your account is deemed to be your responsibility. We recommend that you do not share your password with third parties.",
+    "reservationsTitle": "Reservations & Cancellations",
+    "reservationsText1": "Reservations are created based on date, time, party size and the specific policies of each restaurant. Some venues may require a deposit or a minimum spend.",
+    "reservationsText2": "Cancellation and modification rights are defined by each restaurant’s own policy. Please review the terms shown during the reservation flow carefully.",
+    "prohibitedTitle": "Prohibited Use",
+    "prohibitedText": "You may not use Rezzy for fraudulent, misleading, abusive or illegal purposes. Creating fake reservations, acting on behalf of others without permission, or abusing the system may result in permanent suspension of your account.",
+    "liabilityTitle": "Limitation of Liability",
+    "liabilityText": "Rezzy is not directly responsible for the content, quality or delivery of services offered by restaurants. Rezzy acts as an intermediary platform that facilitates the reservation process.",
+    "changesTitle": "Changes to These Terms",
+    "changesText": "These terms may be updated from time to time. Changes take effect as soon as they are published within the app. Your continued use of Rezzy after changes have been published constitutes acceptance of the updated terms.",
+    "legalTitle": "Legal Information & Contact",
+    "legalText1": "This text is for general information only and does not constitute legal advice. You are expected to comply with all applicable local laws and regulations while using the app.",
+    "legalText2": "If you have any legal or contract-related questions about Rezzy, please reach out to us via the contact screen or by email.",
+    "disclaimer": "*This text is for informational purposes only and does not replace professional legal advice.",
+    "lastUpdate": "Last updated: 2025"
+  },
+  "auth": {
+  "emailLabel": "Email",
+  "emailPlaceholder": "you@example.com",
+  "passwordLabel": "Password",
+  "passwordPlaceholder": "Your password",
+  "loginButton": "Log in",
+  "continueWithGoogle": "Continue with Google",
+  "continueAsGuest": "Continue as guest"
+},
+"filter": {
+  "open": "Filter",
+  "title": "Filter",
+  "clearAll": "Clear all",
+  "date": "Date",
+  "datePlaceholder": "Select a date",
+  "time": "Time",
+  "timePlaceholder": "Select a time",
+  "people": "Number of people",
+  "city": "City",
+  "cityHint": "You can change the city from the top bar.",
+  "price": "Price range",
+  "apply": "Find a place"
+}
+
+}

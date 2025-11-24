@@ -3,6 +3,12 @@ import { create } from "zustand";
 import { Platform } from "react-native";
 import { useRegion } from "./useRegion";
 
+/**
+ * Representation of an authenticated user.  The region and language
+ * preferences are no longer constrained to a predefined list of codes;
+ * any string is accepted.  Backend services should validate codes
+ * where appropriate.
+ */
 export type User = {
   id: string;
   name: string;
@@ -15,8 +21,8 @@ export type User = {
   providers?: string[];
   noShowCount?: number;
   riskScore?: number;
-  preferredRegion?: "CY" | "UK";
-  preferredLanguage?: "tr" | "en";
+  preferredRegion?: string;
+  preferredLanguage?: string;
   createdAt?: string | null;
   updatedAt?: string | null;
 };
@@ -42,12 +48,10 @@ type AuthState = {
 
 const KEY = "rezzy.auth.v2";
 
-// BASE_URL’i burada da türet (client.ts import etme!)
+// Derive API base URL without importing client.ts to avoid cyclic
+// dependencies.
 const ENV_URL = process.env.EXPO_PUBLIC_API_URL?.trim();
-const DEV_LOCAL =
-  Platform.OS === "android"
-    ? "http://10.0.2.2:3000/api"
-    : "http://localhost:3000/api";
+const DEV_LOCAL = Platform.OS === "android" ? "http://10.0.2.2:3000/api" : "http://localhost:3000/api";
 const PROD_FALLBACK = "https://rezzy-backend.onrender.com/api";
 const BASE_URL = ENV_URL || (__DEV__ ? DEV_LOCAL : PROD_FALLBACK);
 
@@ -58,70 +62,63 @@ export const useAuth = create<AuthState>((set, get) => ({
   hydrated: false,
   intendedRoute: null,
 
-  setAuth: async (token, user, refreshToken) => {
+  async setAuth(token, user, refreshToken) {
     const prev = get();
-
     const next = {
       token: token ?? prev.token ?? null,
-      user: user === undefined ? (prev.user ?? null) : user,
+      user: user === undefined ? prev.user ?? null : user,
       refreshToken: refreshToken ?? prev.refreshToken ?? null,
     };
-
     set(next);
 
-    // ✅ Region & dil tercihini global store'a yansıt
+    // Synchronize region and language preferences with the global store.
     try {
       const u = next.user;
       if (u) {
         const regionStore = useRegion.getState();
-        if (u.preferredRegion === "CY" || u.preferredRegion === "UK") {
+        if (u.preferredRegion) {
           regionStore.setRegion(u.preferredRegion);
         }
-        if (u.preferredLanguage === "tr" || u.preferredLanguage === "en") {
+        if (u.preferredLanguage) {
           regionStore.setLanguage(u.preferredLanguage);
         }
       }
     } catch {
-      // sessiz geç
+      // ignore errors silently
     }
-
+    // Persist auth details in secure storage
     try {
       const current = await SecureStore.getItemAsync(KEY);
       const parsed = current ? JSON.parse(current) : {};
-      await SecureStore.setItemAsync(
-        KEY,
-        JSON.stringify({ ...(parsed || {}), ...next })
-      );
+      await SecureStore.setItemAsync(KEY, JSON.stringify({ ...(parsed || {}), ...next }));
     } catch {}
   },
 
-  updateUser: (patch) =>
+  updateUser(patch) {
     set((s) => {
       const merged = s.user ? { ...s.user, ...patch } : s.user ?? null;
-
-      // ✅ Eğer backend'den gelen patch içinde tercih güncellemesi varsa useRegion'a bas
+      // Update region store when region or language changes
       try {
         if (merged) {
           const regionStore = useRegion.getState();
-          if (merged.preferredRegion === "CY" || merged.preferredRegion === "UK") {
+          if (merged.preferredRegion) {
             regionStore.setRegion(merged.preferredRegion);
           }
-          if (merged.preferredLanguage === "tr" || merged.preferredLanguage === "en") {
+          if (merged.preferredLanguage) {
             regionStore.setLanguage(merged.preferredLanguage);
           }
         }
       } catch {}
-
       return { user: merged };
-    }),
+    });
+  },
 
-  hydrate: async () => {
+  async hydrate() {
     try {
       const raw = await SecureStore.getItemAsync(KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
         const user: User | null = parsed?.user ?? null;
-
         set({
           token: parsed?.token ?? null,
           refreshToken: parsed?.refreshToken ?? null,
@@ -129,15 +126,14 @@ export const useAuth = create<AuthState>((set, get) => ({
           intendedRoute: parsed?.intendedRoute ?? null,
           hydrated: true,
         });
-
-        // ✅ Persisted user varsa region & dili oradan da çek
+        // Apply stored preferences to region store
         try {
           if (user) {
             const regionStore = useRegion.getState();
-            if (user.preferredRegion === "CY" || user.preferredRegion === "UK") {
+            if (user.preferredRegion) {
               regionStore.setRegion(user.preferredRegion);
             }
-            if (user.preferredLanguage === "tr" || user.preferredLanguage === "en") {
+            if (user.preferredLanguage) {
               regionStore.setLanguage(user.preferredLanguage);
             }
           }
@@ -150,47 +146,44 @@ export const useAuth = create<AuthState>((set, get) => ({
     }
   },
 
-  clear: async () => {
+  async clear() {
     try {
       await SecureStore.deleteItemAsync(KEY);
     } catch {}
-
-    // NOT: Region/dil'i burada sıfırlamıyoruz; kullanıcı uygulamayı
-    // misafir olarak kullanmaya devam edebilir, en son seçtiği bölge kalabilir.
+    // We intentionally leave the region/language untouched so that the
+    // guest user retains their last choice.  Only auth tokens and user
+    // information are cleared.
     set({ token: null, refreshToken: null, user: null, intendedRoute: null });
   },
 
-  setIntended: async (route) => {
+  async setIntended(route) {
     set({ intendedRoute: route });
     try {
       const current = await SecureStore.getItemAsync(KEY);
       const parsed = current ? JSON.parse(current) : {};
-      await SecureStore.setItemAsync(
-        KEY,
-        JSON.stringify({ ...(parsed || {}), intendedRoute: route })
-      );
+      await SecureStore.setItemAsync(KEY, JSON.stringify({ ...(parsed || {}), intendedRoute: route }));
     } catch {}
   },
 
-  consumeIntended: async () => {
+  async consumeIntended() {
     const route = get().intendedRoute ?? null;
     set({ intendedRoute: null });
     try {
       const current = await SecureStore.getItemAsync(KEY);
       const parsed = current ? JSON.parse(current) : {};
-      await SecureStore.setItemAsync(
-        KEY,
-        JSON.stringify({ ...(parsed || {}), intendedRoute: null })
-      );
+      await SecureStore.setItemAsync(KEY, JSON.stringify({ ...(parsed || {}), intendedRoute: null }));
     } catch {}
     return route;
   },
 
-  /** 🔁 Token yenileme — DÖNGÜ OLMASIN diye fetch ile mutlak URL */
-  refreshAuthToken: async () => {
+  /**
+   * Refresh the auth token using the refresh token.  On success
+   * updates both tokens and returns true.  On failure clears the
+   * current auth state and returns false.
+   */
+  async refreshAuthToken() {
     const { refreshToken, user } = get();
     if (!refreshToken) return false;
-
     try {
       const res = await fetch(`${BASE_URL}/auth/refresh`, {
         method: "POST",
@@ -201,7 +194,6 @@ export const useAuth = create<AuthState>((set, get) => ({
       const json = await res.json();
       const newAccess = json?.token as string | undefined;
       const newRefresh = (json?.refreshToken as string | undefined) ?? refreshToken;
-
       if (newAccess) {
         await get().setAuth(newAccess, user ?? null, newRefresh);
         if (__DEV__) console.log("[auth] token refreshed ✅");

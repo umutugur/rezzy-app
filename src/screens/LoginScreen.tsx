@@ -15,6 +15,7 @@ import Input from "../components/Input";
 import { login, googleSignIn, appleSignIn } from "../api/auth";
 import { useAuth } from "../store/useAuth";
 import { friendlyAuthError } from "../utils/errorText";
+import { useI18n } from "../i18n";
 
 import * as AppleAuthentication from "expo-apple-authentication";
 import * as Google from "expo-auth-session/providers/google";
@@ -35,6 +36,7 @@ export default function LoginScreen() {
   const setAuth = useAuth((s) => s.setAuth);
   const consumeIntended = useAuth((s) => s.consumeIntended);
   const clearAuth = useAuth((s) => s.clear);
+  const { t } = useI18n();
 
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
@@ -197,19 +199,19 @@ export default function LoginScreen() {
 
         <Animated.View style={{ transform: [{ translateX: shakeAnim }] }}>
           <Input
-            label="E-posta"
+            label={t("auth.emailLabel")}
             value={email}
             onChangeText={setEmail}
-            placeholder="ornek@mail.com"
+            placeholder={t("auth.emailPlaceholder")}
           />
 
           <View style={{ position: "relative" }}>
             <Input
-              label="Şifre"
+              label={t("auth.passwordLabel")}
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
-              placeholder="Şifreniz"
+              placeholder={t("auth.passwordPlaceholder")}
               style={{ paddingRight: 48 }} // ikon için sağ boşluk
             />
 
@@ -237,7 +239,7 @@ export default function LoginScreen() {
         </Animated.View>
 
         <BrandButton
-          title="Giriş Yap"
+          title={t("auth.loginButton")}
           onPress={onLogin}
           loading={loading}
           variant="primary"
@@ -247,7 +249,7 @@ export default function LoginScreen() {
         <View style={{ height: 20 }} />
 
         <GoogleBrandButton
-          title="Google ile devam et"
+          title={t("auth.continueWithGoogle")}
           onPress={onGoogle}
           loading={gLoading}
           disabled={!request}
@@ -288,7 +290,7 @@ export default function LoginScreen() {
       {/* --- En alt: Üye olmadan devam et --- */}
       <View style={{ marginTop: "auto" }}>
         <View style={{ height: 12 }} />
-        <OutlineButton title="Üye olmadan devam et" onPress={onGuest} />
+        <OutlineButton title={t("auth.continueAsGuest")} onPress={onGuest} />
       </View>
 
       {/* -------- Modal (Alert yerine) -------- */}
@@ -333,7 +335,7 @@ export default function LoginScreen() {
                 borderRadius: 10,
               })}
             >
-              <RNText style={{ color: "#fff", fontWeight: "700" }}>Tamam</RNText>
+              <RNText style={{ color: "#fff", fontWeight: "700" }}>{t("common.ok")}</RNText>
             </Pressable>
           </View>
         </View>

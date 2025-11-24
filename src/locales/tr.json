@@ -1,0 +1,510 @@
+{
+  "common": {
+    "save": "Kaydet",
+    "saving": "Kaydediliyor...",
+    "ok": "Tamam",
+    "cancel": "İptal",
+    "close": "Kapat",
+    "retry": "Tekrar Dene",
+    "error": "Hata",
+    "warning": "Uyarı",
+    "info": "Bilgi",
+    "noResults": "Sonuç bulunamadı."
+  },
+  "profile": {
+    "title": "Profil",
+    "logout": "Çıkış yap",
+    "logoutConfirm": "Hesabından çıkmak istiyor musun?",
+    "role": {
+      "customer": "Müşteri",
+      "restaurant": "Restoran",
+      "admin": "Admin"
+    },
+    "stats": {
+      "upcoming": "Gelecek",
+      "confirmed": "Onaylı",
+      "cancelled": "İptal"
+    },
+    "section": {
+      "profileInfo": "Profil Bilgileri",
+      "notificationPrefs": "Bildirim Tercihleri",
+      "appPrefs": "Uygulama Tercihleri",
+      "password": "Şifre Değiştirme",
+      "favorites": "Favorilerim",
+      "reservations": "Rezervasyonlarım",
+      "adminShortcuts": "Yönetim Kısayolları",
+      "legalSupport": "Yasal ve Destek"
+    },
+    "field": {
+      "name": "Ad Soyad",
+      "email": "E-posta",
+      "phone": "Telefon"
+    },
+    "notify": {
+      "push": "Anlık Bildirimler",
+      "sms": "SMS (yakında)",
+      "email": "E-posta (yakında)"
+    },
+    "appPrefs": {
+      "title": "Bölge & Dil",
+      "current": "Şu an",
+      "region": "Bölge",
+      "seeAllRegions": "Tüm bölgeleri gör",
+      "language": "Dil",
+      "seeAllLanguages": "Tüm dilleri gör",
+      "selectRegionTitle": "Bölge Seç",
+      "selectLanguageTitle": "Dil Seç",
+      "selectRegion": "Bölge Seç",
+      "selectLanguage": "Dil Seç"
+    },
+    "password": {
+      "current": "Mevcut Şifre",
+      "new": "Yeni Şifre",
+      "newConfirm": "Yeni Şifre (Tekrar)",
+      "update": "Şifreyi Güncelle",
+      "error": {
+        "missingTitle": "Eksik bilgi",
+        "missingBody": "Lütfen tüm şifre alanlarını doldurun.",
+        "weakTitle": "Zayıf şifre",
+        "weakBody": "Yeni şifre en az 8 karakter olmalıdır.",
+        "mismatchTitle": "Eşleşmiyor",
+        "mismatchBody": "Yeni şifreler birbiriyle aynı olmalıdır."
+      },
+      "successTitle": "Şifre güncellendi",
+      "successBody": "Yeni şifreniz başarıyla kaydedildi.",
+      "errorTitle": "Şifre değiştirilemedi",
+      "errorBody": "Lütfen bilgilerinizi kontrol edip tekrar deneyin."
+    },
+    "avatar": {
+      "successTitle": "Güncellendi",
+      "successBody": "Profil fotoğrafınız yenilendi.",
+      "errorBody": "Avatar yüklenemedi."
+    },
+    "favorites": {
+      "total": "Toplam",
+      "empty": "Henüz favori eklemediniz.",
+      "remove": "Kaldır",
+      "go": "Git"
+    },
+    "reservations": {
+      "total": "Toplam",
+      "totalSpent": "Toplam Harcama",
+      "empty": "Henüz rezervasyon yok.",
+      "restaurantFallback": "Restoran",
+      "totalLabel": "Toplam",
+      "itemTitle": "{{date}} • {{count}} kişi",
+      "fallbackRestaurant": "Restoran",
+      "status": {
+        "pending": "Beklemede",
+        "confirmed": "Onaylı",
+        "arrived": "Giriş Yapıldı",
+        "noShow": "Gelmedi",
+        "cancelled": "İptal"
+      }
+    },
+    "shortcuts": {
+      "restaurantPanel": "Restoran Paneli",
+      "adminPanel": "Admin Paneli",
+      "scanQR": "QR Tara",
+      "manualCheckin": "Manuel Check-in"
+    },
+    "legal": {
+      "terms": "Kullanım Koşulları",
+      "privacy": "Gizlilik Politikası",
+      "help": "Yardım & Destek",
+      "contact": "İletişim",
+      "licenses": "Lisanslar",
+      "about": "Hakkında",
+      "deleteAccount": "Hesabı Sil"
+    },
+    "selector": {
+      "chooseRegion": "Bölge Seç",
+      "chooseLanguage": "Dil Seç"
+    },
+    "modal": {
+      "close": "Kapat",
+      "confirm": "Tamam",
+      "retry": "Tekrar Dene"
+    },
+    "toast": {
+      "pushPermissionTitle": "İzin gerekli",
+      "pushPermissionBody": "Push bildirimlerini açmak için bildirim izni vermelisin.",
+      "pushPrefErrorTitle": "Hata",
+      "pushPrefErrorBody": "Bildirim tercihi güncellenemedi.",
+      "cameraPermissionTitle": "İzin gerekli",
+      "cameraPermissionBody": "QR okumak için kamera izni vermelisin.",
+      "favoriteErrorTitle": "Hata",
+      "favoriteErrorBody": "Favori kaldırılamadı.",
+      "invalidQRTitle": "Geçersiz QR",
+      "invalidQRBody": "QR kodu doğrulanamadı.",
+      "qrRetryLabel": "Tekrar Tara",
+      "invalidNumberTitle": "Uyarı",
+      "invalidNumberBody": "Geçerli bir sayı gir (0 veya daha büyük).",
+      "checkinSuccessTitle": "Check-in tamam",
+      "checkinSuccessBody": "Giriş başarıyla kaydedildi.",
+      "checkinFailedTitle": "Check-in başarısız",
+      "checkinFailedBody": "İşlem tamamlanamadı.",
+      "ridRequiredTitle": "Uyarı",
+      "ridRequiredBody": "Rezervasyon ID gerekli.",
+      "checkinManualFailedTitle": "İşlem başarısız",
+      "checkinManualFailedBody": "Check-in gerçekleştirilemedi.",
+      "saveSuccessTitle": "Kaydedildi",
+      "saveSuccessBody": "Profil ve uygulama tercihlerin güncellendi.",
+      "saveErrorTitle": "Güncelleme başarısız",
+      "saveErrorBody": "Lütfen tekrar deneyin."
+    },
+    "qr": {
+      "arrivedCountTitle": "Gelen Kişi Sayısı",
+      "arrivedCountDescription": "QR okundu. Lütfen gelen kişi sayısını gir (zorunlu).",
+      "arrivedCountPlaceholder": "Örn: 5"
+    },
+    "checkin": {
+      "manualTitle": "Manuel Check-in",
+      "ridLabel": "Rezervasyon ID (RID)",
+      "ridPlaceholder": "64b7… gibi Mongo ObjectId",
+      "arrivedLabel": "Gelen kişi sayısı (zorunlu)",
+      "arrivedPlaceholder": "Örn: 4",
+      "submit": "Check-in"
+    }
+  },
+  "status": {
+    "pending": "Beklemede",
+    "confirmed": "Onaylı",
+    "arrived": "Giriş Yapıldı",
+    "no_show": "Gelmedi",
+    "cancelled": "İptal",
+    "rejected": "Reddedildi",
+    "unknown": "Durum Yok"
+  },
+  "home": {
+    "loading": "Yükleniyor...",
+    "error": "Bağlantı hatası",
+    "noResults": "Sonuç bulunamadı. Filtreleri temizleyip tekrar deneyin.",
+    "explore":"Keşfet"
+  },
+  "bookings": {
+     "receipt": {
+    "upload": "Dekont Yükle",
+    "uploading": "Yükleniyor…",
+    "acceptedFormats": "Kabul edilen: JPG/PNG",
+    "view": "Görüntüle",
+    "replace": "Değiştir",
+    "share": "Paylaş",
+    "tapToClose": "Kapatmak için dokun"
+  },
+  "title": "Rezervasyonlarım",
+  "guest": {
+    "title": "Rezervasyonlarınız",
+    "subtitle": "Tüm rezervasyonlarınızı tek yerden görüntülemek ve yönetmek için giriş yapın.",
+    "login": "Giriş Yap"
+  },
+  "loading": "Rezervasyonlar yükleniyor...",
+  "loadError": "Rezervasyonlar yüklenemedi.",
+  "errorPrefix": "Hata:",
+  "emptyTitle": "Sonuç Yok",
+  "emptySubtitle": "Bu filtreye uygun rezervasyon bulunamadı.",
+  "restaurantFallback": "Restoran"
+},
+ "filters": { "all": "Tümü", "active": "Aktif", "past": "Geçmiş", "advanced": "Gelişmiş Filtre", "byStatus": "Duruma Göre Filtrele" },
+  "time": { "all": "Hepsi", "today": "Bugün", "week": "Bu Hafta", "custom": "Tarih Seç", "rangeTitle": "Tarih Aralığı Seçin", "apply": "Uygula", "clear": "Temizle", "start": "Başlangıç", "end": "Bitiş" },
+  "search": { "placeholder": "Restoran ara..." },
+  "restaurantDetail": {
+    "loading": "Yükleniyor…",
+    "notFoundTitle": "Restoran Bulunamadı",
+    "notFoundText": "Bu restoran mevcut değil veya kaldırılmış.",
+    "back": "Geri Dön",
+    "expandAll": "Hepsini Aç",
+    "collapseAll": "Hepsini Kapat",
+    "menuLoading": "Menü yükleniyor...",
+    
+    "aboutTab": "Hakkında",
+    "menuTab": "Menü",
+    "menuTitle": "Menü",
+    "menuComingSoon": "Bu mekan henüz menüsünü paylaşmadı.",
+    "noAbout": "Bu mekan için açıklama yok.",
+
+    "noPhoto": "Fotoğraf bulunamadı",
+
+    "fixedMenus": "Fix Menüler",
+    "noMenu": "Bu restoran için menü bulunamadı.",
+    "perPerson": "kişi başı",
+
+    "findSlot": "Uygun Saat Bul",
+    "date": "Tarih",
+    "partySize": "Kişi Sayısı",
+    "slotsSearching": "Uygun saatler aranıyor…",
+    "noSlots": "Uygun saat bulunamadı.",
+
+    "about": "Hakkında",
+    "contact": "İletişim",
+    "noPhone": "Telefon bilgisi yok",
+    "noAddress": "Adres bilgisi yok",
+
+    "ctaSelectDateTime": "Tarih & Saat Seçin",
+    "ctaPeople": "{{count}} Kişi",
+    "ctaContinue": "Devam Et",
+
+    "pastTimeTitle": "Geçmiş saat",
+    "pastTimeBody": "Geçmiş bir tarih/saat için rezervasyon yapılamaz.",
+    "pastDateTimeTitle": "Geçmiş tarih/saat",
+    "pastDateTimeBody": "Lütfen ileri bir tarih ve saat seçin.",
+
+    "loginRequiredTitle": "Giriş gerekli",
+    "loginRequiredBodyReservation": "Rezervasyon oluşturmak için giriş yapmalısın.",
+    "loginRequiredBodyFavorite": "Favorilere eklemek için giriş yapmalısın.",
+
+    "loadError": "Restoran yüklenemedi",
+    "favoriteError": "Favori işlemi başarısız"
+  },
+    "reservationStep2": {
+    "title": "Kişi & Menü Seçimi",
+    "subtitle": "Her kişi için bir menü seçin.",
+    "loading": "Menüler yükleniyor…",
+    "loadError": "Menüler yüklenemedi.",
+    "emptyMenus": "Bu restoran için menü tanımlı değil.",
+    "personTitle": "Kişi {{index}}",
+    "toastAllRequired": "Lütfen tüm kişiler için menü seçin.",
+    "missingTitle": "Eksik seçim",
+    "ctaContinue": "Devam",
+    "skipFixedMenus": "Fix menü istemiyorum",
+    "skipFixedMenusHelp": "Fix menü seçmeden rezervasyona devam edebilirsiniz.",
+    "skipInfo": "Fix menü seçmeden devam ediyorsunuz. Özet ekranında fix menü ücreti eklenmeyecek."
+  },
+  "reservationStep3": {
+  "title": "Rezervasyon Özeti",
+  "dateTimeLabel": "Tarih & Saat",
+  "partySizeLabel": "Kişi",
+  "selectedMenusTitle": "Seçilen Menüler",
+  "subtotalLabel": "Ara toplam",
+  "depositLabel": "Kapora",
+  "totalLabel": "Genel toplam",
+  "noMenus": "Menü seçimi bulunamadı.",
+  "paymentInfoTitle": "Ödeme Bilgileri",
+  "bankLabel": "Banka",
+  "ibanNameLabel": "IBAN İsim",
+  "ibanLabel": "IBAN",
+  "depositHint": "Lütfen kaporayı yatırdıktan sonra dekontu yükleyin.",
+  "receiptTitle": "Dekont",
+  "ctaCreating": "Oluşturuluyor...",
+  "ctaCreate": "Rezervasyonu Oluştur",
+  "ctaPickReceipt": "Dekont Seçin",
+  "toastCopied": "Kopyalandı",
+  "toastReceiptSelected": "Dekont seçildi",
+  "toastMissing": "Eksik bilgi",
+  "toastNoId": "Rezervasyon ID alınamadı",
+  "toastCreateError": "Oluşturma/Dekont hatası",
+  "fallbackMenuName": "Menü",
+   "paymentMethodTitle": "Ödeme yöntemi",
+  "methodBankTransfer": "Havale / IBAN",
+  "methodCard": "Kart / Apple / Google Pay",
+  "copy": "Kopyala",
+
+   "noFixedMenusSelected": "Fix menü seçilmedi.",
+
+  "receiptInfoForCard": "Kart ile ödeme yaparsan ayrıca dekont yüklemene gerek kalmaz.",
+
+  "ctaStripeProcessing": "Ödeme işleniyor...",
+  "ctaStripePay": "Kart / Apple / Google Pay ile öde",
+
+  "toastNoDepositForCard": "Bu restoran için depozito tanımlı değil.",
+  "toastStripeInitError": "Ödeme başlatılamadı. Lütfen tekrar dene.",
+  "toastStripePaymentError": "Ödeme tamamlanamadı. Lütfen tekrar dene.",
+  "toastStripeSuccess": "Ödeme başarıyla alındı.",
+  "methodCardShort": "Kart ile Öde",
+  "ctaStripePayWithAmount": "{{amount}} öde",
+  "paySuffix": "öde"
+},
+"restaurant": {
+  "noMenus": "Bu restoran için menü bulunamadı."
+},
+"upload": {
+  "receipt": {
+    "button": "Dekont Yükle",
+    "permissionTitle": "İzin gerekli",
+    "permissionMessage": "Galeriye erişim izni verilmedi.",
+    "errorTitle": "Hata",
+    "errorMessage": "Dosya seçilirken bir sorun oluştu.",
+    "acceptedTypes": "Kabul edilen: JPG/PNG"
+  }
+},
+"about": {
+  "title": "Hakkında",
+  "subtitle": "Rezervasyon tarafında hem misafirler hem de işletmeler için adil, şeffaf ve pratik bir deneyim sunar.",
+  "headline": "Rezervasyonları daha akıllı ve güvenli hâle getiriyoruz.",
+  "description": "Rezzy; depozitolu veya depozitosuz rezervasyonları, QR check-in ve gerçek zamanlı doluluk takibiyle bir araya getirir. Misafirler için zahmetsiz, işletmeler için kontrolü yüksek bir akşam akışı sağlar.",
+  "features": {
+    "smartBooking": {
+      "title": "Akıllı rezervasyon akışı",
+      "desc": "Masa, kişi sayısı, tarih ve saat seçimleri; işletmenin çalışma saatleri ve kapasitesiyle uyumlu şekilde önerilir."
+    },
+    "deposit": {
+      "title": "Depozito ve güvence",
+      "desc": "İşletmeler için no-show riskini azaltan, misafir içinse masanın gerçekten ayrıldığından emin olmasını sağlayan depozito süreçleri."
+    },
+    "qr": {
+      "title": "QR ile hızlı check-in",
+      "desc": "Girişte QR kod okutarak rezervasyon doğrulaması yapılır; gelen kişi sayısı anında sisteme yansır."
+    },
+    "transparency": {
+      "title": "Şeffaf performans takibi",
+      "desc": "Rezervasyon geçmişi, iptal oranları ve doluluk gibi metrikler işletmeler için tek ekranda görünür olur."
+    }
+  },
+  "meta": {
+    "title": "Uygulama bilgileri",
+    "version": "Sürüm",
+    "regions": "Aktif bölgeler",
+    "regionsValue": "Birleşik Krallık & Kuzey Kıbrıs (pilot)",
+    "contact": "İletişim"
+  }
+},
+  "contact": {
+    "title": "İletişim",
+    "subtitle": "Size en hızlı ve doğru şekilde yardımcı olabilmemiz için bizimle iletişime geçebilirsiniz.",
+
+    "emailTitle": "E-posta ile destek",
+    "emailDesc": "Her türlü soru, öneri veya destek talebiniz için bize e-posta gönderebilirsiniz.",
+
+    "workHoursTitle": "Çalışma Saatleri",
+    "workdays": "Hafta içi",
+    "workhours": "09:00 — 18:00",
+
+    "moreInfo": "Ek Bilgi",
+    "moreInfoDesc": "Yakında Rezzy hakkında daha fazla bilgi ve destek kanallarını burada bulabileceksiniz."
+  },
+  "deleteAccount": {
+    "title": "Hesabı Sil",
+    "subtitle": "Rezzy hesabınızı ve ilişkili verileri kalıcı olarak silebilirsiniz.",
+    "sectionTitle": "Hesabınızı silmeden önce",
+    "descriptionMain": "Hesabınızı sildiğinizde rezervasyon geçmişiniz ve kişisel verileriniz geri getirilemeyecek şekilde kaldırılır. Devam etmeden önce önemli bilgilerinizi sakladığınızdan emin olun.",
+    "dataTitle": "Silinecek veriler:",
+    "dataItemReservations": "Geçmiş ve geleceğe dönük rezervasyon kayıtlarınız",
+    "dataItemProfile": "Profil bilgileriniz ve iletişim tercihleriniz",
+    "dataItemAnalytics": "Kişisel olarak ilişkilendirilebilen kullanım verileriniz",
+    "warningTitle": "Bu işlem geri alınamaz",
+    "warningText": "Hesap silme işlemi tamamlandığında aynı e-posta adresiyle tekrar giriş yapabilmek için yeni bir hesap oluşturmanız gerekir.",
+    "buttonLabel": "Hesabımı kalıcı olarak sil",
+    "buttonLoading": "Hesabınız siliniyor...",
+    "successTitle": "Hesap silindi",
+    "successMessage": "Hesabınız ve kişisel verileriniz başarıyla silindi.",
+    "errorGeneric": "Hesap silme işlemi sırasında bir hata oluştu."
+  },
+  "helpSupport": {
+  "title": "Yardım & Destek",
+  "subtitle": "Rezervasyonlar, bildirimler ve uygulama kullanımıyla ilgili sık sorulan sorulara hızlıca göz at.",
+  "faq": {
+    "title": "Sık Sorulan Sorular",
+    "subtitle": "En çok merak edilen konuları senin için derledik.",
+    "q1": "Rezervasyon nasıl yapılır?",
+    "q2": "Rezervasyonumu nasıl iptal ederim?",
+    "q3": "Rezervasyon durumumu nasıl takip ederim?",
+    "q4": "Bildirimler neden gelmiyor?",
+    "a1": "Rezzy ile restoranlara hızlıca rezervasyon oluşturabilir, varsa ön ödemenizi güvenle yapabilir ve QR ile giriş yaparak rezervasyonunuzu saniyeler içinde doğrulatabilirsiniz.",
+    "a2": "Rezervasyonun onay durumu, iptal bilgisi ve giriş kaydı uygulama içindeki rezervasyon detay ekranında ve bildirimler ile takip edilebilir.",
+    "a3": "Rezervasyonun iptal koşulları her restoran için farklı olabilir. Rezervasyon oluştururken gördüğünüz iptal politikası geçerlidir.",
+    "a4": "Uygulama içinden Yardım & Destek alanını kullanarak bize ulaşabilir veya iletişim ekranındaki e-posta adresine yazabilirsiniz."
+  },
+  "tips": {
+    "title": "Hızlı İpuçları",
+    "subtitle": "Sorun yaşamamak için aşağıdaki adımları kontrol et.",
+    "item1": "Bildirim izninin açık olduğundan ve internet bağlantının stabil olduğundan emin ol.",
+    "item2": "Rezzy uygulamasının en güncel sürümünü kullandığından emin ol.",
+    "item3": "Sorun devam ederse uygulamayı kapatıp yeniden başlatmayı veya çıkış yapıp tekrar giriş yapmayı deneyebilirsin."
+  },
+  "contact": {
+    "title": "Hâlâ yardıma mı ihtiyacın var?",
+    "subtitle": "Bize dilediğin zaman ulaşabilirsin. En kısa sürede geri dönüş yapmaya çalışacağız.",
+    "button": "Bize ulaş"
+  }
+},
+"licenses": {
+  "title": "Açık Kaynak Lisansları",
+  "subtitle": "Rezzy; performans, güvenlik ve kullanıcı deneyimi için birçok açık kaynak kütüphane kullanır.",
+  "section": {
+    "overviewTitle": "Neden açık kaynak?",
+    "overviewBody1": "Rezzy, modern web ve mobil ekosisteminin güçlü açık kaynak kütüphaneleri üzerine inşa edilmiştir. Bu kütüphaneler; performans, güvenlik ve hızlı geliştirme imkânı sağlar.",
+    "overviewBody2": "Aşağıda, uygulama içerisinde kullanılan temel kütüphane gruplarını ve lisans türlerini özetledik. Detaylı lisans metinleri, ilgili projelerin GitHub sayfalarında bulunabilir.",
+    "coreTitle": "Çekirdek & Altyapı",
+    "uiTitle": "Arayüz & Etkileşim",
+    "toolingTitle": "Araçlar & Yardımcılar",
+    "noteTitle": "Önemli Not",
+    "noteBody1": "Bu liste, uygulamanın en sık kullanılan başlıca kütüphanelerini özetler. Projede ek yardımcı paketler ve geliştirme araçları da bulunabilir.",
+    "noteBody2": "Tüm kütüphaneler, kendi lisans şartlarına uygun şekilde kullanılmakta olup; hak sahiplerinin emeklerine saygı duyuyor ve açık kaynak topluluğuna teşekkür ediyoruz."
+  }
+},
+"privacy": {
+    "title": "Gizlilik Politikası",
+    "subtitle": "Gizliliğiniz bizim için önemlidir. Rezzy'nin verilerinizi nasıl topladığı, kullandığı ve koruduğunu aşağıda bulabilirsiniz.",
+
+    "collected": "Topladığımız Veriler",
+    "collected_id": "Kimlik bilgileri (isim, e-posta, telefon)",
+    "collected_usage": "Rezervasyon ve uygulama kullanım bilgileri",
+    "collected_device": "Cihaz bilgileri (model, işletim sistemi, bölge/dil)",
+
+    "usage": "Verilerin Kullanımı",
+    "usage_reservation": "Rezervasyonlarınızı yönetmek ve doğru hizmet sunmak için",
+    "usage_notifications": "Önemli bildirimler ve güncellemeler göndermek için",
+    "usage_security": "Güvenliği artırmak ve kötüye kullanımı önlemek için",
+
+    "sharing": "Veri Paylaşımı",
+    "sharing_restaurants": "Rezervasyon bilgileri ilgili restoranlarla paylaşılabilir",
+    "sharing_law": "Yasal zorunluluk veya güvenlik nedeniyle paylaşım yapılabilir",
+
+    "retention": "Veri Saklama",
+    "retention_text": "Verileriniz yalnızca operasyonel, yasal ve güvenlik gereksinimleri için gerekli süre boyunca saklanır.",
+
+    "rights": "Haklarınız",
+    "rights_text": "Kişisel verilerinize erişim, düzeltme veya silme talebinde bulunabilirsiniz.",
+
+    "cookies": "Çerezler",
+    "cookies_text": "Rezzy, performansı artırmak ve deneyiminizi kişiselleştirmek için temel çerezler kullanır.",
+
+    "contact": "İletişim",
+    "contact_text": "Gizlilik politikamızla ilgili her türlü soru, görüş veya talebiniz için bizimle iletişime geçebilirsiniz.",
+    "disclaimer": "Bu gizlilik politikası, şeffaflığı artırmak ve yasal uyumu sağlamak adına zaman zaman güncellenebilir."
+  },
+  "terms": {
+    "title": "Kullanım Koşulları",
+    "subtitle": "Rezzy’yi kullanarak aşağıdaki koşulları kabul etmiş olursunuz.",
+    "accountTitle": "Hesap ve Güvenlik",
+    "accountText": "Hesabınızın güvenliğinden ve giriş bilgilerinizin gizli tutulmasından siz sorumlusunuz. Hesabınızda gerçekleşen tüm işlemlerden siz sorumlu kabul edilirsiniz. Şifrenizi üçüncü kişilerle paylaşmamanız önerilir.",
+    "reservationsTitle": "Rezervasyon ve İptal Koşulları",
+    "reservationsText1": "Rezervasyonlar; tarih, saat, kişi sayısı ve restoran politikalarına göre oluşturulur. Bazı restoranlar için ön ödeme veya minimum harcama şartı bulunabilir.",
+    "reservationsText2": "İptal ve değişiklik hakları, her restoranın kendi politikasına göre belirlenir. Rezervasyon sırasında gösterilen koşulları dikkatle incelemeniz tavsiye edilir.",
+    "prohibitedTitle": "Yasaklı Kullanım",
+    "prohibitedText": "Rezzy’yi hileli, yanıltıcı, saldırgan veya yasa dışı herhangi bir amaçla kullanmak yasaktır. Sahte rezervasyon oluşturmak, farklı kişiler adına izinsiz işlem yapmak ve sistemi kötüye kullanmak hesabınızın kalıcı olarak kapatılmasına neden olabilir.",
+    "liabilityTitle": "Sorumluluk Reddi",
+    "liabilityText": "Rezzy, restoranların sunduğu hizmetlerin içeriğinden, kalitesinden veya yaşanabilecek aksaklıklardan doğrudan sorumlu değildir. Rezzy; rezervasyon sürecini kolaylaştıran bir aracı platformdur.",
+    "changesTitle": "Koşullarda Değişiklik Hakkı",
+    "changesText": "Kullanım koşulları zaman zaman güncellenebilir. Değişiklikler uygulama içerisinde yayınlandığı anda yürürlüğe girer. Rezzy’yi kullanmaya devam etmeniz, güncellenen koşulları kabul ettiğiniz anlamına gelir.",
+    "legalTitle": "Yasal Bilgiler ve İletişim",
+    "legalText1": "Bu metin genel bilgilendirme amacı taşır ve hukuki danışmanlık yerine geçmez. Uygulamayı kullanırken geçerli yerel yasa ve yönetmeliklere uymanız beklenir.",
+    "legalText2": "Rezzy ile ilgili hukuki veya sözleşmeye dair sorularınız için lütfen bizimle iletişim ekranı üzerinden veya e-posta adresimiz aracılığıyla iletişime geçin.",
+    "disclaimer": "*Bu metin bilgilendirme amaçlıdır ve profesyonel hukuki danışmanlık yerine geçmez.",
+    "lastUpdate": "Son güncelleme tarihi: 2025"
+  },
+  "auth": {
+  "emailLabel": "E-posta",
+  "emailPlaceholder": "ornek@mail.com",
+  "passwordLabel": "Şifre",
+  "passwordPlaceholder": "Şifreniz",
+  "loginButton": "Giriş Yap",
+  "continueWithGoogle": "Google ile devam et",
+  "continueAsGuest": "Üye olmadan devam et"
+},
+"filter": {
+  "open": "Filtrele",
+  "title": "Filtrele",
+  "clearAll": "Tümünü temizle",
+  "date": "Tarih",
+  "datePlaceholder": "Tarih seç",
+  "time": "Saat",
+  "timePlaceholder": "Saat seç",
+  "people": "Kişi sayısı",
+  "city": "Şehir",
+  "cityHint": "Şehir filtresini üst bardan değiştirebilirsin.",
+  "price": "Fiyat aralığı",
+  "apply": "Mekan Bul"
+}
+}
+
