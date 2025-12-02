@@ -20,7 +20,7 @@ const Stack = createNativeStackNavigator<AdminPanelParams>();
 
 export default function AdminPanelNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerTitle: "Rezzy" }}>
+    <Stack.Navigator screenOptions={{ headerTitle: "Rezvix" }}>
       <Stack.Screen
         name="AdminHub"
         component={AdminHubScreen}

@@ -16,6 +16,7 @@ export type User = {
   email?: string | null;
   phone?: string | null;
   restaurantId?: string | null;
+  restaurantName?: string | null;
   avatarUrl?: string | null;
   notificationPrefs?: { push?: boolean; sms?: boolean; email?: boolean };
   providers?: string[];
@@ -40,13 +41,17 @@ type AuthState = {
   hydrate: () => Promise<void>;
   clear: () => Promise<void>;
 
+  loginWithGoogle: (idToken: string) => Promise<boolean>;
+  loginWithApple: (idToken: string, profile?: { name?: string | null; email?: string | null }) => Promise<boolean>;
+  logout: () => Promise<void>;
+
   intendedRoute: IntendedRoute;
   setIntended: (route: IntendedRoute) => Promise<void>;
   consumeIntended: () => Promise<IntendedRoute>;
   refreshAuthToken: () => Promise<boolean>;
 };
 
-const KEY = "rezzy.auth.v2";
+const KEY = "rezvix.auth.v2";
 
 // Derive API base URL without importing client.ts to avoid cyclic
 // dependencies.
@@ -154,6 +159,58 @@ export const useAuth = create<AuthState>((set, get) => ({
     // guest user retains their last choice.  Only auth tokens and user
     // information are cleared.
     set({ token: null, refreshToken: null, user: null, intendedRoute: null });
+  },
+
+  async logout() {
+    await get().clear();
+  },
+
+  async loginWithGoogle(idToken) {
+    try {
+      const res = await fetch(`${BASE_URL}/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      const token = json?.token as string | undefined;
+      const refreshToken = json?.refreshToken as string | undefined;
+      const user = json?.user as User | undefined;
+      if (!token || !user) throw new Error("Invalid auth response");
+      await get().setAuth(token, user, refreshToken ?? null);
+      if (__DEV__) console.log("[auth] google login ✅");
+      return true;
+    } catch (err) {
+      if (__DEV__) console.log("[auth] google login failed ❌", err);
+      return false;
+    }
+  },
+
+  async loginWithApple(idToken, profile) {
+    try {
+      const body: any = { idToken };
+      if (profile?.name) body.name = profile.name;
+      if (profile?.email) body.email = profile.email;
+
+      const res = await fetch(`${BASE_URL}/auth/apple`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      const token = json?.token as string | undefined;
+      const refreshToken = json?.refreshToken as string | undefined;
+      const user = json?.user as User | undefined;
+      if (!token || !user) throw new Error("Invalid auth response");
+      await get().setAuth(token, user, refreshToken ?? null);
+      if (__DEV__) console.log("[auth] apple login ✅");
+      return true;
+    } catch (err) {
+      if (__DEV__) console.log("[auth] apple login failed ❌", err);
+      return false;
+    }
   },
 
   async setIntended(route) {

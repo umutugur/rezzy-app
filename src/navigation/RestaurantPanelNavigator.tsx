@@ -27,7 +27,7 @@ const Stack = createNativeStackNavigator<RestaurantPanelParams>();
 
 export default function RestaurantPanelNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerTitle: "Rezzy" }}>
+    <Stack.Navigator screenOptions={{ headerTitle: "Rezvix" }}>
       <Stack.Screen
         name="RestaurantHub"
         component={RestaurantHubScreen}

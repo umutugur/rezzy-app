@@ -188,10 +188,10 @@ export default function HelpSupportScreen() {
         <TouchableOpacity
           activeOpacity={0.85}
           onPress={() => {
-            const email = "rezzyapp7@gmail.com";
-            const subject = encodeURIComponent("Rezzy - Yardım Talebi");
+            const email = "rezvixapp7@gmail.com";
+            const subject = encodeURIComponent("Rezvix - Yardım Talebi");
             const body = encodeURIComponent(
-              "Merhaba Rezzy ekibi,\n\nUygulama ile ilgili yardım almak istiyorum.\n\nCihaz / Platform:\nAçıklama:"
+              "Merhaba Rezvix ekibi,\n\nUygulama ile ilgili yardım almak istiyorum.\n\nCihaz / Platform:\nAçıklama:"
             );
             const mailto = `mailto:${email}?subject=${subject}&body=${body}`;
             Linking.openURL(mailto).catch(() => {

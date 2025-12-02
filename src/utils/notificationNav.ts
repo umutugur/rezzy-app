@@ -27,7 +27,7 @@ const lower = (v: any) => toStr(v).toLowerCase();
 function parseLink(raw?: string) {
   const s = toStr(raw);
   if (!s) return {};
-  // ör: rezzy://reservation/ID veya /reservation/ID
+  // ör: rezvix://reservation/ID veya /reservation/ID
   const m1 = s.match(/(?:^|\/)(reservation|booking|rezervasyon)\/([A-Za-z0-9_-]+)/i);
   if (m1) return { type: "reservation", id: m1[2] };
   const m2 = s.match(/(?:^|\/)(restaurant|restoran)\/([A-Za-z0-9_-]+)/i);

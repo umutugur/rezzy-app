@@ -30,7 +30,7 @@ import { useStripe } from "@stripe/stripe-react-native";
 
 dayjs.locale("tr");
 
-/** Rezzy uyumlu renkler */
+/** Rezvix uyumlu renkler */
 const C = {
   primary: "#7B2C2C",
   primaryDark: "#6B2525",
@@ -379,7 +379,7 @@ export default function ReservationStep3Screen() {
         customerId,
         customerEphemeralKeySecret: ephemeralKey,
         paymentIntentClientSecret,
-        merchantDisplayName: "Rezzy",
+        merchantDisplayName: "Rezvix",
         allowsDelayedPaymentMethods: false,
         style: "alwaysLight",
         appearance: {

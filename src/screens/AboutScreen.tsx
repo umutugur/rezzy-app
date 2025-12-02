@@ -31,7 +31,7 @@ export default function AboutScreen() {
             letterSpacing: 0.6,
           }}
         >
-          Rezzy
+          Rezvix
         </Text>
         <Text
           style={{
@@ -171,7 +171,7 @@ export default function AboutScreen() {
         />
         <MetaRow
           label={t("about.meta.contact")}
-          value="rezzyapp7@gmail.com"
+          value="rezvixapp7@gmail.com"
           icon="mail-outline"
         />
       </View>

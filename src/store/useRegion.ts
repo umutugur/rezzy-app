@@ -6,9 +6,9 @@ import { COUNTRIES } from "../constants/countries";
 // and whether the user has explicitly chosen a region/language.  If the
 // user hasn't made a choice we can infer the region from the device's
 // country code (see setFromCountryCode below).
-const REGION_KEY = "@rezzy.region";
-const LANG_KEY = "@rezzy.language";
-const USER_CHOICE_KEY = "@rezzy.region_user_choice";
+const REGION_KEY = "@rezvix.region";
+const LANG_KEY = "@rezvix.language";
+const USER_CHOICE_KEY = "@rezvix.region_user_choice";
 
 /**
  * Zustand store for region and language selection.  Unlike the

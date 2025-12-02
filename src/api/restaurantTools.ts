@@ -13,7 +13,7 @@ function decodeField(val: any): string {
 
 /**
  * Normalize and decode a QR payload into its constituent parts.
- * Supports URL (rezzy://checkin?rid=...&mid=...&ts=...&sig=...),
+ * Supports URL (rezvix://checkin?rid=...&mid=...&ts=...&sig=...),
  * JSON string, slash-separated (rid/mid/ts/sig) and querystring formats.
  */
 function parseQrPayload(raw: string | Record<string, any>): QrPayload {
@@ -28,7 +28,7 @@ function parseQrPayload(raw: string | Record<string, any>): QrPayload {
 
   const text = String(raw || "").trim();
 
-  // rezzy:// URL formatı
+  // rezvix:// URL formatı
   try {
     const u = new URL(text);
     const rid = decodeField(u.searchParams.get("rid"));

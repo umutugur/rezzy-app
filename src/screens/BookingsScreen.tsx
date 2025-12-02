@@ -20,8 +20,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useI18n } from "../i18n";
 
-/** --- Renkler (Rezzy) --- */
-const REZZY = {
+/** --- Renkler (Rezvix) --- */
+const REZVIX = {
   primary: "#7B2C2C",
   primaryDark: "#5E1F1F",
   surface: "#FFFFFF",
@@ -244,7 +244,7 @@ const locale = language ?? hookLocale ?? "tr";
                 <Ionicons
                   name="calendar-outline"
                   size={14}
-                  color={REZZY.muted}
+                  color={REZVIX.muted}
                 />
                 <Text style={styles.cardDate}>
                   {formatDate(item.dateTimeUTC, locale)}
@@ -284,7 +284,7 @@ const locale = language ?? hookLocale ?? "tr";
       <Screen topPadding="flat">
         <View style={styles.guestContainer}>
           <LinearGradient
-            colors={[REZZY.primary, REZZY.primaryDark]}
+            colors={[REZVIX.primary, REZVIX.primaryDark]}
             style={styles.guestCard}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
@@ -312,7 +312,7 @@ const locale = language ?? hookLocale ?? "tr";
               <Ionicons
                 name="log-in-outline"
                 size={20}
-                color={REZZY.primary}
+                color={REZVIX.primary}
               />
               <Text style={styles.guestButtonText}>
                 {t("bookings.guest.login")}
@@ -332,7 +332,7 @@ const locale = language ?? hookLocale ?? "tr";
           <Ionicons
             name="calendar"
             size={24}
-            color={REZZY.primary}
+            color={REZVIX.primary}
           />
           <Text style={styles.headerTitle}>
             {t("bookings.title")}
@@ -371,7 +371,7 @@ const locale = language ?? hookLocale ?? "tr";
         <View style={styles.loadingContainer}>
           <ActivityIndicator
             size="large"
-            color={REZZY.primary}
+            color={REZVIX.primary}
           />
           <Text style={styles.loadingText}>
             {t("bookings.loading")}
@@ -382,7 +382,7 @@ const locale = language ?? hookLocale ?? "tr";
           <Ionicons
             name="alert-circle-outline"
             size={48}
-            color={REZZY.danger}
+            color={REZVIX.danger}
           />
           <Text style={styles.errorText}>
             {t("bookings.errorPrefix")} {error}
@@ -394,7 +394,7 @@ const locale = language ?? hookLocale ?? "tr";
             <Ionicons
               name="refresh-outline"
               size={18}
-              color={REZZY.primary}
+              color={REZVIX.primary}
             />
             <Text style={styles.retryButtonText}>
               {t("common.retry")}
@@ -413,8 +413,8 @@ const locale = language ?? hookLocale ?? "tr";
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                tintColor={REZZY.primary}
-                colors={[REZZY.primary]}
+                tintColor={REZVIX.primary}
+                colors={[REZVIX.primary]}
               />
             }
             ListEmptyComponent={
@@ -423,7 +423,7 @@ const locale = language ?? hookLocale ?? "tr";
                   <Ionicons
                     name="calendar-outline"
                     size={64}
-                    color={REZZY.muted}
+                    color={REZVIX.muted}
                   />
                 </View>
                 <Text style={styles.emptyTitle}>
@@ -453,14 +453,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 6,
     paddingBottom: 10,
-    backgroundColor: REZZY.surface,
+    backgroundColor: REZVIX.surface,
     borderBottomWidth: 1,
-    borderBottomColor: REZZY.border,
+    borderBottomColor: REZVIX.border,
   },
   headerTitleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  headerTitle: { fontSize: 20, fontWeight: "800", color: REZZY.text },
+  headerTitle: { fontSize: 20, fontWeight: "800", color: REZVIX.text },
   countBadge: {
-    backgroundColor: REZZY.primary,
+    backgroundColor: REZVIX.primary,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -478,7 +478,7 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    backgroundColor: REZZY.surface,
+    backgroundColor: REZVIX.surface,
     borderRadius: 14,
     padding: 14,
     marginBottom: 10,
@@ -495,13 +495,13 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: REZZY.primary,
+    backgroundColor: REZVIX.primary,
     alignItems: "center",
     justifyContent: "center",
   },
-  cardTitle: { fontSize: 16, fontWeight: "700", color: REZZY.text },
+  cardTitle: { fontSize: 16, fontWeight: "700", color: REZVIX.text },
   dateRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 },
-  cardDate: { fontSize: 12, color: REZZY.muted, fontWeight: "600" },
+  cardDate: { fontSize: 12, color: REZVIX.muted, fontWeight: "600" },
 
   statusChip: {
     flexDirection: "row",
@@ -555,11 +555,11 @@ const styles = StyleSheet.create({
   guestButtonText: {
     fontSize: 15,
     fontWeight: "700",
-    color: REZZY.primary,
+    color: REZVIX.primary,
   },
 
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  loadingText: { marginTop: 10, fontSize: 14, color: REZZY.muted },
+  loadingText: { marginTop: 10, fontSize: 14, color: REZVIX.muted },
 
   errorContainer: {
     flex: 1,
@@ -569,7 +569,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 14,
-    color: REZZY.muted,
+    color: REZVIX.muted,
     marginTop: 10,
     marginBottom: 16,
     textAlign: "center",
@@ -577,9 +577,9 @@ const styles = StyleSheet.create({
   retryButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: REZZY.surfaceAlt,
+    backgroundColor: REZVIX.surfaceAlt,
     borderWidth: 1,
-    borderColor: REZZY.border,
+    borderColor: REZVIX.border,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 12,
@@ -588,7 +588,7 @@ const styles = StyleSheet.create({
   retryButtonText: {
     fontSize: 14,
     fontWeight: "700",
-    color: REZZY.primary,
+    color: REZVIX.primary,
   },
 
   emptyContainer: {
@@ -601,7 +601,7 @@ const styles = StyleSheet.create({
     width: 110,
     height: 110,
     borderRadius: 55,
-    backgroundColor: REZZY.surfaceAlt,
+    backgroundColor: REZVIX.surfaceAlt,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
@@ -609,13 +609,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: REZZY.text,
+    color: REZVIX.text,
     marginBottom: 6,
     textAlign: "center",
   },
   emptySubtitle: {
     fontSize: 14,
-    color: REZZY.muted,
+    color: REZVIX.muted,
     textAlign: "center",
     lineHeight: 20,
   },

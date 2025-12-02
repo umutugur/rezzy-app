@@ -19,7 +19,7 @@ export default function AppHeaderTitle() {
           letterSpacing: 0.5,
         }}
       >
-        Rezzy
+        Rezvix
       </Text>
     </View>
   );

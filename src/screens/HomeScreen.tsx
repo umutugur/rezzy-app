@@ -59,6 +59,7 @@ export default function HomeScreen() {
   const [filterPeople, setFilterPeople] = React.useState<number>(2);
   const [filterPrice, setFilterPrice] = React.useState<"low" | "medium" | "high" | null>(null);
   const [filterCities, setFilterCities] = React.useState<string[]>([]);
+  const [actionsOpen, setActionsOpen] = React.useState(false);
 
   // dropdown açık/kapalı state’leri
   const [timeFromOpen, setTimeFromOpen] = React.useState(false);
@@ -326,16 +327,111 @@ export default function HomeScreen() {
         }}
       />
 
-      {/* Floating filter button */}
+      {/* Floating actions button (Map / Assistant / Filters) */}
       <View
         style={{
           position: "absolute",
           right: 16,
           bottom: 24,
+          alignItems: "flex-end",
         }}
       >
+        {actionsOpen && (
+          <View
+            style={{
+              marginBottom: 8,
+              gap: 8,
+            }}
+          >
+            {/* Map action */}
+            <Pressable
+              onPress={() => {
+                setActionsOpen(false);
+                nav.navigate("Harita", {
+                  city,
+                  query: qDebounced,
+                });
+              }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 999,
+                backgroundColor: "#fff",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 3 },
+                shadowOpacity: 0.12,
+                shadowRadius: 6,
+                elevation: 3,
+                gap: 6,
+              }}
+            >
+              <Ionicons name="map-outline" size={18} color="#3a302c" />
+              <Text style={{ fontSize: 13, fontWeight: "600", color: "#3a302c" }}>
+                {t("home.actionsMap")}
+              </Text>
+            </Pressable>
+
+           {/* Assistant action */}
+<Pressable
+  onPress={() => {
+    setActionsOpen(false);
+    nav.navigate("Asistan");
+  }}
+  style={{
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
+    gap: 6,
+  }}
+>
+  <Ionicons name="chatbubble-ellipses-outline" size={18} color="#3a302c" />
+  <Text style={{ fontSize: 13, fontWeight: "600", color: "#3a302c" }}>
+    {t("home.actionsAssistant")}
+  </Text>
+</Pressable>
+
+            {/* Filters action (opens modal) */}
+            <Pressable
+              onPress={() => {
+                setActionsOpen(false);
+                setFilterOpen(true);
+              }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 999,
+                backgroundColor: "#fff",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 3 },
+                shadowOpacity: 0.12,
+                shadowRadius: 6,
+                elevation: 3,
+                gap: 6,
+              }}
+            >
+              <Ionicons name="options-outline" size={18} color="#3a302c" />
+              <Text style={{ fontSize: 13, fontWeight: "600", color: "#3a302c" }}>
+                {t("home.actionsFilters")}
+              </Text>
+            </Pressable>
+          </View>
+        )}
+
+        {/* Main FAB */}
         <Pressable
-          onPress={() => setFilterOpen(true)}
+          onPress={() => setActionsOpen((prev) => !prev)}
           style={{
             flexDirection: "row",
             alignItems: "center",
@@ -351,14 +447,14 @@ export default function HomeScreen() {
             gap: 8,
           }}
         >
-          <Ionicons name="options-outline" size={18} color="#fff" />
+          <Ionicons name={actionsOpen ? "close" : "sparkles-outline"} size={18} color="#fff" />
           <Text style={{ color: "#fff", fontWeight: "600" }}>
-            {t("filter.open")}
+            {t("home.actionsMore")}
           </Text>
         </Pressable>
       </View>
 
-      {/* Filter modal (visual only) */}
+      {/* Filter modal */}
       <Modal
         visible={filterOpen}
         animationType="slide"

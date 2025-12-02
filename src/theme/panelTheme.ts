@@ -1,4 +1,4 @@
-// Rezzy panel için hafif tasarım katmanı (chipler, kart, renkler)
+// Rezvix panel için hafif tasarım katmanı (chipler, kart, renkler)
 export const panel = {
   radius: { xs: 8, sm: 10, md: 14, xl: 22 },
   gap: { xs: 6, sm: 10, md: 14, lg: 18 },
@@ -8,7 +8,7 @@ export const panel = {
     text: "#1F2937",
     sub: "#6B7280",
     border: "#E5E7EB",
-    brand: "#7B2C2C",        // Rezzy ana
+    brand: "#7B2C2C",        // Rezvix ana
     brandSoft: "#F5E8E8",
     muted: "#F2F3F5",
     danger: "#DC2626",

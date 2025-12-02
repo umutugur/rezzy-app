@@ -9,7 +9,7 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>$(DEVELOPMENT_LANGUAGE)</string>
     <key>CFBundleDisplayName</key>
-    <string>Rezzy</string>
+    <string>Rezvix</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
@@ -30,7 +30,7 @@
         <key>CFBundleURLSchemes</key>
         <array>
           <string>com.rezzy.app</string>
-          <string>com.rezzy.app</string>
+          <string>com.umutugur.rezzy</string>
         </array>
       </dict>
     </array>
@@ -49,8 +49,18 @@
       <key>NSAllowsLocalNetworking</key>
       <true/>
     </dict>
+    <key>NSCameraUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to access your camera</string>
     <key>NSFaceIDUsageDescription</key>
     <string>Allow $(PRODUCT_NAME) to access your Face ID biometric data.</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to access your location</string>
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to access your location</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to access your location</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to access your microphone</string>
     <key>NSPhotoLibraryAddUsageDescription</key>
     <string>Profil fotoğrafını arşive kaydedebilmemiz için izin gerekir.</string>
     <key>NSPhotoLibraryUsageDescription</key>
@@ -85,7 +95,5 @@
     <string>Light</string>
     <key>UIViewControllerBasedStatusBarAppearance</key>
     <false/>
-    <key>NSCameraUsageDescription</key>
-    <string>QR kodu okutarak check-in ve rezervasyon doğrulama için kameraya ihtiyaç duyar.</string>
   </dict>
 </plist>

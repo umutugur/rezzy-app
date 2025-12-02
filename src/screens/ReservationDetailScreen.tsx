@@ -31,8 +31,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { buildMapsUrl, openInMaps } from "../utils/maps";
 import { useI18n } from "../i18n";
 
-/* ---------- Renk Paleti (Rezzy) ---------- */
-const REZZY = {
+/* ---------- Renk Paleti (Rezvix) ---------- */
+const REZVIX = {
   primary: "#7B2C2C", // Bordo
   primaryDark: "#5E1F1F",
   primarySoft: "#FDF5F5",
@@ -315,9 +315,9 @@ export default function ReservationDetailScreen() {
       NonNullable<Reservation["status"]>,
       { icon: string; colors: [string, string]; textColor: string }
     > = {
-      pending: { icon: "time-outline", colors: [REZZY.primaryMid, REZZY.primary], textColor: "#fff" },
+      pending: { icon: "time-outline", colors: [REZVIX.primaryMid, REZVIX.primary], textColor: "#fff" },
       confirmed: { icon: "checkmark-circle", colors: ["#66BB6A", "#43A047"], textColor: "#fff" },
-      arrived: { icon: "enter-outline", colors: [REZZY.primaryMid, REZZY.primary], textColor: "#fff" },
+      arrived: { icon: "enter-outline", colors: [REZVIX.primaryMid, REZVIX.primary], textColor: "#fff" },
       "no_show": { icon: "close-circle", colors: ["#EF5350", "#E53935"], textColor: "#fff" },
       cancelled: { icon: "ban", colors: ["#78909C", "#546E7A"], textColor: "#fff" },
     };
@@ -335,14 +335,14 @@ export default function ReservationDetailScreen() {
 
   const InfoCard = ({ icon, text }: { icon: string; text: string }) => (
     <View style={styles.infoCard}>
-      <Ionicons name={icon as any} size={20} color={REZZY.textMuted} />
+      <Ionicons name={icon as any} size={20} color={REZVIX.textMuted} />
       <Text style={styles.infoText}>{text}</Text>
     </View>
   );
 
   const SectionHeader = ({ icon, title }: { icon: string; title: string }) => (
     <View style={styles.sectionHeader}>
-      <Ionicons name={icon as any} size={22} color={REZZY.text} />
+      <Ionicons name={icon as any} size={22} color={REZVIX.text} />
       <Text style={styles.sectionTitle}>{title}</Text>
     </View>
   );
@@ -353,7 +353,7 @@ export default function ReservationDetailScreen() {
     return (
       <Screen topPadding="none">
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={REZZY.primary} />
+          <ActivityIndicator size="large" color={REZVIX.primary} />
           <Text style={styles.loadingText}>{t("reservationDetail.loading")}</Text>
         </View>
       </Screen>
@@ -364,7 +364,7 @@ export default function ReservationDetailScreen() {
     return (
       <Screen topPadding="none">
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={64} color={REZZY.danger} />
+          <Ionicons name="alert-circle-outline" size={64} color={REZVIX.danger} />
           <Text style={styles.errorTitle}>{t("reservationDetail.errorTitle")}</Text>
           <Text style={styles.errorText}>{error ?? t("reservationDetail.notFound")}</Text>
           <Button title={t("common.retry")} onPress={refetch} />
@@ -378,7 +378,7 @@ export default function ReservationDetailScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <Animated.View style={{ opacity: fadeAnim }}>
           {/* Header Card */}
-          <LinearGradient colors={[REZZY.primary, REZZY.primaryDark]} style={styles.headerCard}>
+          <LinearGradient colors={[REZVIX.primary, REZVIX.primaryDark]} style={styles.headerCard}>
             <View style={styles.headerContent}>
               <Ionicons name="restaurant" size={32} color="#fff" />
               <View style={styles.headerTextContainer}>
@@ -402,7 +402,7 @@ export default function ReservationDetailScreen() {
             <SectionHeader icon="document-text-outline" title={t("reservationDetail.summaryTitle")} />
 
             <View style={styles.partySizeRow}>
-              <Ionicons name="people" size={20} color={REZZY.primary} />
+              <Ionicons name="people" size={20} color={REZVIX.primary} />
               <Text style={styles.partySizeText}>
                 {partySize} {t("reservationDetail.personLabel")}
               </Text>
@@ -465,9 +465,9 @@ export default function ReservationDetailScreen() {
           <View style={styles.card}>
             <SectionHeader icon="navigate-outline" title={t("reservationDetail.directionsSectionTitle")} />
             <Pressable style={styles.directionsButton} onPress={onDirections}>
-              <Ionicons name="map" size={24} color={REZZY.primary} />
+              <Ionicons name="map" size={24} color={REZVIX.primary} />
               <Text style={styles.directionsText}>{t("reservationDetail.directionsButton")}</Text>
-              <Ionicons name="chevron-forward" size={20} color={REZZY.textMuted} />
+              <Ionicons name="chevron-forward" size={20} color={REZVIX.textMuted} />
             </Pressable>
           </View>
 
@@ -505,10 +505,10 @@ export default function ReservationDetailScreen() {
               disabled={canceling}
             >
               {canceling ? (
-                <ActivityIndicator color={REZZY.danger} />
+                <ActivityIndicator color={REZVIX.danger} />
               ) : (
                 <>
-                  <Ionicons name="close-circle-outline" size={22} color={REZZY.danger} />
+                  <Ionicons name="close-circle-outline" size={22} color={REZVIX.danger} />
                   <Text style={styles.cancelButtonText}>
                     {t("reservationDetail.cancelButton")}
                   </Text>
@@ -521,16 +521,16 @@ export default function ReservationDetailScreen() {
                 marginTop: 8,
                 padding: 10,
                 borderRadius: 10,
-                backgroundColor: REZZY.dangerSoft,
+                backgroundColor: REZVIX.dangerSoft,
                 borderWidth: 1,
-                borderColor: REZZY.dangerBorder,
+                borderColor: REZVIX.dangerBorder,
                 flexDirection: "row",
                 gap: 8,
                 alignItems: "center",
               }}
             >
-              <Ionicons name="lock-closed-outline" size={18} color={REZZY.danger} />
-              <Text style={{ color: REZZY.danger, fontWeight: "600" }}>
+              <Ionicons name="lock-closed-outline" size={18} color={REZVIX.danger} />
+              <Text style={{ color: REZVIX.danger, fontWeight: "600" }}>
                 {t("reservationDetail.cannotCancel")}
               </Text>
             </View>
@@ -545,13 +545,13 @@ export default function ReservationDetailScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{t("reservationDetail.qrModalTitle")}</Text>
               <Pressable onPress={() => setQrOpen(false)} style={styles.closeButton}>
-                <Ionicons name="close" size={24} color={REZZY.textMuted} />
+                <Ionicons name="close" size={24} color={REZVIX.textMuted} />
               </Pressable>
             </View>
 
             {!qrUrl ? (
               <View style={styles.qrLoadingContainer}>
-                <ActivityIndicator size="large" color={REZZY.primary} />
+                <ActivityIndicator size="large" color={REZVIX.primary} />
               </View>
             ) : (
               <View style={styles.qrImageContainer}>
@@ -603,13 +603,13 @@ export default function ReservationDetailScreen() {
                   : t("common.info"))}
             </Text>
 
-            <Text style={{ color: REZZY.textMuted, marginVertical: 10, textAlign: "center" }}>
+            <Text style={{ color: REZVIX.textMuted, marginVertical: 10, textAlign: "center" }}>
               {infoModal?.message}
             </Text>
 
             {infoModal?.type === "error" && (
               <TouchableOpacity
-                style={[styles.qrButton, { alignSelf: "center", backgroundColor: REZZY.danger }]}
+                style={[styles.qrButton, { alignSelf: "center", backgroundColor: REZVIX.danger }]}
                 onPress={() => setInfoModal(null)}
               >
                 <Text style={styles.qrButtonText}>{t("common.ok")}</Text>
@@ -636,7 +636,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: REZZY.textMuted,
+    color: REZVIX.textMuted,
   },
   errorContainer: {
     flex: 1,
@@ -649,11 +649,11 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginTop: 16,
     marginBottom: 8,
-    color: REZZY.text,
+    color: REZVIX.text,
   },
   errorText: {
     fontSize: 15,
-    color: REZZY.textMuted,
+    color: REZVIX.textMuted,
     textAlign: "center",
     marginBottom: 24,
   },
@@ -708,7 +708,7 @@ const styles = StyleSheet.create({
   infoCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: REZZY.surfaceAlt,
+    backgroundColor: REZVIX.surfaceAlt,
     borderRadius: 12,
     padding: 14,
     marginBottom: 16,
@@ -717,11 +717,11 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 13,
-    color: REZZY.textMuted,
+    color: REZVIX.textMuted,
     lineHeight: 18,
   },
   card: {
-    backgroundColor: REZZY.surface,
+    backgroundColor: REZVIX.surface,
     borderRadius: 16,
     padding: 18,
     marginBottom: 16,
@@ -740,12 +740,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 17,
     fontWeight: "700",
-    color: REZZY.text,
+    color: REZVIX.text,
   },
   partySizeRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: REZZY.primarySoft,
+    backgroundColor: REZVIX.primarySoft,
     padding: 12,
     borderRadius: 10,
     marginBottom: 16,
@@ -754,7 +754,7 @@ const styles = StyleSheet.create({
   partySizeText: {
     fontSize: 15,
     fontWeight: "600",
-    color: REZZY.primaryDark,
+    color: REZVIX.primaryDark,
   },
   menuList: {
     marginBottom: 16,
@@ -772,7 +772,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   menuBadge: {
-    backgroundColor: REZZY.primary,
+    backgroundColor: REZVIX.primary,
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 6,
@@ -787,21 +787,21 @@ const styles = StyleSheet.create({
   menuName: {
     fontSize: 15,
     fontWeight: "600",
-    color: REZZY.text,
+    color: REZVIX.text,
     marginBottom: 2,
   },
   menuUnit: {
     fontSize: 13,
-    color: REZZY.textMuted,
+    color: REZVIX.textMuted,
   },
   menuPrice: {
     fontSize: 16,
     fontWeight: "700",
-    color: REZZY.text,
+    color: REZVIX.text,
   },
   divider: {
     height: 1,
-    backgroundColor: REZZY.border,
+    backgroundColor: REZVIX.border,
   },
   noMenuText: {
     fontSize: 14,
@@ -811,7 +811,7 @@ const styles = StyleSheet.create({
   },
   totalSection: {
     borderTopWidth: 2,
-    borderTopColor: REZZY.border,
+    borderTopColor: REZVIX.border,
     paddingTop: 16,
     gap: 10,
   },
@@ -822,18 +822,18 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     fontSize: 14,
-    color: REZZY.textMuted,
+    color: REZVIX.textMuted,
   },
   totalValue: {
     fontSize: 15,
     fontWeight: "600",
-    color: REZZY.text,
+    color: REZVIX.text,
   },
   grandTotalRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: REZZY.surfaceAlt,
+    backgroundColor: REZVIX.surfaceAlt,
     padding: 12,
     borderRadius: 10,
     marginTop: 6,
@@ -841,19 +841,19 @@ const styles = StyleSheet.create({
   grandTotalLabel: {
     fontSize: 16,
     fontWeight: "700",
-    color: REZZY.text,
+    color: REZVIX.text,
   },
   grandTotalValue: {
     fontSize: 18,
     fontWeight: "800",
-    color: REZZY.primary,
+    color: REZVIX.primary,
   },
   directionsButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: REZZY.surfaceAlt,
+    backgroundColor: REZVIX.surfaceAlt,
     borderWidth: 1,
-    borderColor: REZZY.border,
+    borderColor: REZVIX.border,
     borderRadius: 12,
     padding: 14,
     gap: 12,
@@ -862,13 +862,13 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: "600",
-    color: REZZY.text,
+    color: REZVIX.text,
   },
   qrButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: REZZY.primary,
+    backgroundColor: REZVIX.primary,
     borderRadius: 12,
     padding: 16,
     gap: 10,
@@ -885,9 +885,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: REZZY.dangerSoft,
+    backgroundColor: REZVIX.dangerSoft,
     borderWidth: 1,
-    borderColor: REZZY.dangerBorder,
+    borderColor: REZVIX.dangerBorder,
     borderRadius: 12,
     padding: 16,
     gap: 10,
@@ -898,7 +898,7 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: 15,
     fontWeight: "700",
-    color: REZZY.danger,
+    color: REZVIX.danger,
   },
   modalOverlay: {
     flex: 1,
@@ -928,7 +928,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: REZZY.text,
+    color: REZVIX.text,
     textAlign: "center",
     alignSelf: "center",
     width: "100%",
@@ -948,12 +948,12 @@ const styles = StyleSheet.create({
     width: 280,
     height: 280,
     borderRadius: 16,
-    backgroundColor: REZZY.surfaceAlt,
+    backgroundColor: REZVIX.surfaceAlt,
   },
   qrHelperText: {
     marginTop: 16,
     fontSize: 14,
-    color: REZZY.textMuted,
+    color: REZVIX.textMuted,
     textAlign: "center",
   },
   iconBadge: {

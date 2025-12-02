@@ -1,6 +1,6 @@
 // src/navigation/RootNavigator.tsx
 import React from "react";
-import { Platform, View, Text } from "react-native";
+import { Platform, View, Text, Pressable, StyleSheet } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator, type StackNavigationOptions } from "@react-navigation/stack";
 import {
@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import RestaurantPanelNavigator from "../navigation/RestaurantPanelNavigator";
 import LoginScreen from "../screens/LoginScreen";
 import HomeScreen from "../screens/HomeScreen";
+import RestaurantMapScreen from "../screens/RestaurantMapScreen";
 import RestaurantDetailScreen from "../screens/RestaurantDetailScreen";
 import ReservationStep1Screen from "../screens/ReservationStep1Screen";
 import ReservationStep2Screen from "../screens/ReservationStep2Screen";
@@ -20,8 +21,6 @@ import ReservationStep3Screen from "../screens/ReservationStep3Screen";
 import ReservationDetailScreen from "../screens/ReservationDetailScreen";
 import BookingsScreen from "../screens/BookingsScreen";
 import ProfileScreen from "../screens/ProfileScreen";
-import RestaurantPanelScreen from "../screens/RestaurantPanelScreen";
-import AdminPanelScreen from "../screens/AdminPanelScreen";
 import NotificationsScreen from "../screens/NotificationsScreen";
 import TermsScreen from "../screens/TermsScreen";
 import PrivacyPolicyScreen from "../screens/PrivacyPolicyScreen";
@@ -30,90 +29,69 @@ import ContactScreen from "../screens/ContactScreen";
 import AboutScreen from "../screens/AboutScreen";
 import LicensesScreen from "../screens/LicensesScreen";
 import DeleteAccountScreen from "../screens/DeleteAccountScreen";
+import AssistantScreen from "../screens/AssistantScreen";
+
+import QrMenuScreen from "../screens/QrMenuScreen";
+import QrScanScreen from "../screens/QrScanScreen";
 
 import { useAuth } from "../store/useAuth";
 import { useNotifications } from "../store/useNotifications";
 import AppHeaderTitle from "../components/AppHeaderTitle";
 import AdminPanelNavigator from "./AdminPanelNavigator";
-
 import { useI18n } from "../i18n";
 
 const Stack = createStackNavigator();
 const Tabs = createBottomTabNavigator();
 
-function Bell({ onPress }: { onPress: () => void }) {
-  const unread = useNotifications((s) => s.unreadCount);
+/** Ortadaki floating QR buton */
+function QrTabButton({
+  onPress,
+  accessibilityState,
+}: {
+  onPress: () => void;
+  accessibilityState?: any;
+}) {
+  const focused = accessibilityState?.selected;
   return (
-    <View style={{ paddingRight: 6 }}>
-      <Ionicons
-        name="notifications-outline"
-        size={24}
-        color="#111827"
-        onPress={onPress}
-      />
-      {unread > 0 && (
-        <View
-          pointerEvents="none"
-          style={{
-            position: "absolute",
-            right: -6,
-            top: -4,
-            backgroundColor: "#DC2626",
-            minWidth: 18,
-            height: 18,
-            borderRadius: 9,
-            alignItems: "center",
-            justifyContent: "center",
-            paddingHorizontal: 4,
-          }}
-        >
-          <Text style={{ color: "#fff", fontSize: 11, fontWeight: "700" }}>
-            {unread > 99 ? "99+" : unread}
-          </Text>
-        </View>
-      )}
-    </View>
+    <Pressable onPress={onPress} style={styles.qrBtnWrap} hitSlop={10}>
+      <View style={[styles.qrBtn, focused && styles.qrBtnFocused]}>
+        <Ionicons name="qr-code-outline" size={24} color="#fff" />
+      </View>
+      <Text style={styles.qrBtnLabel}>QR Menü</Text>
+    </Pressable>
   );
+}
+
+// Dummy component (render olmaz, sadece buton için)
+function EmptyScreen() {
+  return null;
 }
 
 /** Tabs config */
 function useTabScreenOptions(headerBellPress: () => void) {
   const insets = useSafeAreaInsets();
   const bottomPad = Math.max(insets.bottom, 8);
-  const barHeight = 56 + bottomPad;
+  const barHeight = 58 + bottomPad; // biraz daha yüksek bırakalım
 
-  // Use i18n hook so that tab labels track the actual app language
   const { t, language } = useI18n();
+  let lang: "tr" | "en" | "ru" | "el" =
+    (["tr", "en", "ru", "el"].includes(language) ? language : "en") as any;
+
+  const labels = {
+    explore: { tr: "Keşfet", en: "Explore", ru: "Исследовать", el: "Εξερεύνηση" },
+    reservations: {
+      tr: "Rezervasyonlarım",
+      en: "My Reservations",
+      ru: "Бронирования",
+      el: "Κρατήσεις",
+    },
+    profile: { tr: "Profil", en: "Profile", ru: "Профиль", el: "Προφίλ" },
+    qr: { tr: "QR Menü", en: "QR Menu", ru: "QR Меню", el: "QR Μενού" },
+  };
 
   return ({ route }: any): BottomTabNavigationOptions => {
     let iconName: any = "ellipse-outline";
     let label: string = route.name;
-
-    let lang: "tr" | "en" | "ru" | "el" =
-      (["tr", "en", "ru", "el"].includes(language)
-        ? language
-        : "en") as "tr" | "en" | "ru" | "el";
-
-    const labels = {
-      explore: {
-        tr: "Keşfet",
-        en: "Explore",
-        ru: "Исследовать",
-        el: "Εξερεύνηση",
-      },
-      reservations: {
-        tr: "Rezervasyonlarım",
-        en: "My Reservations",
-        ru: "Бронирования",
-        el: "Κρατήσεις",
-      },
-      profile: {
-        tr: "Profil",
-        en: "Profile",
-        ru: "Профиль",
-        el: "Προφίλ",
-      }
-    };
 
     if (route.name === "Keşfet") {
       iconName = "compass-outline";
@@ -124,6 +102,9 @@ function useTabScreenOptions(headerBellPress: () => void) {
     } else if (route.name === "Profil") {
       iconName = "person-circle-outline";
       label = labels.profile[lang];
+    } else if (route.name === "QR") {
+      // QR tab label'ını custom buton çiziyor, burada gizliyoruz
+      label = labels.qr[lang];
     }
 
     return {
@@ -132,6 +113,7 @@ function useTabScreenOptions(headerBellPress: () => void) {
       headerStyle: { backgroundColor: "#fff" },
       headerLeftContainerStyle: { width: 44 },
       headerRightContainerStyle: { width: 44 },
+
       tabBarActiveTintColor: "#7B2C2C",
       tabBarInactiveTintColor: "#888",
       tabBarHideOnKeyboard: true,
@@ -142,20 +124,51 @@ function useTabScreenOptions(headerBellPress: () => void) {
         borderTopWidth: 0.5,
         backgroundColor: "#fff",
       },
+
       tabBarLabel: label,
-      tabBarIcon: ({ color, size }) => (
-        <Ionicons name={iconName} size={size} color={color} />
+      tabBarIcon: ({ color, size }) =>
+        route.name === "QR" ? null : (
+          <Ionicons name={iconName} size={size} color={color} />
+        ),
+
+      headerRight: () => (
+        <Pressable onPress={headerBellPress} style={{ paddingRight: 6 }}>
+          <Ionicons name="notifications-outline" size={24} color="#111827" />
+        </Pressable>
       ),
-      headerRight: () => <Bell onPress={headerBellPress} />,
     };
   };
 }
 
 function AppTabs({ navigation }: any) {
   const opts = useTabScreenOptions(() => navigation.navigate("Bildirimler"));
+
   return (
     <Tabs.Navigator screenOptions={opts}>
       <Tabs.Screen name="Keşfet" component={HomeScreen} />
+
+      {/* ✅ ORTA FLOATING QR TAB */}
+      <Tabs.Screen
+        name="QR"
+        component={EmptyScreen}
+        options={{
+          tabBarButton: (props) => (
+            <QrTabButton
+              {...props}
+              onPress={() => {
+                // Simulatörde scan yok → direkt QR Menü’ye yönlendir
+                navigation.navigate("QR Menü", {
+                  restaurantId: "6921c14d622ec940df475eef",
+                  tableId: "692467e897befd5da2602187",
+                  sessionId: null,
+                  reservationId: null,
+                });
+              }}
+            />
+          ),
+        }}
+      />
+
       <Tabs.Screen name="Rezervasyonlar" component={BookingsScreen} />
       <Tabs.Screen name="Profil" component={ProfileScreen} />
     </Tabs.Navigator>
@@ -164,9 +177,31 @@ function AppTabs({ navigation }: any) {
 
 function GuestTabs({ navigation }: any) {
   const opts = useTabScreenOptions(() => navigation.navigate("Giriş"));
+
   return (
     <Tabs.Navigator screenOptions={opts}>
       <Tabs.Screen name="Keşfet" component={HomeScreen} />
+
+      <Tabs.Screen
+        name="QR"
+        component={EmptyScreen}
+        options={{
+          tabBarButton: (props) => (
+            <QrTabButton
+              {...props}
+              onPress={() => {
+                navigation.navigate("QR Menü", {
+                  restaurantId: "6921c14d622ec940df475eef",
+                  tableId: "692467e897befd5da2602187",
+                  sessionId: null,
+                  reservationId: null,
+                });
+              }}
+            />
+          ),
+        }}
+      />
+
       <Tabs.Screen name="Rezervasyonlar" component={BookingsScreen} />
       <Tabs.Screen
         name="Profil"
@@ -185,7 +220,6 @@ export default function RootNavigator() {
     fetchUnreadCount().catch(() => {});
   }, [token]);
 
-  /** ✅ Stack Header Config */
   const stackOptions: StackNavigationOptions = {
     headerShown: true,
     headerTitle: () => <AppHeaderTitle />,
@@ -203,10 +237,16 @@ export default function RootNavigator() {
             <Stack.Screen name="Tabs" component={AppTabs} options={{ headerShown: false }} />
             <Stack.Screen name="Bildirimler" component={NotificationsScreen} />
             <Stack.Screen name="Restoran" component={RestaurantDetailScreen} />
+            <Stack.Screen name="Harita" component={RestaurantMapScreen} />
             <Stack.Screen name="Rezervasyon - Tarih" component={ReservationStep1Screen} />
             <Stack.Screen name="Rezervasyon - Menü" component={ReservationStep2Screen} />
             <Stack.Screen name="Rezervasyon - Özet" component={ReservationStep3Screen} />
             <Stack.Screen name="Rezervasyon Detayı" component={ReservationDetailScreen} />
+
+            {/* ✅ QR ekranları */}
+            <Stack.Screen name="QR Menü" component={QrMenuScreen} />
+            <Stack.Screen name="QR Tara" component={QrScanScreen} />
+
             <Stack.Screen name="RestaurantPanel" component={RestaurantPanelNavigator} options={{ headerShown: false }}/>
             <Stack.Screen name="AdminPanel" component={AdminPanelNavigator} options={{ headerShown: false }} />
             <Stack.Screen name="Terms" component={TermsScreen} />
@@ -216,24 +256,67 @@ export default function RootNavigator() {
             <Stack.Screen name="About" component={AboutScreen} />
             <Stack.Screen name="Licenses" component={LicensesScreen} />
             <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
+            <Stack.Screen name="Asistan" component={AssistantScreen} />
+
           </>
         ) : (
           <>
             <Stack.Screen name="TabsGuest" component={GuestTabs} options={{ headerShown: false }} />
             <Stack.Screen name="Giriş" component={LoginScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Restoran" component={RestaurantDetailScreen} />
+            <Stack.Screen name="Harita" component={RestaurantMapScreen} />
             <Stack.Screen name="Rezervasyon - Tarih" component={ReservationStep1Screen} />
             <Stack.Screen name="Rezervasyon - Menü" component={ReservationStep2Screen} />
             <Stack.Screen name="Rezervasyon - Özet" component={ReservationStep3Screen} />
+
+            {/* ✅ QR ekranları */}
+            <Stack.Screen name="QR Menü" component={QrMenuScreen} />
+            <Stack.Screen name="QR Tara" component={QrScanScreen} />
+
             <Stack.Screen name="Terms" component={TermsScreen} />
             <Stack.Screen name="Privacy" component={PrivacyPolicyScreen} />
             <Stack.Screen name="Help" component={HelpSupportScreen} />
             <Stack.Screen name="Contact" component={ContactScreen} />
             <Stack.Screen name="About" component={AboutScreen} />
             <Stack.Screen name="Licenses" component={LicensesScreen} />
+            <Stack.Screen name="Asistan" component={AssistantScreen} />
+
           </>
         )}
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  qrBtnWrap: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 84,
+    top: -18, // ✅ daha yukarı taşıyoruz (çakışma biter)
+  },
+  qrBtn: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: "#7B2C2C",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 8,
+    borderWidth: 3,
+    borderColor: "#fff", // tab bardan “ayrı” gibi hissettiren beyaz halka
+  },
+  qrBtnFocused: {
+    backgroundColor: "#6B2525",
+  },
+  qrBtnLabel: {
+    marginTop: 4,
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#7B2C2C",
+  },
+});

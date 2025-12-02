@@ -218,8 +218,18 @@
     "loading": "Loading...",
     "error": "Connection error",
     "noResults": "No results found. Try clearing filters and search again.",
-    "explore":"Explore"
+    "explore":"Explore",
+    "actionsMore": "More",
+  "actionsMap": "Map",
+  "actionsAssistant": "Assistant",
+  "actionsFilters": "Filters"
   },
+  "map": {
+  "title": "Nearby Places",
+  "noLocation": "Could not access your location. Please check location permissions or choose a different city.",
+  "noResults": "No suitable venues found in this area.",
+  "calloutMore": "View details"
+},
   "bookings": {
      "receipt": {
     "upload": "Upload receipt",
@@ -430,7 +440,7 @@
   "title": "About",
   "subtitle": "Designed to make restaurant reservations fair, transparent and effortless for both guests and venues.",
   "headline": "We make reservations smarter and safer.",
-  "description": "Rezzy combines deposits, QR check-in and real-time occupancy tracking. Guests enjoy a smooth experience while venues keep full control over their night.",
+  "description": "Rezvix combines deposits, QR check-in and real-time occupancy tracking. Guests enjoy a smooth experience while venues keep full control over their night.",
   "features": {
     "smartBooking": {
       "title": "Smart booking flow",
@@ -470,11 +480,11 @@
     "workhours": "09:00 — 18:00",
 
     "moreInfo": "More Information",
-    "moreInfoDesc": "Soon you will find more information and support channels about Rezzy right here."
+    "moreInfoDesc": "Soon you will find more information and support channels about Rezvix right here."
   },
   "deleteAccount": {
     "title": "Delete Account",
-    "subtitle": "You can permanently delete your Rezzy account and related data.",
+    "subtitle": "You can permanently delete your Rezvix account and related data.",
     "sectionTitle": "Before you delete your account",
     "descriptionMain": "When you delete your account, your reservation history and personal data will be removed permanently. Please make sure you have saved any important information before continuing.",
     "dataTitle": "Data that will be removed:",
@@ -499,7 +509,7 @@
     "q2": "How can I cancel my reservation?",
     "q3": "How do I track the status of my reservation?",
     "q4": "Why am I not receiving notifications?",
-     "a1": "With Rezzy you can quickly book tables at partner restaurants, securely pay any required deposit, and verify your reservation in seconds using a QR check-in.",
+     "a1": "With Rezvix you can quickly book tables at partner restaurants, securely pay any required deposit, and verify your reservation in seconds using a QR check-in.",
     "a2": "You can track your reservation status, cancellations and check-in records on the reservation detail screen and via in-app notifications.",
     "a3": "Cancellation rules may vary by restaurant. The policy shown while creating the reservation is the one that applies.",
     "a4": "You can reach us through the Help & Support section in the app or by sending an email to our contact address."
@@ -508,7 +518,7 @@
     "title": "Quick Tips",
     "subtitle": "Check these steps first to avoid most issues.",
     "item1": "Make sure notification permission is granted and your internet connection is stable.",
-    "item2": "Ensure you are using the latest version of the Rezzy app.",
+    "item2": "Ensure you are using the latest version of the Rezvix app.",
     "item3": "If the issue continues, try closing and reopening the app or logging out and back in."
   },
   "contact": {
@@ -519,10 +529,10 @@
 },
 "licenses": {
   "title": "Open Source Licenses",
-  "subtitle": "Rezzy relies on many open source libraries for performance, security and a smooth user experience.",
+  "subtitle": "Rezvix relies on many open source libraries for performance, security and a smooth user experience.",
   "section": {
     "overviewTitle": "Why open source?",
-    "overviewBody1": "Rezzy is built on top of modern web and mobile open source libraries. These projects help us ship faster while keeping performance and security standards high.",
+    "overviewBody1": "Rezvix is built on top of modern web and mobile open source libraries. These projects help us ship faster while keeping performance and security standards high.",
     "overviewBody2": "Below is a grouped overview of some of the main libraries used in the app and their license types. For full license texts, please refer to each project’s GitHub repository.",
     "coreTitle": "Core & Infrastructure",
     "uiTitle": "UI & Interaction",
@@ -534,7 +544,7 @@
 },
 "privacy": {
     "title": "Privacy Policy",
-    "subtitle": "Your privacy is important to us. Below you can find details about how Rezzy collects, uses and protects your data.",
+    "subtitle": "Your privacy is important to us. Below you can find details about how Rezvix collects, uses and protects your data.",
 
     "collected": "Data We Collect",
     "collected_id": "Identification information (name, email, phone)",
@@ -557,7 +567,7 @@
     "rights_text": "You may request access, correction or deletion of your personal data at any time.",
 
     "cookies": "Cookies",
-    "cookies_text": "Rezzy uses essential cookies to improve performance and personalize your experience.",
+    "cookies_text": "Rezvix uses essential cookies to improve performance and personalize your experience.",
 
     "contact": "Contact",
     "contact_text": "You can contact us for any questions, feedback, or requests regarding our privacy policy.",
@@ -565,21 +575,21 @@
   },
   "terms": {
     "title": "Terms of Use",
-    "subtitle": "By using Rezzy, you agree to the following terms and conditions.",
+    "subtitle": "By using Rezvix, you agree to the following terms and conditions.",
     "accountTitle": "Account & Security",
     "accountText": "You are responsible for keeping your account secure and your login details confidential. Any activity carried out via your account is deemed to be your responsibility. We recommend that you do not share your password with third parties.",
     "reservationsTitle": "Reservations & Cancellations",
     "reservationsText1": "Reservations are created based on date, time, party size and the specific policies of each restaurant. Some venues may require a deposit or a minimum spend.",
     "reservationsText2": "Cancellation and modification rights are defined by each restaurant’s own policy. Please review the terms shown during the reservation flow carefully.",
     "prohibitedTitle": "Prohibited Use",
-    "prohibitedText": "You may not use Rezzy for fraudulent, misleading, abusive or illegal purposes. Creating fake reservations, acting on behalf of others without permission, or abusing the system may result in permanent suspension of your account.",
+    "prohibitedText": "You may not use Rezvix for fraudulent, misleading, abusive or illegal purposes. Creating fake reservations, acting on behalf of others without permission, or abusing the system may result in permanent suspension of your account.",
     "liabilityTitle": "Limitation of Liability",
-    "liabilityText": "Rezzy is not directly responsible for the content, quality or delivery of services offered by restaurants. Rezzy acts as an intermediary platform that facilitates the reservation process.",
+    "liabilityText": "Rezvix is not directly responsible for the content, quality or delivery of services offered by restaurants. Rezvix acts as an intermediary platform that facilitates the reservation process.",
     "changesTitle": "Changes to These Terms",
-    "changesText": "These terms may be updated from time to time. Changes take effect as soon as they are published within the app. Your continued use of Rezzy after changes have been published constitutes acceptance of the updated terms.",
+    "changesText": "These terms may be updated from time to time. Changes take effect as soon as they are published within the app. Your continued use of Rezvix after changes have been published constitutes acceptance of the updated terms.",
     "legalTitle": "Legal Information & Contact",
     "legalText1": "This text is for general information only and does not constitute legal advice. You are expected to comply with all applicable local laws and regulations while using the app.",
-    "legalText2": "If you have any legal or contract-related questions about Rezzy, please reach out to us via the contact screen or by email.",
+    "legalText2": "If you have any legal or contract-related questions about Rezvix, please reach out to us via the contact screen or by email.",
     "disclaimer": "*This text is for informational purposes only and does not replace professional legal advice.",
     "lastUpdate": "Last updated: 2025"
   },
@@ -605,6 +615,69 @@
   "cityHint": "You can change the city from the top bar.",
   "price": "Price range",
   "apply": "Find a place"
+},
+ "qrMenu": {
+    "loading": "Loading…",
+    "cartEmptyTitle": "Cart is empty",
+    "cartEmptyMessage": "Please select at least one item.",
+    "orderIdMissing": "Order ID could not be retrieved. Please try again.",
+    "stripeMissingTitle": "Payment could not be started",
+    "stripeMissingMessage": "Payment information returned incomplete. Please try again.",
+    "stripeInitErrorTitle": "Payment could not be started",
+    "stripeFailTitle": "Payment failed",
+    "orderSuccessTitle": "Order received ✅",
+    "orderSuccessMessage": "Your order has been sent to the venue.",
+    "orderErrorFallback": "The order could not be created.",
+    "restaurantLoadError": "The restaurant could not be loaded.",
+    "menuTitle": "Menu",
+    "tableLabel": "Table: {{tableId}}",
+    "notesLabel": "Note (optional)",
+    "notesPlaceholder": "E.g. no onions, less spicy...",
+    "waiterCall": "Call Waiter",
+    "waiterCalledTitle": "Waiter called",
+    "waiterCalledMessage": "Someone will come to your table shortly.",
+    "requestBill": "Request Bill",
+    "billRequestedTitle": "Bill requested",
+    "billRequestedMessage": "Your bill is being prepared.",
+    "expandAll": "Expand all",
+    "collapseAll": "Collapse all",
+    "menuLoading": "Loading menu…",
+    "menuEmpty": "This venue has not shared a menu.",
+    "outOfStock": "Out of stock",
+    "add": "Add",
+    "cartLabel": "Cart: {{count}} items",
+    "cartTotal": "Total: {{amount}}",
+    "processing": "Processing...",
+    "confirmOrder": "Confirm Order",
+    "payWithCard": "Pay by Card",
+    "payAtVenue": "Pay at Venue",
+    "clearCartTitle": "Clear cart?",
+    "clearCartMessage": "All selected items will be removed.",
+    "clearCartCancel": "Cancel",
+    "clearCartConfirm": "Clear",
+    "billTitle": "Bill",
+    "billTable": "Table",
+    "billOnlinePaid": "Paid Online",
+    "billPayAtVenue": "To Pay at Venue",
+    "billGrandTotal": "Grand Total",
+    "billEmpty": "No orders yet.",
+    "billOrderTitle": "Order",
+    "billPaymentMethodCard": "Card",
+    "billPaymentMethodVenue": "Venue",
+    "billItemFallback": "Item",
+    "photoMissing": "No photo",
+    "waiterCallSuccessTitle": "Waiter requested",
+  "waiterCallSuccessMessage": "A waiter is on the way to your table.",
+  "billRequestSuccessTitle": "Bill requested",
+  "billRequestSuccessMessage": "Your bill is being prepared.",
+  "quickRequestError": "We couldn’t send your request. Please try again."
+  },
+  "assistant": {
+  "loading": "Assistant is getting ready...",
+  "inputPlaceholder": "Ask about venues, reservations or anything about Rezvix...",
+  "hint": "Ex: “Can you suggest a place in Girne for 4 people tonight?”",
+  "errorInit": "The assistant could not be started right now. Please try again later.",
+  "errorSend": "I couldn’t process your message. Please try again."
 }
 
 }

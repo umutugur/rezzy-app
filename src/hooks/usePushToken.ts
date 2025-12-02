@@ -8,7 +8,7 @@ import { Platform, Alert } from "react-native";
 import { api } from "../api/client";
 import { useAuth } from "../store/useAuth";
 
-const DEVICE_KEY = "rezzy.device.id.v1";
+const DEVICE_KEY = "rezvix.device.id.v1";
 
 /** HEX random id üret */
 async function createDeviceId() {

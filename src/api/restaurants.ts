@@ -20,6 +20,19 @@ export type ListRestaurantsParams = {
   lng?: number;
   limit?: number;
   cursor?: string;
+
+  // Assistant / filtre destek alanları (tamamı opsiyonel)
+  people?: number;
+  /** YYYY-MM-DD veya benzeri tarih string’i */
+  date?: string;
+  /** Örn: "18:00-22:00" gibi bir saat aralığı */
+  timeRange?: string;
+  /** Bütçe filtresi, örn: "₺", "₺₺", "₺₺₺" veya "low/medium/high" */
+  budget?: string;
+  /** Mekan tarzı / mutfak tipi, örn: "meyhane", "balık", "tapas" */
+  style?: string;
+  /** Sadece logging/analiz için; asistandan geldiğini belirtmek istersen */
+  fromAssistant?: boolean;
 };
 
 export interface Restaurant {

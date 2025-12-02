@@ -195,7 +195,7 @@ export default function LoginScreen() {
   return (
     <Screen style={{ flex: 1 }}>
       <View style={{ paddingBottom: 16 }}>
-        <Text style={{ fontSize: 28, fontWeight: "700", marginBottom: 16 }}>Rezzy</Text>
+        <Text style={{ fontSize: 28, fontWeight: "700", marginBottom: 16 }}>Rezvix</Text>
 
         <Animated.View style={{ transform: [{ translateX: shakeAnim }] }}>
           <Input

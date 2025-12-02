@@ -588,7 +588,100 @@ export default function RestaurantDetailScreen() {
               </View>
             )}
           </View>
+             {/* Uygun Saat Bul */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="time" size={22} color="#7B2C2C" />
+              <Text style={styles.sectionTitle}>Uygun Saat Bul</Text>
+            </View>
 
+            <View style={styles.controlsContainer}>
+              <View style={styles.controlCard}>
+                <Text style={styles.controlLabel}>Tarih</Text>
+                <View style={styles.dateControls}>
+                  <Pressable
+                    onPress={() => setDate(dayjs(date).subtract(1, "day").format("YYYY-MM-DD"))}
+                    disabled={dayjs(date).isSame(dayjs(), "day")}
+                    style={[styles.controlButton, dayjs(date).isSame(dayjs(), "day") && styles.disabled]}
+                  >
+                    <Ionicons name="chevron-back" size={18} color="#1A1A1A" />
+                  </Pressable>
+
+                  <View style={styles.dateDisplay}>
+                    <Text style={styles.dateText}>{dayjs(date).format("DD MMM")}</Text>
+                    <Text style={styles.dayText}>{dayjs(date).format("dddd")}</Text>
+                  </View>
+
+                  <Pressable
+                    onPress={() => setDate(dayjs(date).add(1, "day").format("YYYY-MM-DD"))}
+                    style={styles.controlButton}
+                  >
+                    <Ionicons name="chevron-forward" size={18} color="#1A1A1A" />
+                  </Pressable>
+                </View>
+              </View>
+
+              <View style={styles.controlCard}>
+                <Text style={styles.controlLabel}>Kişi Sayısı</Text>
+                <View style={styles.partyControls}>
+                  <Pressable
+                    onPress={() => setPartySize((p) => Math.max(1, p - 1))}
+                    style={[styles.controlButton, partySize <= 1 && styles.disabled]}
+                  >
+                    <Ionicons name="remove" size={18} color="#1A1A1A" />
+                  </Pressable>
+
+                  <View style={styles.partyDisplay}>
+                    <Ionicons name="people" size={20} color="#7B2C2C" />
+                    <Text style={styles.partyText}>{partySize}</Text>
+                  </View>
+
+                  <Pressable onPress={() => setPartySize((p) => p + 1)} style={styles.controlButton}>
+                    <Ionicons name="add" size={18} color="#1A1A1A" />
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+
+            {fetchingSlots ? (
+              <View style={styles.slotsLoading}>
+                <ActivityIndicator color="#7B2C2C" />
+                <Text style={styles.slotsLoadingText}>Uygun saatler aranıyor…</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={slots}
+                horizontal
+                keyExtractor={(s) => s.timeISO}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.slotsList}
+                renderItem={({ item }) => {
+                  const isSelected = selectedSlot?.timeISO === item.timeISO;
+                  const disabled = !item.isAvailable;
+                  return (
+                    <Pressable
+                      onPress={() => onSelectSlot(item)}
+                      disabled={disabled}
+                      style={[styles.slot, disabled && styles.slotDisabled, isSelected && styles.slotSelected]}
+                    >
+                      <Ionicons
+                        name={isSelected ? "checkmark-circle" : "time-outline"}
+                        size={18}
+                        color={isSelected ? "#fff" : disabled ? "#999999" : "#7B2C2C"}
+                      />
+                      <Text style={[styles.slotText, isSelected && styles.slotTextSelected]}>{item.label}</Text>
+                    </Pressable>
+                  );
+                }}
+                ListEmptyComponent={
+                  <View style={styles.emptyStateSmall}>
+                    <Ionicons name="calendar-outline" size={32} color="#999999" />
+                    <Text style={styles.muted}>Uygun saat bulunamadı.</Text>
+                  </View>
+                }
+              />
+            )}
+          </View>
           
 
           {/* ✅ Tabs (Hakkında / Menü) */}

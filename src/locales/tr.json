@@ -180,8 +180,18 @@
     "loading": "Yükleniyor...",
     "error": "Bağlantı hatası",
     "noResults": "Sonuç bulunamadı. Filtreleri temizleyip tekrar deneyin.",
-    "explore":"Keşfet"
+    "explore":"Keşfet",
+    "actionsMore": "Daha fazla",
+  "actionsMap": "Harita",
+  "actionsAssistant": "Asistan",
+  "actionsFilters": "Filtreler"
   },
+  "map": {
+  "title": "Yakındaki Mekanlar",
+  "noLocation": "Konum bilgisine erişilemedi. Lütfen konum iznini kontrol edin veya farklı bir şehir seçin.",
+  "noResults": "Bu bölgede uygun mekan bulunamadı.",
+  "calloutMore": "Detaya git"
+},
   "bookings": {
      "receipt": {
     "upload": "Dekont Yükle",
@@ -331,7 +341,7 @@
   "title": "Hakkında",
   "subtitle": "Rezervasyon tarafında hem misafirler hem de işletmeler için adil, şeffaf ve pratik bir deneyim sunar.",
   "headline": "Rezervasyonları daha akıllı ve güvenli hâle getiriyoruz.",
-  "description": "Rezzy; depozitolu veya depozitosuz rezervasyonları, QR check-in ve gerçek zamanlı doluluk takibiyle bir araya getirir. Misafirler için zahmetsiz, işletmeler için kontrolü yüksek bir akşam akışı sağlar.",
+  "description": "Rezvix; depozitolu veya depozitosuz rezervasyonları, QR check-in ve gerçek zamanlı doluluk takibiyle bir araya getirir. Misafirler için zahmetsiz, işletmeler için kontrolü yüksek bir akşam akışı sağlar.",
   "features": {
     "smartBooking": {
       "title": "Akıllı rezervasyon akışı",
@@ -370,11 +380,11 @@
     "workhours": "09:00 — 18:00",
 
     "moreInfo": "Ek Bilgi",
-    "moreInfoDesc": "Yakında Rezzy hakkında daha fazla bilgi ve destek kanallarını burada bulabileceksiniz."
+    "moreInfoDesc": "Yakında Rezvix hakkında daha fazla bilgi ve destek kanallarını burada bulabileceksiniz."
   },
   "deleteAccount": {
     "title": "Hesabı Sil",
-    "subtitle": "Rezzy hesabınızı ve ilişkili verileri kalıcı olarak silebilirsiniz.",
+    "subtitle": "Rezvix hesabınızı ve ilişkili verileri kalıcı olarak silebilirsiniz.",
     "sectionTitle": "Hesabınızı silmeden önce",
     "descriptionMain": "Hesabınızı sildiğinizde rezervasyon geçmişiniz ve kişisel verileriniz geri getirilemeyecek şekilde kaldırılır. Devam etmeden önce önemli bilgilerinizi sakladığınızdan emin olun.",
     "dataTitle": "Silinecek veriler:",
@@ -399,7 +409,7 @@
     "q2": "Rezervasyonumu nasıl iptal ederim?",
     "q3": "Rezervasyon durumumu nasıl takip ederim?",
     "q4": "Bildirimler neden gelmiyor?",
-    "a1": "Rezzy ile restoranlara hızlıca rezervasyon oluşturabilir, varsa ön ödemenizi güvenle yapabilir ve QR ile giriş yaparak rezervasyonunuzu saniyeler içinde doğrulatabilirsiniz.",
+    "a1": "Rezvix ile restoranlara hızlıca rezervasyon oluşturabilir, varsa ön ödemenizi güvenle yapabilir ve QR ile giriş yaparak rezervasyonunuzu saniyeler içinde doğrulatabilirsiniz.",
     "a2": "Rezervasyonun onay durumu, iptal bilgisi ve giriş kaydı uygulama içindeki rezervasyon detay ekranında ve bildirimler ile takip edilebilir.",
     "a3": "Rezervasyonun iptal koşulları her restoran için farklı olabilir. Rezervasyon oluştururken gördüğünüz iptal politikası geçerlidir.",
     "a4": "Uygulama içinden Yardım & Destek alanını kullanarak bize ulaşabilir veya iletişim ekranındaki e-posta adresine yazabilirsiniz."
@@ -408,7 +418,7 @@
     "title": "Hızlı İpuçları",
     "subtitle": "Sorun yaşamamak için aşağıdaki adımları kontrol et.",
     "item1": "Bildirim izninin açık olduğundan ve internet bağlantının stabil olduğundan emin ol.",
-    "item2": "Rezzy uygulamasının en güncel sürümünü kullandığından emin ol.",
+    "item2": "Rezvix uygulamasının en güncel sürümünü kullandığından emin ol.",
     "item3": "Sorun devam ederse uygulamayı kapatıp yeniden başlatmayı veya çıkış yapıp tekrar giriş yapmayı deneyebilirsin."
   },
   "contact": {
@@ -419,10 +429,10 @@
 },
 "licenses": {
   "title": "Açık Kaynak Lisansları",
-  "subtitle": "Rezzy; performans, güvenlik ve kullanıcı deneyimi için birçok açık kaynak kütüphane kullanır.",
+  "subtitle": "Rezvix; performans, güvenlik ve kullanıcı deneyimi için birçok açık kaynak kütüphane kullanır.",
   "section": {
     "overviewTitle": "Neden açık kaynak?",
-    "overviewBody1": "Rezzy, modern web ve mobil ekosisteminin güçlü açık kaynak kütüphaneleri üzerine inşa edilmiştir. Bu kütüphaneler; performans, güvenlik ve hızlı geliştirme imkânı sağlar.",
+    "overviewBody1": "Rezvix, modern web ve mobil ekosisteminin güçlü açık kaynak kütüphaneleri üzerine inşa edilmiştir. Bu kütüphaneler; performans, güvenlik ve hızlı geliştirme imkânı sağlar.",
     "overviewBody2": "Aşağıda, uygulama içerisinde kullanılan temel kütüphane gruplarını ve lisans türlerini özetledik. Detaylı lisans metinleri, ilgili projelerin GitHub sayfalarında bulunabilir.",
     "coreTitle": "Çekirdek & Altyapı",
     "uiTitle": "Arayüz & Etkileşim",
@@ -434,7 +444,7 @@
 },
 "privacy": {
     "title": "Gizlilik Politikası",
-    "subtitle": "Gizliliğiniz bizim için önemlidir. Rezzy'nin verilerinizi nasıl topladığı, kullandığı ve koruduğunu aşağıda bulabilirsiniz.",
+    "subtitle": "Gizliliğiniz bizim için önemlidir. Rezvix'nin verilerinizi nasıl topladığı, kullandığı ve koruduğunu aşağıda bulabilirsiniz.",
 
     "collected": "Topladığımız Veriler",
     "collected_id": "Kimlik bilgileri (isim, e-posta, telefon)",
@@ -457,7 +467,7 @@
     "rights_text": "Kişisel verilerinize erişim, düzeltme veya silme talebinde bulunabilirsiniz.",
 
     "cookies": "Çerezler",
-    "cookies_text": "Rezzy, performansı artırmak ve deneyiminizi kişiselleştirmek için temel çerezler kullanır.",
+    "cookies_text": "Rezvix, performansı artırmak ve deneyiminizi kişiselleştirmek için temel çerezler kullanır.",
 
     "contact": "İletişim",
     "contact_text": "Gizlilik politikamızla ilgili her türlü soru, görüş veya talebiniz için bizimle iletişime geçebilirsiniz.",
@@ -465,21 +475,21 @@
   },
   "terms": {
     "title": "Kullanım Koşulları",
-    "subtitle": "Rezzy’yi kullanarak aşağıdaki koşulları kabul etmiş olursunuz.",
+    "subtitle": "Rezvix’yi kullanarak aşağıdaki koşulları kabul etmiş olursunuz.",
     "accountTitle": "Hesap ve Güvenlik",
     "accountText": "Hesabınızın güvenliğinden ve giriş bilgilerinizin gizli tutulmasından siz sorumlusunuz. Hesabınızda gerçekleşen tüm işlemlerden siz sorumlu kabul edilirsiniz. Şifrenizi üçüncü kişilerle paylaşmamanız önerilir.",
     "reservationsTitle": "Rezervasyon ve İptal Koşulları",
     "reservationsText1": "Rezervasyonlar; tarih, saat, kişi sayısı ve restoran politikalarına göre oluşturulur. Bazı restoranlar için ön ödeme veya minimum harcama şartı bulunabilir.",
     "reservationsText2": "İptal ve değişiklik hakları, her restoranın kendi politikasına göre belirlenir. Rezervasyon sırasında gösterilen koşulları dikkatle incelemeniz tavsiye edilir.",
     "prohibitedTitle": "Yasaklı Kullanım",
-    "prohibitedText": "Rezzy’yi hileli, yanıltıcı, saldırgan veya yasa dışı herhangi bir amaçla kullanmak yasaktır. Sahte rezervasyon oluşturmak, farklı kişiler adına izinsiz işlem yapmak ve sistemi kötüye kullanmak hesabınızın kalıcı olarak kapatılmasına neden olabilir.",
+    "prohibitedText": "Rezvix’yi hileli, yanıltıcı, saldırgan veya yasa dışı herhangi bir amaçla kullanmak yasaktır. Sahte rezervasyon oluşturmak, farklı kişiler adına izinsiz işlem yapmak ve sistemi kötüye kullanmak hesabınızın kalıcı olarak kapatılmasına neden olabilir.",
     "liabilityTitle": "Sorumluluk Reddi",
-    "liabilityText": "Rezzy, restoranların sunduğu hizmetlerin içeriğinden, kalitesinden veya yaşanabilecek aksaklıklardan doğrudan sorumlu değildir. Rezzy; rezervasyon sürecini kolaylaştıran bir aracı platformdur.",
+    "liabilityText": "Rezvix, restoranların sunduğu hizmetlerin içeriğinden, kalitesinden veya yaşanabilecek aksaklıklardan doğrudan sorumlu değildir. Rezvix; rezervasyon sürecini kolaylaştıran bir aracı platformdur.",
     "changesTitle": "Koşullarda Değişiklik Hakkı",
-    "changesText": "Kullanım koşulları zaman zaman güncellenebilir. Değişiklikler uygulama içerisinde yayınlandığı anda yürürlüğe girer. Rezzy’yi kullanmaya devam etmeniz, güncellenen koşulları kabul ettiğiniz anlamına gelir.",
+    "changesText": "Kullanım koşulları zaman zaman güncellenebilir. Değişiklikler uygulama içerisinde yayınlandığı anda yürürlüğe girer. Rezvix’yi kullanmaya devam etmeniz, güncellenen koşulları kabul ettiğiniz anlamına gelir.",
     "legalTitle": "Yasal Bilgiler ve İletişim",
     "legalText1": "Bu metin genel bilgilendirme amacı taşır ve hukuki danışmanlık yerine geçmez. Uygulamayı kullanırken geçerli yerel yasa ve yönetmeliklere uymanız beklenir.",
-    "legalText2": "Rezzy ile ilgili hukuki veya sözleşmeye dair sorularınız için lütfen bizimle iletişim ekranı üzerinden veya e-posta adresimiz aracılığıyla iletişime geçin.",
+    "legalText2": "Rezvix ile ilgili hukuki veya sözleşmeye dair sorularınız için lütfen bizimle iletişim ekranı üzerinden veya e-posta adresimiz aracılığıyla iletişime geçin.",
     "disclaimer": "*Bu metin bilgilendirme amaçlıdır ve profesyonel hukuki danışmanlık yerine geçmez.",
     "lastUpdate": "Son güncelleme tarihi: 2025"
   },
@@ -505,6 +515,69 @@
   "cityHint": "Şehir filtresini üst bardan değiştirebilirsin.",
   "price": "Fiyat aralığı",
   "apply": "Mekan Bul"
+},
+"qrMenu": {
+    "loading": "Yükleniyor…",
+    "cartEmptyTitle": "Sepet boş",
+    "cartEmptyMessage": "Lütfen ürün seçin.",
+    "orderIdMissing": "Sipariş ID alınamadı. Lütfen tekrar deneyin.",
+    "stripeMissingTitle": "Ödeme başlatılamadı",
+    "stripeMissingMessage": "Ödeme bilgileri eksik döndü. Lütfen tekrar deneyin.",
+    "stripeInitErrorTitle": "Ödeme başlatılamadı",
+    "stripeFailTitle": "Ödeme başarısız",
+    "orderSuccessTitle": "Sipariş alındı ✅",
+    "orderSuccessMessage": "Siparişiniz mekana iletildi.",
+    "orderErrorFallback": "Sipariş oluşturulamadı.",
+    "restaurantLoadError": "Restoran yüklenemedi.",
+    "menuTitle": "Menü",
+    "tableLabel": "Masa: {{tableId}}",
+    "notesLabel": "Not (opsiyonel)",
+    "notesPlaceholder": "Örn: soğansız, az acılı...",
+    "waiterCall": "Garson Çağır",
+    "waiterCalledTitle": "Garson çağrıldı",
+    "waiterCalledMessage": "Birazdan sizinle ilgilenecekler.",
+    "requestBill": "Hesap İste",
+    "billRequestedTitle": "Hesap istendi",
+    "billRequestedMessage": "Hesabınız hazırlanıyor.",
+    "expandAll": "Hepsini Aç",
+    "collapseAll": "Hepsini Kapat",
+    "menuLoading": "Menü yükleniyor…",
+    "menuEmpty": "Bu mekan menü paylaşmadı.",
+    "outOfStock": "Stok yok",
+    "add": "Ekle",
+    "cartLabel": "Sepet: {{count}} ürün",
+    "cartTotal": "Toplam: {{amount}}",
+    "processing": "İşleniyor...",
+    "confirmOrder": "Siparişi Onayla",
+    "payWithCard": "Kart ile Öde",
+    "payAtVenue": "Mekanda Öde",
+    "clearCartTitle": "Sepeti temizle?",
+    "clearCartMessage": "Tüm seçimler silinecek.",
+    "clearCartCancel": "Vazgeç",
+    "clearCartConfirm": "Temizle",
+    "billTitle": "Adisyon",
+    "billTable": "Masa",
+    "billOnlinePaid": "Online Ödenen",
+    "billPayAtVenue": "Mekanda Ödenecek",
+    "billGrandTotal": "Genel Toplam",
+    "billEmpty": "Henüz sipariş yok.",
+    "billOrderTitle": "Sipariş",
+    "billPaymentMethodCard": "Kart",
+    "billPaymentMethodVenue": "Mekan",
+    "billItemFallback": "Ürün",
+    "photoMissing": "Fotoğraf yok",
+     "waiterCallSuccessTitle": "Garson çağrıldı",
+  "waiterCallSuccessMessage": "Birazdan garsonunuz masanıza gelecek.",
+  "billRequestSuccessTitle": "Hesap istendi",
+  "billRequestSuccessMessage": "Hesabınız hazırlanıyor, lütfen bekleyin.",
+  "quickRequestError": "İsteğiniz gönderilemedi, lütfen tekrar deneyin."
+  },
+  "assistant": {
+  "loading": "Asistan hazırlanıyor...",
+  "inputPlaceholder": "Mekan, rezervasyon veya Rezvix ile ilgili bir soru sor...",
+  "hint": "Örn: “Bu akşam 4 kişi Girne’de meyhane önerir misin?”",
+  "errorInit": "Asistan şu anda başlatılamadı. Lütfen tekrar dene ya da birazdan yeniden aç.",
+  "errorSend": "Şu anda mesajını işleyemedim. Lütfen tekrar dene."
 }
 }
 

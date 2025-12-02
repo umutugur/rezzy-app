@@ -9,7 +9,7 @@ export default function ContactScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
 
-  const email = "rezzyapp7@gmail.com";
+  const email = "rezvixapp7@gmail.com";
 
   return (
     <ScrollView

@@ -21,7 +21,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useShallow } from "zustand/react/shallow";
 import { useI18n } from "../i18n";
 
-/** ---- Renk Paleti (Rezzy ile uyumlu) ---- */
+/** ---- Renk Paleti (Rezvix ile uyumlu) ---- */
 const C = {
   primary: "#7B2C2C",
   primaryDark: "#6B2525",
