@@ -148,26 +148,20 @@ function AppTabs({ navigation }: any) {
       <Tabs.Screen name="Keşfet" component={HomeScreen} />
 
       {/* ✅ ORTA FLOATING QR TAB */}
-      <Tabs.Screen
-        name="QR"
-        component={EmptyScreen}
-        options={{
-          tabBarButton: (props) => (
-            <QrTabButton
-              {...props}
-              onPress={() => {
-                // Simulatörde scan yok → direkt QR Menü’ye yönlendir
-                navigation.navigate("QR Menü", {
-                  restaurantId: "6921c14d622ec940df475eef",
-                  tableId: "692467e897befd5da2602187",
-                  sessionId: null,
-                  reservationId: null,
-                });
-              }}
-            />
-          ),
+     <Tabs.Screen
+  name="QR"
+  component={EmptyScreen}
+  options={{
+    tabBarButton: (props) => (
+      <QrTabButton
+        {...props}
+        onPress={() => {
+          navigation.navigate("QR Tara");
         }}
       />
+    ),
+  }}
+/>
 
       <Tabs.Screen name="Rezervasyonlar" component={BookingsScreen} />
       <Tabs.Screen name="Profil" component={ProfileScreen} />
@@ -183,24 +177,19 @@ function GuestTabs({ navigation }: any) {
       <Tabs.Screen name="Keşfet" component={HomeScreen} />
 
       <Tabs.Screen
-        name="QR"
-        component={EmptyScreen}
-        options={{
-          tabBarButton: (props) => (
-            <QrTabButton
-              {...props}
-              onPress={() => {
-                navigation.navigate("QR Menü", {
-                  restaurantId: "6921c14d622ec940df475eef",
-                  tableId: "692467e897befd5da2602187",
-                  sessionId: null,
-                  reservationId: null,
-                });
-              }}
-            />
-          ),
+  name="QR"
+  component={EmptyScreen}
+  options={{
+    tabBarButton: (props) => (
+      <QrTabButton
+        {...props}
+        onPress={() => {
+          navigation.navigate("QR Tara");
         }}
       />
+    ),
+  }}
+/>
 
       <Tabs.Screen name="Rezervasyonlar" component={BookingsScreen} />
       <Tabs.Screen

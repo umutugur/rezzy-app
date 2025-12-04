@@ -678,6 +678,17 @@
   "hint": "Ex: “Can you suggest a place in Girne for 4 people tonight?”",
   "errorInit": "The assistant could not be started right now. Please try again later.",
   "errorSend": "I couldn’t process your message. Please try again."
-}
-
+},
+"qrScan": {
+    "permissionCheckingText": "Checking camera permission…",
+    "cameraRequiredTitle": "Camera permission required",
+    "cameraRequiredMessage": "You need to allow camera access to scan the table’s QR code.",
+    "askPermissionBtn": "Allow camera access",
+    "back": "Back",
+    "title": "Scan QR",
+    "scanHint": "Scan the QR code on the table",
+    "rescan": "Rescan",
+    "invalidQrTitle": "Invalid QR code",
+    "invalidQrMessage": "The scanned QR code does not contain valid restaurant information."
+  }
 }

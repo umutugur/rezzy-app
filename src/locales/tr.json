@@ -578,6 +578,18 @@
   "hint": "Örn: “Bu akşam 4 kişi Girne’de meyhane önerir misin?”",
   "errorInit": "Asistan şu anda başlatılamadı. Lütfen tekrar dene ya da birazdan yeniden aç.",
   "errorSend": "Şu anda mesajını işleyemedim. Lütfen tekrar dene."
-}
+},
+"qrScan": {
+    "permissionCheckingText": "Kamera izni kontrol ediliyor…",
+    "cameraRequiredTitle": "Kamera izni gerekli",
+    "cameraRequiredMessage": "Masadaki QR kodu okuyabilmek için kamera izni vermeniz gerekiyor.",
+    "askPermissionBtn": "Kamera izni ver",
+    "back": "Geri",
+    "title": "QR Tara",
+    "scanHint": "Masadaki QR kodunu okutun",
+    "rescan": "Tekrar Tara",
+    "invalidQrTitle": "Geçersiz QR kodu",
+    "invalidQrMessage": "Bu QR kodundan restoran bilgisi alınamadı."
+  }
 }
 

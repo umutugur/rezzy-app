@@ -1,10 +1,10 @@
 {
   "expo": {
     "name": "Rezvix",
-    "slug": "rezvix-app",
+    "slug": "rezzy-app",
     "scheme": "com.rezzy.app",
     "owner": "umutugur",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./src/assets/icon.png",
     "userInterfaceStyle": "light",
@@ -19,19 +19,24 @@
       "supportsTablet": true,
       "usesAppleSignIn": true,
       "infoPlist": {
-        "NSUserNotificationsUsageDescription": "Rezervasyon durumları ve mesajlar için bildirim izni gerekir.",
-        "NSPhotoLibraryUsageDescription": "Profil fotoğrafını seçmek için fotoğraf arşivine erişmemiz gerekiyor.",
-        "NSPhotoLibraryAddUsageDescription": "Profil fotoğrafını arşive kaydedebilmemiz için izin gerekir.",
+        "CFBundleDisplayName": "Rezvix",
+        "NSCameraUsageDescription": "See localized strings",
+        "NSLocationWhenInUseUsageDescription": "See localized strings",
+        "NSUserNotificationsUsageDescription": "See localized strings",
+        "NSPhotoLibraryUsageDescription": "See localized strings",
+        "NSPhotoLibraryAddUsageDescription": "See localized strings",
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "13"
+      "buildNumber": "18"
     },
     "android": {
       "package": "com.rezzy.app",
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "NOTIFICATIONS",
-        "CAMERA"
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/adaptive-icon.png",
@@ -52,7 +57,7 @@
           ]
         }
       ],
-      "versionCode": 12
+      "versionCode": 18
     },
     "web": {
       "favicon": "./src/assets/favicon.png"
@@ -62,8 +67,9 @@
       "expo-notifications",
       "expo-secure-store",
       "expo-font",
-      "expo-web-browser"
-        ],
+      "expo-web-browser",
+      "./plugins/localized-infoplist.js"
+    ],
     "extra": {
       "EXPO_PUBLIC_STRIPE_PK": "pk_live_51SVWgyGwmM7e2NWE4qENGfGpXCQCfFTng1csChRVGe9toXDsrEONRi66Xg98XJrzlZWkfkl3n5TeaBMkICF0SI7f00yEFrQcRE",
       "googleClientIdAndroid": "323726747494-vdkp19mnbd5u77pb45snhnr6o1ud56pi.apps.googleusercontent.com",

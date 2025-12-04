@@ -1,18 +1,17 @@
 // src/screens/QrScanScreen.tsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   StyleSheet,
   Text,
   TouchableOpacity,
   Alert,
-  TextInput,
-  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { CameraView, useCameraPermissions, CameraType } from "expo-camera";
+import { CameraView, useCameraPermissions } from "expo-camera";
+import { useI18n } from "../i18n";
 
 type ParsedQr = {
   restaurantId?: string;
@@ -47,7 +46,8 @@ function parseQrData(raw: string): ParsedQr {
         restaurantId: qp.get("restaurantId") || qp.get("rid") || undefined,
         tableId: qp.get("tableId") || qp.get("tid") || undefined,
         sessionId: qp.get("sessionId") || qp.get("sid") || undefined,
-        reservationId: qp.get("reservationId") || qp.get("resId") || undefined,
+        reservationId:
+          qp.get("reservationId") || qp.get("resId") || undefined,
       };
     }
   } catch {}
@@ -55,7 +55,12 @@ function parseQrData(raw: string): ParsedQr {
   // 3) Basit format: "rid|tid|sid|resId"
   if (text.includes("|")) {
     const [rid, tid, sid, resId] = text.split("|").map((x) => x.trim());
-    return { restaurantId: rid, tableId: tid, sessionId: sid, reservationId: resId };
+    return {
+      restaurantId: rid,
+      tableId: tid,
+      sessionId: sid,
+      reservationId: resId,
+    };
   }
 
   // 4) sadece restaurantId geldiyse:
@@ -67,14 +72,10 @@ function parseQrData(raw: string): ParsedQr {
 export default function QrScanScreen() {
   const nav = useNavigation<any>();
   const insets = useSafeAreaInsets();
+  const { t } = useI18n();
 
   const [permission, requestPermission] = useCameraPermissions();
-
   const [scanned, setScanned] = useState(false);
-
-  // Fallback için manuel inputlar
-  const [manualRestaurantId, setManualRestaurantId] = useState("");
-  const [manualTableId, setManualTableId] = useState("");
 
   const onBarCodeScanned = ({ data }: { data: string }) => {
     if (scanned) return;
@@ -83,7 +84,10 @@ export default function QrScanScreen() {
     const parsed = parseQrData(data);
 
     if (!parsed.restaurantId) {
-      Alert.alert("QR okunamadı", "Restoran bilgisi bulunamadı.");
+      Alert.alert(
+        t("qrScan.invalidQrTitle"),
+        t("qrScan.invalidQrMessage")
+      );
       setTimeout(() => setScanned(false), 800);
       return;
     }
@@ -99,90 +103,58 @@ export default function QrScanScreen() {
 
   const padTop = Math.max(insets.top, 12);
 
-  if (Platform.OS === "ios" && !permission?.granted) {
-    // retain manual mode for simulators
-    return (
-      <View style={[styles.center, { paddingTop: padTop }]}>
-        <Ionicons name="qr-code-outline" size={64} color="#7B2C2C" />
-        <Text style={{ marginTop: 10, fontWeight: "800", fontSize: 17 }}>
-          QR tarama bu build'de desteklenmiyor
-        </Text>
-        <Text style={{ marginTop: 6, color: "#666", textAlign: "center" }}>
-          Simülatör/Expo Go'da kameradan QR okuyamayız.{"\n"}
-          Aşağıdan restoran ve masa ID girip menüyü açabilirsin.
-        </Text>
+  // Ekran her açıldığında, izin yoksa iste
+  useEffect(() => {
+    if (!permission) return;
+    if (!permission.granted) {
+      requestPermission();
+    }
+  }, [permission, requestPermission]);
 
-        <View style={{ width: "100%", marginTop: 14, gap: 8 }}>
-          <TextInput
-            placeholder="restaurantId (24 karakter)"
-            value={manualRestaurantId}
-            onChangeText={setManualRestaurantId}
-            autoCapitalize="none"
-            style={styles.input}
-          />
-          <TextInput
-            placeholder="tableId (opsiyonel)"
-            value={manualTableId}
-            onChangeText={setManualTableId}
-            autoCapitalize="none"
-            style={styles.input}
-          />
-
-          <TouchableOpacity
-            onPress={() => {
-              if (!manualRestaurantId?.trim()) {
-                Alert.alert("Eksik bilgi", "restaurantId girmen lazım.");
-                return;
-              }
-              nav.navigate("QR Menü", {
-                restaurantId: manualRestaurantId.trim(),
-                tableId: manualTableId.trim() || null,
-                sessionId: null,
-                reservationId: null,
-                _dev: true,
-              });
-            }}
-            style={styles.primaryBtn}
-          >
-            <Ionicons name="restaurant-outline" size={18} color="#fff" />
-            <Text style={styles.primaryBtnText}>Menüyü Aç</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
-
+  // Henüz permission objesi gelmediyse
   if (!permission) {
     return (
       <View style={[styles.center, { paddingTop: padTop }]}>
-        <Text>Kamera izni isteniyor…</Text>
+        <Text>{t("qrScan.permissionCheckingText")}</Text>
       </View>
     );
   }
 
+  // İzin kalıcı olarak reddedildiyse / şu an granted değilse
   if (!permission.granted) {
     return (
       <View style={[styles.center, { paddingTop: padTop }]}>
         <Ionicons name="alert-circle-outline" size={48} color="#7B2C2C" />
-        <Text style={{ marginTop: 8, fontWeight: "700" }}>
-          Kamera izni gerekli.
+        <Text style={{ marginTop: 8, fontWeight: "700", fontSize: 16 }}>
+          {t("qrScan.cameraRequiredTitle")}
         </Text>
+        <Text style={{ marginTop: 6, color: "#666", textAlign: "center" }}>
+          {t("qrScan.cameraRequiredMessage")}
+        </Text>
+
         <TouchableOpacity onPress={requestPermission} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>İzin Ver</Text>
+          <Text style={styles.backBtnText}>{t("qrScan.askPermissionBtn")}</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => nav.goBack()} style={[styles.backBtn, { marginTop: 10 }]}>
-          <Text style={styles.backBtnText}>Geri</Text>
+
+        <TouchableOpacity
+          onPress={() => nav.goBack()}
+          style={[styles.backBtn, { marginTop: 10 }]}
+        >
+          <Text style={styles.backBtnText}>{t("qrScan.back")}</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
+  // İzin verilmiş: tam ekran kamera + overlay
   return (
     <View style={styles.screen}>
       <CameraView
         style={StyleSheet.absoluteFillObject}
-        facing={"back"}
+        facing="back"
         onBarcodeScanned={onBarCodeScanned}
+        // Sadece QR kodları için kısıtlama istersen:
+        // barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
       />
 
       {/* Üst bar */}
@@ -190,14 +162,14 @@ export default function QrScanScreen() {
         <TouchableOpacity onPress={() => nav.goBack()} style={styles.topBtn}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.topTitle}>QR Tara</Text>
+        <Text style={styles.topTitle}>{t("qrScan.title")}</Text>
         <View style={{ width: 36 }} />
       </View>
 
       {/* Scan frame */}
       <View style={styles.overlay}>
         <View style={styles.frame} />
-        <Text style={styles.hint}>Masadaki QR kodu okutun</Text>
+        <Text style={styles.hint}>{t("qrScan.scanHint")}</Text>
 
         {scanned && (
           <TouchableOpacity
@@ -205,7 +177,7 @@ export default function QrScanScreen() {
             style={styles.rescanBtn}
           >
             <Ionicons name="scan-outline" size={18} color="#fff" />
-            <Text style={styles.rescanText}>Tekrar Tara</Text>
+            <Text style={styles.rescanText}>{t("qrScan.rescan")}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -223,32 +195,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
 
-  input: {
-    borderWidth: 1,
-    borderColor: "#E6E6E6",
-    backgroundColor: "#FAFAFA",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-  },
-
-  primaryBtn: {
-    marginTop: 6,
-    flexDirection: "row",
-    gap: 8,
-    backgroundColor: "#7B2C2C",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  primaryBtnText: { color: "#fff", fontWeight: "800", fontSize: 14 },
-
   topBar: {
     position: "absolute",
-    left: 0, right: 0, top: 0,
+    left: 0,
+    right: 0,
+    top: 0,
     paddingHorizontal: 16,
     paddingBottom: 10,
     flexDirection: "row",
@@ -257,18 +208,24 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.55)",
   },
   topBtn: {
-    width: 36, height: 36, borderRadius: 18,
-    alignItems: "center", justifyContent: "center",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: "rgba(255,255,255,0.12)",
   },
   topTitle: { color: "#fff", fontSize: 18, fontWeight: "800" },
 
   overlay: {
-    flex: 1, alignItems: "center", justifyContent: "center",
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: "rgba(0,0,0,0.25)",
   },
   frame: {
-    width: 250, height: 250,
+    width: 250,
+    height: 250,
     borderRadius: 18,
     borderWidth: 2,
     borderColor: "#fff",
@@ -289,7 +246,7 @@ const styles = StyleSheet.create({
   rescanText: { color: "#fff", fontWeight: "800" },
 
   backBtn: {
-    marginTop: 10,
+    marginTop: 16,
     backgroundColor: "#7B2C2C",
     paddingHorizontal: 18,
     paddingVertical: 10,
