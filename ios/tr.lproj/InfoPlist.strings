@@ -1,0 +1,5 @@
+"NSCameraUsageDescription" = "QR kodlarını taramak için kamera erişimine ihtiyacımız var.";
+"NSLocationWhenInUseUsageDescription" = "Yakındaki restoranları gösterebilmek için konum bilginize ihtiyacımız var.";
+"NSUserNotificationsUsageDescription" = "Bildirimler, rezervasyon güncellemeleri için gereklidir.";
+"NSPhotoLibraryUsageDescription" = "Profil fotoğrafını seçebilmek için fotoğraf arşivine erişmemiz gerekiyor.";
+"NSPhotoLibraryAddUsageDescription" = "Profil fotoğrafını kaydedebilmek için izin gerekir.";
