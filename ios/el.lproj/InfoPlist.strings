@@ -1,0 +1,5 @@
+"NSCameraUsageDescription" = "Χρειαζόμαστε πρόσβαση στην κάμερα για σάρωση QR κωδίκων.";
+"NSLocationWhenInUseUsageDescription" = "Χρησιμοποιούμε την τοποθεσία σας για να δείξουμε κοντινά εστιατόρια.";
+"NSUserNotificationsUsageDescription" = "Οι ειδοποιήσεις απαιτούνται για ενημερώσεις κρατήσεων.";
+"NSPhotoLibraryUsageDescription" = "Χρειαζόμαστε πρόσβαση για επιλογή φωτογραφίας προφίλ.";
+"NSPhotoLibraryAddUsageDescription" = "Χρειαζόμαστε άδεια για αποθήκευση της φωτογραφίας.";
