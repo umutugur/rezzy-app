@@ -20,12 +20,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useStripe } from "@stripe/stripe-react-native";
 
 import { getRestaurant, type Restaurant as ApiRestaurant } from "../api/restaurants";
-import {
-  rpListCategories,
-  rpListItems,
-  type MenuCategory,
-  type MenuItem as ALaCarteItem,
-} from "../api/menu";
+import { type MenuCategory, type MenuItem as ALaCarteItem } from "../api/menu";
+import { rpGetPublicResolvedMenu } from "../api/menuResolved";
 import {
   openOrderSession,
   createOrder,
@@ -33,6 +29,7 @@ import {
   listSessionOrders, // ✅ adisyon için
   type StripeIntentResponse,
   type OrderDto, // ✅ yoksa any yapabilirsin
+  cancelOrder
 } from "../api/orders";
 import { createTableServiceRequest } from "../api/tableService";
 import { useQrCart, selectCount, selectTotal } from "../store/useQrCart";
@@ -320,23 +317,39 @@ export default function QrMenuScreen() {
     if (!restaurantId) return;
     setMenuLoading(true);
     try {
-      const cats = await rpListCategories(restaurantId);
+      const resolved: any = await rpGetPublicResolvedMenu(restaurantId);
+
+      const cats: ALaCarteCategory[] = Array.isArray(resolved?.categories)
+        ? resolved.categories
+        : Array.isArray(resolved?.cats)
+        ? resolved.cats
+        : [];
+
+      const itemsAll: ALaCarteItem[] = Array.isArray(resolved?.items)
+        ? resolved.items
+        : Array.isArray(resolved?.menuItems)
+        ? resolved.menuItems
+        : [];
+
       const byCat: ALaCarteItemsByCat = {};
-      await Promise.all(
-        (cats || []).map(async (c) => {
-          try {
-            const its = await rpListItems(restaurantId, { categoryId: c._id });
-            const activeIts = (its || []).filter((x) => x?.isActive ?? true);
-            if (activeIts.length) byCat[c._id] = activeIts;
-          } catch {
-            // ignore item-level errors
-          }
-        })
-      );
+
+      for (const it of itemsAll) {
+        const catId = String((it as any)?.categoryId ?? "");
+        if (!catId) continue;
+
+        // Keep behavior consistent with existing screen:
+        // - category must be active
+        // - item must be active
+        if (!((it as any)?.isActive ?? true)) continue;
+
+        if (!byCat[catId]) byCat[catId] = [];
+        byCat[catId].push(it);
+      }
 
       const nonEmptyCats = (cats || []).filter(
-        (c) => !!byCat[c._id]?.length && (c.isActive ?? true)
+        (c) => (c?.isActive ?? true) && !!byCat[String(c._id)]?.length
       );
+
       setMenuCats(nonEmptyCats);
       setMenuItemsByCat(byCat);
       setExpandedCatId(nonEmptyCats[0]?._id ?? null);

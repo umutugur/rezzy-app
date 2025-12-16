@@ -170,16 +170,27 @@ export default function ReservationStep3Screen() {
     };
   }, [restaurantId, autoMethodSet]);
 
-  /** ✅ selections içinden gerçek/valid menuId olanları ayıkla */
+  /** ✅ selections içinden gerçek/valid + aktif menuId olanları ayıkla */
   const cleanedSelections = useMemo(() => {
     const arr = (selections || []) as any[];
+
+    // ✅ Restoranın aktif fix menü id’leri (backend tarafındaki doğrulamayla aynı hedef)
+    const activeMenuIds = new Set<string>(
+      (restaurant?.menus || [])
+        .filter((m) => m && m.isActive !== false)
+        .map((m) => String(m?._id || ""))
+        .filter(Boolean)
+    );
+
     return arr
       .filter((s) => isOid(s?.menuId))
       .map((s) => ({
         person: Number(s?.person) || 0,
         menuId: String(s.menuId),
-      }));
-  }, [selections]);
+      }))
+      // ✅ Menü bu restoranda yoksa / pasifse payload’a sokma
+      .filter((s) => (activeMenuIds.size ? activeMenuIds.has(s.menuId) : true));
+  }, [selections, restaurant?.menus]);
 
   /** Fix menü seçildi mi? */
   const hasFixMenuSelection = cleanedSelections.length > 0;
@@ -285,6 +296,7 @@ export default function ReservationStep3Screen() {
       type: typeof restaurantId,
       dateTimeISO,
       partySize,
+      rawSelections: selections,
       selections: effectiveSelections,
     });
 

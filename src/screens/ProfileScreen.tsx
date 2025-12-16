@@ -28,6 +28,7 @@ import { useNavigation } from "@react-navigation/native";
 import { listFavorites, removeFavorite, type FavoriteRestaurant } from "../api/favorites";
 import { useRegion } from "../store/useRegion";
 import { useI18n } from "../i18n";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type RegionCode = "CY" | "UK";
 type LangCode = "tr" | "en" | "ru" | "el";
@@ -55,6 +56,7 @@ const Money = ({ n }: { n?: number }) => (
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
   const { user, updateUser, clear } = useAuth();
+  const insets = useSafeAreaInsets();
   const { region, language, setRegion, setLanguage } = useRegion();
   const { t, language: i18nLanguage, locale } = useI18n();
 
@@ -885,7 +887,7 @@ export default function ProfileScreen() {
           <AppPrefs />
         </Section>
       )}
-      {/* Bölge / Dil seçim bottom sheet */}
+     {/* Bölge / Dil seçim bottom sheet */}
       {selectorOpen && (
         <Modal
           visible={!!selectorOpen}
@@ -908,7 +910,7 @@ export default function ProfileScreen() {
                 right: 0,
                 bottom: 0,
                 padding: 16,
-                paddingBottom: 24,
+                paddingBottom: 24 + (insets?.bottom || 0),
                 borderTopLeftRadius: 18,
                 borderTopRightRadius: 18,
                 backgroundColor: "#fff",

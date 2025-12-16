@@ -16,6 +16,7 @@ import {
   Pressable,
   Animated,
   Modal,
+  Linking,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -41,12 +42,8 @@ import { useAuth } from "../store/useAuth";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useI18n } from "../i18n";
-import {
-  rpListCategories,
-  rpListItems,
-  type MenuCategory,
-  type MenuItem as ALaCarteItem,
-} from "../api/menu";
+import { type MenuCategory, type MenuItem as ALaCarteItem } from "../api/menu";
+import { rpGetPublicResolvedMenu } from "../api/menuResolved";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const H_PADDING = 16;
@@ -136,26 +133,56 @@ export default function RestaurantDetailScreen() {
   const loadALaCarteMenu = React.useCallback(async () => {
     if (!restaurantId) return;
     setMenuLoading(true);
-    try {
-      const cats = await rpListCategories(restaurantId);
-      // load items per category
-      const byCat: ALaCarteItemsByCat = {};
-      await Promise.all(
-        (cats || []).map(async (c) => {
-          try {
-            const its = await rpListItems(restaurantId, { categoryId: c._id });
-            const activeIts = (its || []).filter((x) => (x?.isActive ?? true));
-            if (activeIts.length) byCat[c._id] = activeIts;
-          } catch {
-            // ignore single category fetch errors
-          }
-        })
-      );
 
-      const nonEmptyCats = (cats || []).filter((c) => !!byCat[c._id]?.length && (c.isActive ?? true));
-      setMenuCats(nonEmptyCats);
+    try {
+      const resolved = await rpGetPublicResolvedMenu(restaurantId);
+
+      const catsRaw = Array.isArray((resolved as any)?.categories)
+        ? (resolved as any).categories
+        : [];
+
+      const byCat: ALaCarteItemsByCat = {};
+      const cats: ALaCarteCategory[] = [];
+
+      const pickCatId = (c: any) => String(c?._id || c?.id || c?.orgCategoryId || "");
+      const pickItemId = (it: any) => String(it?._id || it?.id || it?.orgItemId || "");
+
+      for (const c of catsRaw) {
+        const catId = pickCatId(c);
+        const itemsRaw = Array.isArray(c?.items) ? c.items : [];
+        const activeItems = itemsRaw.filter((x: any) => (x?.isActive ?? true));
+
+        // Mevcut UI davranışını koru: boş kategori gösterme
+        if (!catId || !(c?.isActive ?? true) || activeItems.length === 0) continue;
+
+        // MenuItem shape'ine map
+        byCat[catId] = activeItems.map((it: any) => ({
+          _id: pickItemId(it),
+          title: it.title,
+          description: it.description ?? undefined,
+          price: Number(it.price) || 0,
+          photoUrl: it.photoUrl ?? undefined,
+          tags: Array.isArray(it.tags) ? it.tags : [],
+          order: it.order ?? 0,
+          isActive: it.isActive ?? true,
+          isAvailable: it.isAvailable ?? true,
+        })) as any;
+
+        cats.push({
+          _id: catId,
+          title: c.title,
+          description: c.description ?? undefined,
+          order: c.order ?? 0,
+          isActive: c.isActive ?? true,
+        } as any);
+      }
+
+      // Varsa order'a göre sırala (yoksa mevcut sıralama zaten korunur)
+      cats.sort((a: any, b: any) => Number(a.order || 0) - Number(b.order || 0));
+
+      setMenuCats(cats);
       setMenuItemsByCat(byCat);
-      setExpandedCatId(nonEmptyCats[0]?._id ?? null);
+      setExpandedCatId(cats[0]?._id ?? null);
       setExpandAllMenuCats(false);
     } catch (e: any) {
       setMenuCats([]);
@@ -201,6 +228,24 @@ export default function RestaurantDetailScreen() {
       }
     } catch {}
     Alert.alert(title, body);
+  }, []);
+
+  const callPhone = React.useCallback((phone?: string) => {
+    const raw = String(phone ?? "").trim();
+    if (!raw) return;
+
+    // Keep digits and leading + only
+    const cleaned = raw.replace(/(?!^\+)[^\d]/g, "");
+    const url = `tel:${cleaned}`;
+
+    Linking.canOpenURL(url)
+      .then((supported) => {
+        if (supported) return Linking.openURL(url);
+        Alert.alert("Hata", "Telefon araması başlatılamadı.");
+      })
+      .catch(() => {
+        Alert.alert("Hata", "Telefon araması başlatılamadı.");
+      });
   }, []);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -332,7 +377,7 @@ export default function RestaurantDetailScreen() {
     setSelectedSlot(s);
   };
 
-  const onContinue = async () => {
+const onContinue = async () => {
     if (!selectedSlot || !r) return;
 
     const [h, m] = selectedSlot.label.split(":");
@@ -363,7 +408,11 @@ export default function RestaurantDetailScreen() {
     setRestaurant(r._id);
     setDateTime(localDateTime);
     setParty(partySize);
-    nav.navigate("Rezervasyon - Menü");
+    if (menus.length > 0) {
+      nav.navigate("Rezervasyon - Menü");
+    } else {
+      nav.navigate("Rezervasyon - Özet");
+    }
   };
 
   const onPhotoScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -549,20 +598,14 @@ export default function RestaurantDetailScreen() {
           </View>
 
           {/* ✅ Fix Menüler (HER ZAMAN SABİT) */}
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Ionicons name="restaurant" size={22} color="#7B2C2C" />
-              <Text style={styles.sectionTitle}>
-                {t("restaurantDetail.fixedMenus")}
-              </Text>
-            </View>
-
-            {menus.length === 0 ? (
-              <View style={styles.emptyStateSmall}>
-                <Ionicons name="fast-food-outline" size={32} color="#999999" />
-                <Text style={styles.muted}>{t("restaurantDetail.noMenu")}</Text>
+          {menus.length > 0 && (
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Ionicons name="restaurant" size={22} color="#7B2C2C" />
+                <Text style={styles.sectionTitle}>
+                  {t("restaurantDetail.fixedMenus")}
+                </Text>
               </View>
-            ) : (
               <View style={{ gap: 12 }}>
                 {menus.map((m, idx) => (
                   <View key={`${m._id || m.title}-${idx}`} style={styles.menuCard}>
@@ -586,18 +629,18 @@ export default function RestaurantDetailScreen() {
                   </View>
                 ))}
               </View>
-            )}
-          </View>
+            </View>
+          )}
              {/* Uygun Saat Bul */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Ionicons name="time" size={22} color="#7B2C2C" />
-              <Text style={styles.sectionTitle}>Uygun Saat Bul</Text>
+              <Text style={styles.sectionTitle}>{tt("restaurantDetail.findSlot", "Uygun Saat Bul")}</Text>
             </View>
 
             <View style={styles.controlsContainer}>
               <View style={styles.controlCard}>
-                <Text style={styles.controlLabel}>Tarih</Text>
+                <Text style={styles.controlLabel}>{tt("restaurantDetail.date", "Tarih")}</Text>
                 <View style={styles.dateControls}>
                   <Pressable
                     onPress={() => setDate(dayjs(date).subtract(1, "day").format("YYYY-MM-DD"))}
@@ -622,7 +665,7 @@ export default function RestaurantDetailScreen() {
               </View>
 
               <View style={styles.controlCard}>
-                <Text style={styles.controlLabel}>Kişi Sayısı</Text>
+                <Text style={styles.controlLabel}>{tt("restaurantDetail.partySize", "Kişi Sayısı")}</Text>
                 <View style={styles.partyControls}>
                   <Pressable
                     onPress={() => setPartySize((p) => Math.max(1, p - 1))}
@@ -646,7 +689,7 @@ export default function RestaurantDetailScreen() {
             {fetchingSlots ? (
               <View style={styles.slotsLoading}>
                 <ActivityIndicator color="#7B2C2C" />
-                <Text style={styles.slotsLoadingText}>Uygun saatler aranıyor…</Text>
+                <Text style={styles.slotsLoadingText}>{tt("restaurantDetail.slotsSearching", "Uygun saatler aranıyor…")}</Text>
               </View>
             ) : (
               <FlatList
@@ -676,7 +719,7 @@ export default function RestaurantDetailScreen() {
                 ListEmptyComponent={
                   <View style={styles.emptyStateSmall}>
                     <Ionicons name="calendar-outline" size={32} color="#999999" />
-                    <Text style={styles.muted}>Uygun saat bulunamadı.</Text>
+                    <Text style={styles.muted}>{tt("restaurantDetail.noSlots", "Uygun saat bulunamadı.")}</Text>
                   </View>
                 }
               />
@@ -892,12 +935,16 @@ export default function RestaurantDetailScreen() {
               <Ionicons name="call" size={22} color="#7B2C2C" />
               <Text style={styles.sectionTitle}>{t("restaurantDetail.contact")}</Text>
             </View>
-            <View style={styles.contactItem}>
+            <Pressable
+              style={styles.contactItem}
+              onPress={() => callPhone((r as any)?.phone)}
+              disabled={!((r as any)?.phone)}
+            >
               <Ionicons name="call-outline" size={18} color="#666666" />
               <Text style={styles.contactText}>
-                {r.phone || t("restaurantDetail.noPhone")}
+                {(r as any)?.phone || t("restaurantDetail.noPhone")}
               </Text>
-            </View>
+            </Pressable>
             <View style={styles.contactItem}>
               <Ionicons name="location-outline" size={18} color="#666666" />
               <Text style={styles.contactText}>
