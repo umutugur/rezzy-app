@@ -4,7 +4,7 @@
     "slug": "rezzy-app",
     "scheme": "com.rezzy.app",
     "owner": "umutugur",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./src/assets/icon.png",
     "userInterfaceStyle": "light",
@@ -27,7 +27,7 @@
         "NSPhotoLibraryAddUsageDescription": "See localized strings",
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "19"
+      "buildNumber": "20"
     },
     "android": {
       "package": "com.rezzy.app",
@@ -58,7 +58,7 @@
           ]
         }
       ],
-      "versionCode": 21,
+      "versionCode": 22,
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyBTZ7evrDuZfm81QnzFYbyYTgyCmyL6XLQ"
