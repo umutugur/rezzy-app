@@ -17,6 +17,7 @@ import {
   Animated,
   Modal,
   Linking,
+  Platform,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -247,6 +248,69 @@ export default function RestaurantDetailScreen() {
         Alert.alert("Hata", "Telefon araması başlatılamadı.");
       });
   }, []);
+
+  type Coords = { lat: number; lng: number };
+
+  const openInMaps = React.useCallback(
+    async (opts: { googleMapsUrl?: string | null; coords?: Coords | null; label?: string }) => {
+      const googleMapsUrl = String(opts.googleMapsUrl ?? "").trim();
+      if (googleMapsUrl) {
+        try {
+          const can = await Linking.canOpenURL(googleMapsUrl);
+          if (can) {
+            await Linking.openURL(googleMapsUrl);
+            return;
+          }
+        } catch {
+          // fall through
+        }
+      }
+
+      const c = opts.coords;
+      if (!c || !Number.isFinite(c.lat) || !Number.isFinite(c.lng)) {
+        Alert.alert("Konum bulunamadı", "Bu restoran için harita bilgisi yok.");
+        return;
+      }
+
+      const label = encodeURIComponent(opts.label || "Restaurant");
+      const url =
+        Platform.OS === "ios"
+          ? `http://maps.apple.com/?ll=${c.lat},${c.lng}&q=${label}`
+          : `geo:${c.lat},${c.lng}?q=${c.lat},${c.lng}(${label})`;
+
+      try {
+        const can = await Linking.canOpenURL(url);
+        if (!can) {
+          Alert.alert("Açılamadı", "Harita uygulaması açılamadı.");
+          return;
+        }
+        await Linking.openURL(url);
+      } catch {
+        Alert.alert("Açılamadı", "Harita uygulaması açılamadı.");
+      }
+    },
+    []
+  );
+
+  const restaurantCoords: Coords | null = useMemo(() => {
+    const rr: any = r;
+
+    // Preferred: direct coordinates object (already {lat,lng} on some responses)
+    const direct = rr?.coordinates;
+    if (direct && Number.isFinite(direct.lat) && Number.isFinite(direct.lng)) {
+      return { lat: Number(direct.lat), lng: Number(direct.lng) };
+    }
+
+    // Fallback: GeoJSON Point: { type: 'Point', coordinates: [lng, lat] }
+    const geo = rr?.location?.coordinates;
+    if (Array.isArray(geo) && geo.length >= 2) {
+      const lng = Number(geo[0]);
+      const lat = Number(geo[1]);
+      if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
+    }
+
+    return null;
+  }, [r]);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
@@ -945,12 +1009,22 @@ const onContinue = async () => {
                 {(r as any)?.phone || t("restaurantDetail.noPhone")}
               </Text>
             </Pressable>
-            <View style={styles.contactItem}>
+            <Pressable
+              style={styles.contactItem}
+              onPress={() =>
+                openInMaps({
+                  googleMapsUrl: (r as any)?.googleMapsUrl,
+                  coords: restaurantCoords,
+                  label: r?.name,
+                })
+              }
+              disabled={!(restaurantCoords || (r as any)?.googleMapsUrl)}
+            >
               <Ionicons name="location-outline" size={18} color="#666666" />
               <Text style={styles.contactText}>
                 {r.address || t("restaurantDetail.noAddress")}
               </Text>
-            </View>
+            </Pressable>
           </View>
         </Animated.View>
       </ScrollView>

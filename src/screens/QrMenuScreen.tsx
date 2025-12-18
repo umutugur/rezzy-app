@@ -29,7 +29,7 @@ import {
   listSessionOrders, // ✅ adisyon için
   type StripeIntentResponse,
   type OrderDto, // ✅ yoksa any yapabilirsin
-  cancelOrder
+  cancelOrder,
 } from "../api/orders";
 import { createTableServiceRequest } from "../api/tableService";
 import { useQrCart, selectCount, selectTotal } from "../store/useQrCart";
@@ -143,6 +143,8 @@ export default function QrMenuScreen() {
       return;
     }
 
+    let createdOrderId: string | null = null;
+
     try {
       setCreating(true);
 
@@ -166,6 +168,51 @@ export default function QrMenuScreen() {
           sid = null;
         }
       }
+
+      // ✅ Pay at venue: direkt order oluştur
+      if (methodToUse === "pay_at_venue") {
+        const order = await createOrder({
+          restaurantId,
+          tableId: tableId || undefined,
+          sessionId: sid || undefined,
+          reservationId: reservationId || undefined,
+          items: items.map((x) => ({
+            itemId: x.itemId,
+            title: x.title,
+            qty: x.qty,
+            price: x.price,
+          })),
+          notes: notes?.trim() || undefined,
+          paymentMethod: methodToUse,
+        });
+
+        const orderId =
+          (order as any)?._id ||
+          (order as any)?.id ||
+          (order as any)?.orderId ||
+          (order as any)?.order?._id;
+
+        if (!orderId) {
+          console.log("[QrMenu] createOrder response:", order);
+          Alert.alert(t("common.error"), t("qrMenu.orderIdMissing"));
+          return;
+        }
+
+        Alert.alert(t("qrMenu.orderSuccessTitle"), t("qrMenu.orderSuccessMessage"));
+        clearCart();
+
+        nav.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: token ? "Tabs" : "TabsGuest" }],
+          })
+        );
+
+        return;
+      }
+
+      // ✅ Card: önce order oluştur ama ödeme başarısızsa iptal et
+      setSheetBusy(true);
 
       const order = await createOrder({
         restaurantId,
@@ -194,68 +241,73 @@ export default function QrMenuScreen() {
         return;
       }
 
-      if (methodToUse === "card") {
-        setSheetBusy(true);
+      createdOrderId = String(orderId);
 
-        const setup: StripeIntentResponse = await createOrderStripeIntent(orderId, {
-          saveCard: true,
-        });
+      const setup: StripeIntentResponse = await createOrderStripeIntent(createdOrderId, {
+        saveCard: true,
+      });
 
-        if (!setup?.paymentIntentClientSecret || !setup?.customerId || !setup?.ephemeralKey) {
-          Alert.alert(
-            t("qrMenu.stripeMissingTitle"),
-            t("qrMenu.stripeMissingMessage")
-          );
-          return;
-        }
-
-        const { paymentIntentClientSecret, customerId, ephemeralKey } = setup;
-
-        const { error: initError } = await initPaymentSheet({
-          customerId,
-          customerEphemeralKeySecret: ephemeralKey,
-          paymentIntentClientSecret,
-          merchantDisplayName: "Rezvix",
-          allowsDelayedPaymentMethods: false,
-          style: "alwaysLight",
-          appearance: {
-            colors: {
-              primary: C.primary,
-              background: C.card,
-              componentBackground: C.card,
-              componentBorder: C.border,
-              componentText: C.text,
-              primaryText: "#FFFFFF",
-              secondaryText: C.muted,
-              placeholderText: "#9CA3AF",
-              icon: C.primary,
-            },
-            shapes: { borderRadius: 12, borderWidth: 1 },
-            primaryButton: {
-              colors: { background: C.primary, text: "#FFFFFF", border: C.primary },
-              shapes: { borderRadius: 16 },
-            },
-          },
-        });
-
-        if (initError) {
-          Alert.alert(t("qrMenu.stripeInitErrorTitle"), initError.message);
-          return;
-        }
-
-        const { error: presentError } = await presentPaymentSheet();
-        if (presentError) {
-          if (presentError.code !== "Canceled") {
-            Alert.alert(t("qrMenu.stripeFailTitle"), presentError.message);
-          }
-          return;
-        }
+      if (!setup?.paymentIntentClientSecret || !setup?.customerId || !setup?.ephemeralKey) {
+        Alert.alert(t("qrMenu.stripeMissingTitle"), t("qrMenu.stripeMissingMessage"));
+        // ödeme bilgileri eksikse order'ı iptal et
+        try {
+          await cancelOrder(createdOrderId);
+        } catch {}
+        return;
       }
 
-      Alert.alert(
-        t("qrMenu.orderSuccessTitle"),
-        t("qrMenu.orderSuccessMessage")
-      );
+      const { paymentIntentClientSecret, customerId, ephemeralKey } = setup;
+
+      const { error: initError } = await initPaymentSheet({
+        customerId,
+        customerEphemeralKeySecret: ephemeralKey,
+        paymentIntentClientSecret,
+        merchantDisplayName: "Rezvix",
+        allowsDelayedPaymentMethods: false,
+        style: "alwaysLight",
+        appearance: {
+          colors: {
+            primary: C.primary,
+            background: C.card,
+            componentBackground: C.card,
+            componentBorder: C.border,
+            componentText: C.text,
+            primaryText: "#FFFFFF",
+            secondaryText: C.muted,
+            placeholderText: "#9CA3AF",
+            icon: C.primary,
+          },
+          shapes: { borderRadius: 12, borderWidth: 1 },
+          primaryButton: {
+            colors: { background: C.primary, text: "#FFFFFF", border: C.primary },
+            shapes: { borderRadius: 16 },
+          },
+        },
+      });
+
+      if (initError) {
+        Alert.alert(t("qrMenu.stripeInitErrorTitle"), initError.message);
+        try {
+          await cancelOrder(createdOrderId);
+        } catch {}
+        return;
+      }
+
+      const { error: presentError } = await presentPaymentSheet();
+      if (presentError) {
+        // iptal veya hata: order iptal
+        try {
+          await cancelOrder(createdOrderId);
+        } catch {}
+
+        if (presentError.code !== "Canceled") {
+          Alert.alert(t("qrMenu.stripeFailTitle"), presentError.message);
+        }
+        return;
+      }
+
+      // ✅ ödeme başarılı: başarı UI
+      Alert.alert(t("qrMenu.orderSuccessTitle"), t("qrMenu.orderSuccessMessage"));
       clearCart();
 
       nav.dispatch(
@@ -265,6 +317,13 @@ export default function QrMenuScreen() {
         })
       );
     } catch (e: any) {
+      // beklenmeyen hata: eğer order oluştuysa iptal etmeyi dene
+      if (createdOrderId) {
+        try {
+          await cancelOrder(createdOrderId);
+        } catch {}
+      }
+
       Alert.alert(
         t("common.error"),
         e?.response?.data?.message || e?.message || t("qrMenu.orderErrorFallback")
@@ -325,30 +384,49 @@ export default function QrMenuScreen() {
         ? resolved.cats
         : [];
 
-      const itemsAll: ALaCarteItem[] = Array.isArray(resolved?.items)
-        ? resolved.items
-        : Array.isArray(resolved?.menuItems)
-        ? resolved.menuItems
-        : [];
-
       const byCat: ALaCarteItemsByCat = {};
 
-      for (const it of itemsAll) {
-        const catId = String((it as any)?.categoryId ?? "");
-        if (!catId) continue;
+      // Prefer nested items: categories[].items (new contract)
+      if (cats.length > 0 && (cats as any[]).some((c) => Array.isArray((c as any)?.items))) {
+        for (const c of cats as any[]) {
+          const catId = String(c?._id ?? "");
+          if (!catId) continue;
+          if (!((c as any)?.isActive ?? true)) continue;
 
-        // Keep behavior consistent with existing screen:
-        // - category must be active
-        // - item must be active
-        if (!((it as any)?.isActive ?? true)) continue;
+          const itemsRaw: any[] = Array.isArray(c?.items) ? c.items : [];
+          const itemsActive: ALaCarteItem[] = itemsRaw.filter((it) => ((it as any)?.isActive ?? true));
+          if (!itemsActive.length) continue;
 
-        if (!byCat[catId]) byCat[catId] = [];
-        byCat[catId].push(it);
+          // Keep order stable if provided
+          byCat[catId] = itemsActive.slice().sort((a: any, b: any) => Number(a?.order ?? 0) - Number(b?.order ?? 0));
+        }
+      } else {
+        // Back-compat: flat items array with categoryId
+        const itemsAll: ALaCarteItem[] = Array.isArray(resolved?.items)
+          ? resolved.items
+          : Array.isArray(resolved?.menuItems)
+          ? resolved.menuItems
+          : [];
+
+        for (const it of itemsAll) {
+          const catId = String((it as any)?.categoryId ?? "");
+          if (!catId) continue;
+          if (!((it as any)?.isActive ?? true)) continue;
+
+          if (!byCat[catId]) byCat[catId] = [];
+          byCat[catId].push(it);
+        }
+
+        // Sort within each category if order exists
+        for (const k of Object.keys(byCat)) {
+          byCat[k] = byCat[k].slice().sort((a: any, b: any) => Number(a?.order ?? 0) - Number(b?.order ?? 0));
+        }
       }
 
-      const nonEmptyCats = (cats || []).filter(
-        (c) => (c?.isActive ?? true) && !!byCat[String(c._id)]?.length
-      );
+      const nonEmptyCats = (cats || [])
+        .filter((c: any) => (c?.isActive ?? true) && !!byCat[String(c._id)]?.length)
+        .slice()
+        .sort((a: any, b: any) => Number(a?.order ?? 0) - Number(b?.order ?? 0));
 
       setMenuCats(nonEmptyCats);
       setMenuItemsByCat(byCat);
