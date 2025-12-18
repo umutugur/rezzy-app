@@ -452,7 +452,19 @@ export default function ProfileScreen() {
     );
   }
 
-  const isRestaurant = user?.role === "restaurant";
+  // ✅ Legacy role (user.role) artık her zaman "restaurant" olmayabilir.
+  // Multi-organization yapıda restoran erişimini restaurantMemberships üzerinden de tanıyoruz.
+  const restaurantMemberships = ((user as any)?.restaurantMemberships || []) as any[];
+  const hasRestaurantMembership = Array.isArray(restaurantMemberships) && restaurantMemberships.length > 0;
+
+  // Active restaurantId: legacy field -> membership.id -> membership.restaurantId fallback
+  const activeRestaurantId: string | null =
+    (user as any)?.restaurantId ||
+    (restaurantMemberships?.[0]?.id ?? null) ||
+    (restaurantMemberships?.[0]?.restaurantId ?? null);
+
+  const isRestaurant = user?.role === "restaurant" || hasRestaurantMembership;
+  const isAdmin = user?.role === "admin";
 
   /** durum → {label,color} */
   const statusMeta = (s: string) => {
@@ -882,7 +894,7 @@ export default function ProfileScreen() {
           </View>
         </Section>
       )}
-      {(user?.role === "admin" || user?.role === "restaurant") && (
+      {(isAdmin || isRestaurant) && (
         <Section title={t("profile.section.appPrefs")}>
           <AppPrefs />
         </Section>
@@ -1150,21 +1162,29 @@ export default function ProfileScreen() {
       )}
 
       {/* Yönetim Kısayolları */}
-      {(user?.role === "restaurant" || user?.role === "admin") && (
+      {(isRestaurant || isAdmin) && (
         <Section title={t("profile.section.adminShortcuts")}>
           <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap" }}>
-            {user?.role === "restaurant" && (
+            {isRestaurant && (
               <PrimaryButton
                 title={t("profile.shortcuts.restaurantPanel")}
-                onPress={() =>
+                onPress={() => {
+                  if (!activeRestaurantId) {
+                    showError(
+                      t("common.error"),
+                      t("profile.toast.noRestaurantMembership") ||
+                        "Bu kullanıcı için restoran erişimi bulunamadı. (restaurantId / restaurantMemberships boş)"
+                    );
+                    return;
+                  }
                   navigation.navigate("RestaurantPanel", {
                     screen: "RestaurantHub",
-                    params: { restaurantId: user?.restaurantId },
-                  })
-                }
+                    params: { restaurantId: activeRestaurantId },
+                  });
+                }}
               />
             )}
-            {user?.role === "admin" && (
+            {isAdmin && (
               <PrimaryButton
                 title={t("profile.shortcuts.adminPanel")}
                 onPress={() => navigation.navigate("AdminPanel")}
