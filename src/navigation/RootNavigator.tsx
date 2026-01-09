@@ -1,6 +1,6 @@
 // src/navigation/RootNavigator.tsx
 import React from "react";
-import { Platform, View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator, type StackNavigationOptions } from "@react-navigation/stack";
 import {
@@ -35,6 +35,7 @@ import QrMenuScreen from "../screens/QrMenuScreen";
 import QrScanScreen from "../screens/QrScanScreen";
 
 import { useAuth } from "../store/useAuth";
+import { useRegion } from "../store/useRegion";
 import { useNotifications } from "../store/useNotifications";
 import AppHeaderTitle from "../components/AppHeaderTitle";
 import AdminPanelNavigator from "./AdminPanelNavigator";
@@ -71,10 +72,10 @@ function EmptyScreen() {
 function useTabScreenOptions(headerBellPress: () => void) {
   const insets = useSafeAreaInsets();
   const bottomPad = Math.max(insets.bottom, 8);
-  const barHeight = 58 + bottomPad; // biraz daha yüksek bırakalım
+  const barHeight = 58 + bottomPad;
 
-  const { t, language } = useI18n();
-  let lang: "tr" | "en" | "ru" | "el" =
+  const { language } = useI18n();
+  const lang: "tr" | "en" | "ru" | "el" =
     (["tr", "en", "ru", "el"].includes(language) ? language : "en") as any;
 
   const labels = {
@@ -103,7 +104,6 @@ function useTabScreenOptions(headerBellPress: () => void) {
       iconName = "person-circle-outline";
       label = labels.profile[lang];
     } else if (route.name === "QR") {
-      // QR tab label'ını custom buton çiziyor, burada gizliyoruz
       label = labels.qr[lang];
     }
 
@@ -147,21 +147,20 @@ function AppTabs({ navigation }: any) {
     <Tabs.Navigator screenOptions={opts}>
       <Tabs.Screen name="Keşfet" component={HomeScreen} />
 
-      {/* ✅ ORTA FLOATING QR TAB */}
-     <Tabs.Screen
-  name="QR"
-  component={EmptyScreen}
-  options={{
-    tabBarButton: (props) => (
-      <QrTabButton
-        {...props}
-        onPress={() => {
-          navigation.navigate("QR Tara");
+      <Tabs.Screen
+        name="QR"
+        component={EmptyScreen}
+        options={{
+          tabBarButton: (props) => (
+            <QrTabButton
+              {...props}
+              onPress={() => {
+                navigation.navigate("QR Tara");
+              }}
+            />
+          ),
         }}
       />
-    ),
-  }}
-/>
 
       <Tabs.Screen name="Rezervasyonlar" component={BookingsScreen} />
       <Tabs.Screen name="Profil" component={ProfileScreen} />
@@ -177,19 +176,19 @@ function GuestTabs({ navigation }: any) {
       <Tabs.Screen name="Keşfet" component={HomeScreen} />
 
       <Tabs.Screen
-  name="QR"
-  component={EmptyScreen}
-  options={{
-    tabBarButton: (props) => (
-      <QrTabButton
-        {...props}
-        onPress={() => {
-          navigation.navigate("QR Tara");
+        name="QR"
+        component={EmptyScreen}
+        options={{
+          tabBarButton: (props) => (
+            <QrTabButton
+              {...props}
+              onPress={() => {
+                navigation.navigate("QR Tara");
+              }}
+            />
+          ),
         }}
       />
-    ),
-  }}
-/>
 
       <Tabs.Screen name="Rezervasyonlar" component={BookingsScreen} />
       <Tabs.Screen
@@ -203,11 +202,22 @@ function GuestTabs({ navigation }: any) {
 
 export default function RootNavigator() {
   const token = useAuth((s) => s.token);
+  const authHydrated = useAuth((s) => s.hydrated);
+
+  const regionHydrated = useRegion((s) => s.hydrated);
+  const regionResolved = useRegion((s) => s.resolved);
+
+  // ✅ Sadece auth durumunda remount (login/logout).
+  // Region/language değişimi NavigationContainer'ı remount etmemeli.
+  const navKey = token ? "auth" : "guest";
+
   const fetchUnreadCount = useNotifications((s) => s.fetchUnreadCount);
 
   React.useEffect(() => {
+    // Token yoksa unread sayısı anlamsız; boşuna request atma.
+    if (!token) return;
     fetchUnreadCount().catch(() => {});
-  }, [token]);
+  }, [token, fetchUnreadCount]);
 
   const stackOptions: StackNavigationOptions = {
     headerShown: true,
@@ -218,8 +228,21 @@ export default function RootNavigator() {
     headerRightContainerStyle: { width: 44 },
   };
 
+  // ✅ İlk açılış: auth hydrate + region hydrate + region resolve bitmeden UI'ı başlatma.
+  // Böylece Home doğru region ile gelir; ilk render sonrası region flip / tab reset yaşanmaz.
+  if (!authHydrated || !regionHydrated || !regionResolved) {
+    return (
+      <View style={{ flex: 1, backgroundColor: "#fff", alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator />
+        <Text style={{ marginTop: 10, color: "#6B7280", fontWeight: "600" }}>
+          Yükleniyor…
+        </Text>
+      </View>
+    );
+  }
+
   return (
-    <NavigationContainer>
+    <NavigationContainer key={navKey}>
       <Stack.Navigator screenOptions={stackOptions}>
         {token ? (
           <>
@@ -232,11 +255,10 @@ export default function RootNavigator() {
             <Stack.Screen name="Rezervasyon - Özet" component={ReservationStep3Screen} />
             <Stack.Screen name="Rezervasyon Detayı" component={ReservationDetailScreen} />
 
-            {/* ✅ QR ekranları */}
             <Stack.Screen name="QR Menü" component={QrMenuScreen} />
             <Stack.Screen name="QR Tara" component={QrScanScreen} />
 
-            <Stack.Screen name="RestaurantPanel" component={RestaurantPanelNavigator} options={{ headerShown: false }}/>
+            <Stack.Screen name="RestaurantPanel" component={RestaurantPanelNavigator} options={{ headerShown: false }} />
             <Stack.Screen name="AdminPanel" component={AdminPanelNavigator} options={{ headerShown: false }} />
             <Stack.Screen name="Terms" component={TermsScreen} />
             <Stack.Screen name="Privacy" component={PrivacyPolicyScreen} />
@@ -246,7 +268,6 @@ export default function RootNavigator() {
             <Stack.Screen name="Licenses" component={LicensesScreen} />
             <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
             <Stack.Screen name="Asistan" component={AssistantScreen} />
-
           </>
         ) : (
           <>
@@ -258,7 +279,6 @@ export default function RootNavigator() {
             <Stack.Screen name="Rezervasyon - Menü" component={ReservationStep2Screen} />
             <Stack.Screen name="Rezervasyon - Özet" component={ReservationStep3Screen} />
 
-            {/* ✅ QR ekranları */}
             <Stack.Screen name="QR Menü" component={QrMenuScreen} />
             <Stack.Screen name="QR Tara" component={QrScanScreen} />
 
@@ -269,7 +289,6 @@ export default function RootNavigator() {
             <Stack.Screen name="About" component={AboutScreen} />
             <Stack.Screen name="Licenses" component={LicensesScreen} />
             <Stack.Screen name="Asistan" component={AssistantScreen} />
-
           </>
         )}
       </Stack.Navigator>
@@ -282,7 +301,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     width: 84,
-    top: -18, // ✅ daha yukarı taşıyoruz (çakışma biter)
+    top: -18,
   },
   qrBtn: {
     width: 58,
@@ -297,7 +316,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 8,
     borderWidth: 3,
-    borderColor: "#fff", // tab bardan “ayrı” gibi hissettiren beyaz halka
+    borderColor: "#fff",
   },
   qrBtnFocused: {
     backgroundColor: "#6B2525",

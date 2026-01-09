@@ -237,16 +237,24 @@ export default function RestaurantDetailScreen() {
 
     // Keep digits and leading + only
     const cleaned = raw.replace(/(?!^\+)[^\d]/g, "");
-    const url = `tel:${cleaned}`;
+    if (!cleaned) return;
 
-    Linking.canOpenURL(url)
-      .then((supported) => {
-        if (supported) return Linking.openURL(url);
-        Alert.alert("Hata", "Telefon araması başlatılamadı.");
-      })
-      .catch(() => {
-        Alert.alert("Hata", "Telefon araması başlatılamadı.");
-      });
+    // Some Android ROMs / devices return false for canOpenURL(tel:...), even though openURL works.
+    // Prefer a direct openURL with a safe fallback.
+    const urlPrimary = Platform.OS === "ios" ? `telprompt:${cleaned}` : `tel:${cleaned}`;
+    const urlFallback = `tel:${cleaned}`;
+
+    (async () => {
+      try {
+        await Linking.openURL(urlPrimary);
+      } catch {
+        try {
+          await Linking.openURL(urlFallback);
+        } catch {
+          Alert.alert("Hata", "Telefon araması başlatılamadı.");
+        }
+      }
+    })();
   }, []);
 
   type Coords = { lat: number; lng: number };

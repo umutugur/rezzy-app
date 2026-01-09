@@ -903,16 +903,22 @@ export default function QrMenuScreen() {
           ]}
           activeOpacity={0.85}
         >
-          <Ionicons
-            name={payMethod === "card" ? "card-outline" : "cash-outline"}
-            size={18}
-            color="#fff"
-          />
-          <Text style={styles.ctaBtnText}>
-            {creating || sheetBusy
-              ? t("qrMenu.processing")
-              : t("qrMenu.confirmOrder")}
-          </Text>
+          <View style={styles.ctaBtnContent}>
+            <Ionicons
+              name={payMethod === "card" ? "card-outline" : "cash-outline"}
+              size={18}
+              color="#fff"
+            />
+            <Text
+              style={styles.ctaBtnText}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            >
+              {creating || sheetBusy
+                ? t("qrMenu.processing")
+                : t("qrMenu.confirmOrder")}
+            </Text>
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -1348,7 +1354,7 @@ const styles = StyleSheet.create({
   ctaBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    justifyContent: "center",
     backgroundColor: C.primary,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -1356,7 +1362,19 @@ const styles = StyleSheet.create({
     minWidth: 170,
   },
   ctaBtnDisabled: { opacity: 0.55 },
-  ctaBtnText: { color: "#fff", fontWeight: "900", fontSize: 14 },
+  ctaBtnText: {
+    color: "#fff",
+    fontWeight: "900",
+    fontSize: 14,
+    marginLeft: 6,
+    flexShrink: 1,
+    minWidth: 0,
+  },
+
+  ctaBtnContent: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
 
   previewBackdrop: {
     flex: 1,

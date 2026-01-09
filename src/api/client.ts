@@ -6,6 +6,7 @@ import axios, {
   InternalAxiosRequestConfig,
 } from "axios";
 import { useAuth } from "../store/useAuth";
+import { useRegion } from "../store/useRegion";
 
 // === SABİT BASE_URL ===
 const BASE_URL = "https://rezzy-backend.onrender.com/api";
@@ -47,6 +48,7 @@ export const api = axios.create({
 // === Request Interceptor ===
 api.interceptors.request.use((config: TimedConfig): TimedConfig => {
   const { token } = useAuth.getState();
+  const { region, language } = useRegion.getState();
 
   // headers hiçbir zaman undefined kalmasın
   config.headers = (config.headers ?? {}) as AxiosRequestHeaders;
@@ -54,6 +56,21 @@ api.interceptors.request.use((config: TimedConfig): TimedConfig => {
   // Auth
   if (token) {
     (config.headers as any).Authorization = `Bearer ${token}`;
+  }
+
+  // Region / Language (best-effort)
+  // Do not override if caller explicitly set them.
+  const hasRegionHeader =
+    (config.headers as any)["X-Region"] || (config.headers as any)["x-region"];
+  const hasLangHeader =
+    (config.headers as any)["Accept-Language"] ||
+    (config.headers as any)["accept-language"];
+
+  if (!hasRegionHeader && region) {
+    (config.headers as any)["X-Region"] = String(region).toUpperCase();
+  }
+  if (!hasLangHeader && language) {
+    (config.headers as any)["Accept-Language"] = String(language);
   }
 
   // SÜRE ÖLÇÜMÜ
@@ -98,6 +115,14 @@ api.interceptors.request.use((config: TimedConfig): TimedConfig => {
     console.log("[api:req] hdr", {
       "Content-Type": ctLog,
       Authorization: token ? `Bearer ${maskToken(token)}` : "∅",
+      "X-Region":
+        (config.headers as any)["X-Region"] ||
+        (config.headers as any)["x-region"] ||
+        "∅",
+      "Accept-Language":
+        (config.headers as any)["Accept-Language"] ||
+        (config.headers as any)["accept-language"] ||
+        "∅",
     });
     if (config.params) console.log("[api:req] params", config.params);
     if (config.data !== undefined) {

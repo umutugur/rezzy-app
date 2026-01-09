@@ -19,6 +19,7 @@ import HomeHeader from "./_HomeHeader";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useNotifications } from "../store/useNotifications";
 import { useRegion } from "../store/useRegion";
+import { useShallow } from "zustand/react/shallow";
 import * as Location from "expo-location";
 import { useI18n } from "../i18n";
 
@@ -36,13 +37,49 @@ const TIME_OPTIONS: string[] = Array.from({ length: 25 }, (_, index) => {
 
 export default function HomeScreen() {
   const nav = useNavigation<any>();
-  const { region } = useRegion();
+
+  // ✅ Region store hydrate tamamlanmadan ilk /restaurants çağrısını tetikleme.
+  // Not: Store'a henüz `hydrated` eklenmediyse `initialized` ile fallback yapıyoruz.
+  const { region, regionHydrated } = useRegion(
+    useShallow((s: any) => ({
+      region: s.region,
+      // IMPORTANT: Only treat the store as ready when hydration explicitly completed.
+      // `initialized` can flip true before persisted state is actually applied, which
+      // causes an early render with default region (CY).
+      regionHydrated: s.hydrated === true,
+    }))
+  );
   const { t } = useI18n();
+  // NOTE: `t` can be unstable (new function each render). Keep a ref so callbacks stay stable.
+  const tRef = React.useRef(t);
+  React.useEffect(() => {
+    tRef.current = t;
+  }, [t]);
 
-  const cities = CITIES_BY_REGION[region] || CITIES_BY_REGION.CY;
-  const initialCity = cities[0] || "Hepsi";
+  const inflightRef = React.useRef(false);
+  const lastSigRef = React.useRef<string>("");
 
-  const [city, setCity] = React.useState<string>(initialCity);
+  // ✅ Hydration tamamlanmadan HomeScreen render edip varsayılan region (CY) ile ilk isteği atma.
+  // Not: `regionHydrated` kesinlikle `hydrated === true` olmalı. `initialized` gibi erken
+  // flip eden flag'ler ilk render'da default region ile request atılmasına yol açar.
+  if (!regionHydrated) {
+    return (
+      <View style={{ flex: 1, backgroundColor: "#fff", justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator />
+        <Text secondary style={{ marginTop: 8 }}>
+          {t("home.loading")}
+        </Text>
+      </View>
+    );
+  }
+
+  const cities = React.useMemo(
+    () => CITIES_BY_REGION[region] || CITIES_BY_REGION.CY,
+    [region]
+  );
+
+  // City is derived from region; initialize empty to avoid locking onto a pre-hydration default.
+  const [city, setCity] = React.useState<string>("");
   const [query, setQuery] = React.useState<string>("");
 
   const [data, setData] = React.useState<Restaurant[]>([]);
@@ -98,19 +135,27 @@ export default function HomeScreen() {
       }
     })();
   }, [locationRequested]);
-
-  // Bölge değişince şehir filtresini resetle
-  React.useEffect(() => {
-    const first = (CITIES_BY_REGION[region] || CITIES_BY_REGION.CY)[0] || "Hepsi";
-    setCity(first);
-  }, [region]);
-
   const load = React.useCallback(
     async (
       selectedCity?: string,
       searched?: string,
       mode: "initial" | "update" = "update"
     ) => {
+      // Prevent request storms caused by rapid re-renders.
+      // Also de-dupe identical calls.
+      const sig = JSON.stringify({
+        region,
+        city: selectedCity || "",
+        searched: searched || "",
+        lat: coords?.lat ?? null,
+        lng: coords?.lng ?? null,
+        mode,
+      });
+
+      if (inflightRef.current && sig === lastSigRef.current) return;
+      inflightRef.current = true;
+      lastSigRef.current = sig;
+
       try {
         setError(undefined);
         if (mode === "initial") setInitialLoading(true);
@@ -139,29 +184,48 @@ export default function HomeScreen() {
         const isHtml = typeof raw === "string" && raw.startsWith("<!DOCTYPE html");
         const msg =
           (!isHtml && (raw?.message || e?.message)) ||
-          t("home.error");
+          tRef.current("home.error");
         setError(msg);
       } finally {
+        inflightRef.current = false;
         if (mode === "initial") setInitialLoading(false);
         setFetching(false);
       }
     },
-    [region, coords?.lat, coords?.lng, t]
+    // IMPORTANT: do NOT depend on `t` directly, it may be unstable and cause infinite effects.
+    [region, coords?.lat, coords?.lng]
   );
 
-  // İlk yükleme: sadece 1 kez
+  // ---- Region -> City bootstrap (after hydration) ----
   const didInitialLoad = React.useRef(false);
-  React.useEffect(() => {
-    if (didInitialLoad.current) return;
-    didInitialLoad.current = true;
-    load(initialCity, qDebounced, "initial");
-  }, [load, initialCity, qDebounced]);
+  const lastRegionRef = React.useRef<string | null>(null);
 
-  // Konum veya region değişince (ilk yük tamamlandıysa) güncelle
+  // When region is hydrated (or changes), ensure city matches the region's default.
   React.useEffect(() => {
-    if (!didInitialLoad.current || initialLoading) return;
-    load(city, qDebounced, "update");
-  }, [coords?.lat, coords?.lng, region]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!regionHydrated) return;
+
+    const first = (CITIES_BY_REGION[region] || CITIES_BY_REGION.CY)[0] || "Hepsi";
+
+    // Only update if region changed or city is still empty.
+    if (lastRegionRef.current !== region || !city) {
+      lastRegionRef.current = region;
+      setCity(first);
+    }
+  }, [regionHydrated, region, city]);
+
+  // Single source of truth for fetching restaurants.
+  React.useEffect(() => {
+    if (!regionHydrated) return;
+    if (!city) return; // wait until city is set from hydrated region
+
+    const mode: "initial" | "update" = didInitialLoad.current ? "update" : "initial";
+    didInitialLoad.current = true;
+
+    load(city, qDebounced, mode);
+  }, [regionHydrated, city, qDebounced, coords?.lat, coords?.lng, load]);
+
+  
+
 
   // Ekrana her gelişte sadece bildirim sayacını yenile
   useFocusEffect(
@@ -170,11 +234,6 @@ export default function HomeScreen() {
     }, [fetchUnreadCount])
   );
 
-  // Filtre/debounce değişince (ilk yük sonrası)
-  React.useEffect(() => {
-    if (!didInitialLoad.current || initialLoading) return;
-    load(city, qDebounced, "update");
-  }, [city, qDebounced]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onRefresh = React.useCallback(async () => {
     try {

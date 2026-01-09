@@ -47,66 +47,188 @@ const publishableKey =
 
 export default function App() {
   const hydrateAuth = useAuth((s: any) => s.hydrate);
-  const authHydrated = useAuth((s: any) => s.hydrated);
+  const fetchMe = useAuth((s: any) => s.fetchMe);
   const token = useAuth((s: any) => s.token);
-
-  const hydrateRegion = useRegion((s) => s.hydrate);
-  const regionInitialized = useRegion((s) => s.initialized);
+  const userPreferredRegion = useAuth((s: any) => s.user?.preferredRegion);
+  const userPreferredLanguage = useAuth((s: any) => s.user?.preferredLanguage);
+  // ✅ Region store self-hydrates inside useRegion.ts; avoid calling hydrate() again here.
+  const regionHydrated = useRegion((s) => s.hydrated);
+  const regionResolved = useRegion((s) => s.resolved);
   const hasUserChoice = useRegion((s) => s.hasUserChoice);
   const setFromCountryCode = useRegion((s) => s.setFromCountryCode);
+  const setRegion = useRegion((s) => s.setRegion);
+  const setLanguage = useRegion((s) => s.setLanguage);
+  const markRegionResolved = useRegion((s) => s.markResolved);
 
-  // Auth hydrate
+  // Region auto-resolution completed? (prevents CY default render -> UK flip)
+  // Removed local state in favor of store's resolved state
+
+  // ✅ /auth/me gerçekten en az 1 kez çekildi mi? (persisted meLoaded'a güvenmiyoruz)
+  const [meBootstrapped, setMeBootstrapped] = React.useState(false);
+
+  // Helper: should we wait for /me before deciding region?
+  const needsMeBeforeRegion = !!token;
+
+  // ✅ Auth hydrate (boot gate)
+  // Important: token/user can arrive async; we treat the app as not ready until hydrateAuth() completes.
+  const [authBootstrapped, setAuthBootstrapped] = React.useState(false);
+
   React.useEffect(() => {
-    hydrateAuth();
+    let cancelled = false;
+
+    (async () => {
+      try {
+        // hydrateAuth is expected to resolve after AsyncStorage read + store set
+        await hydrateAuth?.();
+      } catch {
+        // no-op
+      } finally {
+        if (!cancelled) setAuthBootstrapped(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [hydrateAuth]);
 
-  // Region hydrate
+  // ✅ Token varsa /auth/me'yi uygulama açılışında ZORLA çek.
+  // Not: meLoaded persist edilmiş olabilir; buna güvenmeyip gerçek bir fetch ile bootstrap ediyoruz.
   React.useEffect(() => {
-    hydrateRegion();
-  }, [hydrateRegion]);
+    let cancelled = false;
+
+    (async () => {
+      if (!authBootstrapped) return;
+
+      // Login yoksa: me bootstrap tamam
+      if (!token) {
+        if (!cancelled) setMeBootstrapped(true);
+        return;
+      }
+
+      // Token var: /me'yi en az 1 kez çekmeden UI açma
+      if (typeof fetchMe !== "function") {
+        if (!cancelled) setMeBootstrapped(true);
+        return;
+      }
+
+      try {
+        await fetchMe();
+      } finally {
+        if (!cancelled) setMeBootstrapped(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authBootstrapped, token, fetchMe]);
 
   // İlk açılışta push token
   React.useEffect(() => {
     (async () => {
       await ensureAndroidChannel();
-      if (authHydrated) {
+      if (authBootstrapped) {
         await registerPushToken();
       }
     })();
-  }, [authHydrated]);
+  }, [authBootstrapped]);
 
   // Login / logout sonrası cihaz eşleştirme
   React.useEffect(() => {
     (async () => {
-      if (!authHydrated) return;
+      if (!authBootstrapped) return;
       if (token) {
         await attachDeviceAfterLogin();
       } else {
         await registerPushToken();
       }
     })();
-  }, [token, authHydrated]);
+  }, [token, authBootstrapped]);
 
-  // Bölgeyi ülkeye göre otomatik tahmin (kullanıcı seçim yapmadıysa)
+  // Bölgeyi ülkeye göre otomatik belirle (kullanıcı seçim yapmadıysa)
+  // Kritik: Bu iş bitmeden UI açılırsa ilk render default (CY) ile request atıp sonra UK'ye flip edebiliyor.
   React.useEffect(() => {
+    let cancelled = false;
+
     (async () => {
-      if (!regionInitialized || hasUserChoice) return;
+      // Wait for auth + region hydration first.
+      if (!authBootstrapped) return;
+      if (!regionHydrated) return;
+
+      // If logged in, ensure we fetched /me at least once before deciding region.
+      if (needsMeBeforeRegion && !meBootstrapped) return;
+
       try {
+        // If user explicitly chose a region/language, never override.
+        if (hasUserChoice) {
+          if (!cancelled) markRegionResolved();
+          return;
+        }
+
+        // Logged-in: apply backend preferences if present.
+        if (token) {
+          if (!cancelled && userPreferredRegion) {
+            setRegion(String(userPreferredRegion).toUpperCase());
+          }
+          if (!cancelled && userPreferredLanguage) {
+            setLanguage(String(userPreferredLanguage));
+          }
+
+          // Even if no preference exists, we consider region resolution complete.
+          if (!cancelled) markRegionResolved();
+          return;
+        }
+
+        // Logged-out: attempt location-based auto-detect.
         const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== "granted") return;
+        if (cancelled) return;
+
+        if (status !== "granted") {
+          if (!cancelled) markRegionResolved();
+          return;
+        }
 
         const pos = await Location.getCurrentPositionAsync({});
+        if (cancelled) return;
+
         const geo = await Location.reverseGeocodeAsync(pos.coords);
+        if (cancelled) return;
+
         const code = geo?.[0]?.isoCountryCode || null;
-        setFromCountryCode(code || undefined);
+        if (code) {
+          // NOTE: setFromCountryCode internally sets `resolved: true` when it can.
+          // We do not call markRegionResolved here to avoid double-setting state.
+          if (!cancelled) setFromCountryCode(code);
+        } else {
+          // No country code => stop retrying and allow UI to proceed with persisted/defaults.
+          if (!cancelled) markRegionResolved();
+        }
       } catch {
-        // sessiz geç
+        if (!cancelled) markRegionResolved();
       }
     })();
-  }, [regionInitialized, hasUserChoice, setFromCountryCode]);
 
-  // Hem auth hem region hazır değilse
-  if (!authHydrated || !regionInitialized) {
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    authBootstrapped,
+    regionHydrated,
+    hasUserChoice,
+    token,
+    needsMeBeforeRegion,
+    meBootstrapped,
+    userPreferredRegion,
+    userPreferredLanguage,
+    setFromCountryCode,
+    setRegion,
+    setLanguage,
+    markRegionResolved,
+  ]);
+
+  // Hem auth hem region hazır değilse (ve region auto-detect bitmediyse)
+  if (!authBootstrapped || !regionHydrated || !regionResolved || (token && !meBootstrapped)) {
     return (
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>

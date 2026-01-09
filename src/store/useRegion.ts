@@ -2,117 +2,181 @@ import { create } from "zustand";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { COUNTRIES } from "../constants/countries";
 
-// Keys used in AsyncStorage for persisting the selected region, language
-// and whether the user has explicitly chosen a region/language.  If the
-// user hasn't made a choice we can infer the region from the device's
-// country code (see setFromCountryCode below).
 const REGION_KEY = "@rezvix.region";
 const LANG_KEY = "@rezvix.language";
 const USER_CHOICE_KEY = "@rezvix.region_user_choice";
 
-/**
- * Zustand store for region and language selection.  Unlike the
- * previous implementation this version does not restrict the region or
- * language to a small union of values; instead any ISO‑style
- * two‑letter country code is accepted.  A companion list of
- * countries (COUNTRIES) defines the available options and default
- * language for each region.  The language can be any string and is
- * primarily used by the i18n library to select the appropriate
- * translations.
- */
+const DEFAULT_REGION = (COUNTRIES[0]?.code ?? "TR").toUpperCase();
+const DEFAULT_LANGUAGE = COUNTRIES[0]?.defaultLanguage ?? "tr";
+
+let __hydratePromise: Promise<void> | null = null;
+
 type RegionState = {
-  /** Two letter country/region code (e.g. "TR", "UK"). */
   region: string;
-  /** Language code (ISO 639‑1) used for translations. */
   language: string;
-  /** Whether the store has loaded persisted values. */
-  initialized: boolean;
-  /** Whether the user has explicitly selected region/language. */
+
+  // Hydration = AsyncStorage read completed (region/lang loaded or defaults applied)
+  hydrated: boolean;
+
+  // Resolved = region selection decision finalized for this boot
+  // (persisted choice OR user choice OR auto-geo applied)
+  resolved: boolean;
+
   hasUserChoice: boolean;
-  /** Load persisted region and language from AsyncStorage. */
+
   hydrate: () => Promise<void>;
-  /** Persist the region and update the store. */
   setRegion: (region: string) => void;
-  /** Persist the language and update the store. */
   setLanguage: (language: string) => void;
-  /**
-   * Guess region and language from an ISO country code.  Called once
-   * on first launch if the user hasn't picked a region yet.  This
-   * function checks whether the code exists in our list of
-   * countries and sets the corresponding region and default
-   * language.
-   */
+
+  // Best-effort geo/locale default. Must NEVER override persisted/user choice.
+  // Non-async signature to avoid refactor ripple; internally awaits hydration.
   setFromCountryCode: (code?: string | null) => void;
+
+  // Manual gate: allow App-level bootstrap to say "don’t auto-resolve anymore".
+  markResolved: () => void;
 };
 
 export const useRegion = create<RegionState>((set, get) => ({
-  // Default to the first entry in our countries list.  This should
-  // ideally be Türkiye to preserve the previous behaviour for Turkish
-  // users but can be changed as needed.
-  region: COUNTRIES[0]?.code ?? "TR",
-  language: COUNTRIES[0]?.defaultLanguage ?? "tr",
-  initialized: false,
+  region: DEFAULT_REGION,
+  language: DEFAULT_LANGUAGE,
+
+  hydrated: false,
+  resolved: false,
   hasUserChoice: false,
 
   async hydrate() {
-    try {
-      const [r, l, u] = await Promise.all([
-        AsyncStorage.getItem(REGION_KEY),
-        AsyncStorage.getItem(LANG_KEY),
-        AsyncStorage.getItem(USER_CHOICE_KEY),
-      ]);
+    // Idempotent + coalesce concurrent callers.
+    if (get().hydrated) return;
+    if (__hydratePromise) return __hydratePromise;
 
-      // Normalize region: if it's a two‑letter string and exists in our
-      // countries list use it; otherwise fall back to default.
-      let region = (r && r.length === 2 ? r.toUpperCase() : undefined) || COUNTRIES[0]?.code;
-      if (!region || !COUNTRIES.some((c) => c.code.toUpperCase() === region)) {
-        region = COUNTRIES[0]?.code;
+    __hydratePromise = (async () => {
+      try {
+        const [r, l, u] = await Promise.all([
+          AsyncStorage.getItem(REGION_KEY),
+          AsyncStorage.getItem(LANG_KEY),
+          AsyncStorage.getItem(USER_CHOICE_KEY),
+        ]);
+
+        const persistedRegion =
+          r && r.trim().length === 2 ? r.trim().toUpperCase() : undefined;
+
+        const persistedLanguage = (l || "").trim() || undefined;
+
+        const explicitUserChoice = u === "1" || u === "true" || u === "yes";
+        const inferredUserChoice = !!persistedRegion && persistedRegion !== DEFAULT_REGION;
+        const hasUserChoice = explicitUserChoice || inferredUserChoice;
+
+        const nextRegion = persistedRegion ?? DEFAULT_REGION;
+
+        const nextLanguage =
+          persistedLanguage ||
+          COUNTRIES.find((c) => c.code.toUpperCase() === nextRegion)?.defaultLanguage ||
+          DEFAULT_LANGUAGE;
+
+        // If persisted/user choice exists, treat decision as resolved for this boot.
+        const resolved = hasUserChoice || !!persistedRegion || !!persistedLanguage;
+
+        const prev = get();
+        // Never downgrade flags that may have been set by app-level bootstrap.
+        const nextResolved = prev.resolved || resolved;
+        const nextHasUserChoice = prev.hasUserChoice || hasUserChoice;
+
+        set({
+          region: nextRegion,
+          language: nextLanguage,
+          hasUserChoice: nextHasUserChoice,
+          hydrated: true,
+          resolved: nextResolved,
+        });
+      } catch {
+        // Hard fallback: defaults, but hydration still completes.
+        const prev = get();
+        set({
+          region: DEFAULT_REGION,
+          language: DEFAULT_LANGUAGE,
+          hasUserChoice: prev.hasUserChoice || false,
+          hydrated: true,
+          resolved: prev.resolved || false,
+        });
+      } finally {
+        __hydratePromise = null;
       }
+    })();
 
-      // Determine language: prefer persisted value; otherwise use the
-      // default language associated with the region.  If both are
-      // missing, default to Turkish.
-      let language = l || COUNTRIES.find((c) => c.code.toUpperCase() === region)?.defaultLanguage || COUNTRIES[0]?.defaultLanguage || "tr";
-
-      const hasUserChoice = u === "1";
-      set({ region, language, hasUserChoice, initialized: true });
-    } catch {
-      // Even if something goes wrong we still mark initialization as
-      // complete so the app can proceed.
-      set({ initialized: true });
-    }
+    return __hydratePromise;
   },
 
   setRegion(region: string) {
-    const normalized = region.toUpperCase();
-    set({ region: normalized, hasUserChoice: true });
+    const normalized = String(region).toUpperCase();
+    set({ region: normalized, hasUserChoice: true, hydrated: true, resolved: true });
     AsyncStorage.setItem(REGION_KEY, normalized).catch(() => {});
     AsyncStorage.setItem(USER_CHOICE_KEY, "1").catch(() => {});
-
-    // When the region changes we may want to update the language to the
-    // region's default if the current language does not belong to
-    // any registered language.  This logic is intentionally not
-    // automatic to avoid surprising the user; see setFromCountryCode.
   },
 
   setLanguage(language: string) {
-    set({ language, hasUserChoice: true });
+    set({ language, hasUserChoice: true, hydrated: true, resolved: true });
     AsyncStorage.setItem(LANG_KEY, language).catch(() => {});
     AsyncStorage.setItem(USER_CHOICE_KEY, "1").catch(() => {});
   },
 
   setFromCountryCode(code?: string | null) {
-    const { initialized, hasUserChoice } = get();
-    if (!initialized || hasUserChoice) return;
-    if (!code) return;
+    void (async () => {
+      // If no code was determined, stop re-attempting.
+      if (!code) {
+        set({ resolved: true });
+        return;
+      }
 
-    const upper = code.toUpperCase();
-    const country = COUNTRIES.find((c) => c.code.toUpperCase() === upper);
-    if (country) {
-      set({ region: country.code, language: country.defaultLanguage });
-      AsyncStorage.setItem(REGION_KEY, country.code).catch(() => {});
-      AsyncStorage.setItem(LANG_KEY, country.defaultLanguage).catch(() => {});
-    }
-    // For unknown codes we simply leave the defaults in place.
+      // Ensure AsyncStorage hydration completed before making a decision.
+      if (!get().hydrated) {
+        await get().hydrate();
+      }
+
+      // Re-read after hydration to avoid races.
+      const snap = get();
+
+      // Never override persisted/user choice or an already-resolved decision.
+      if (snap.hasUserChoice) return;
+      if (snap.resolved) return;
+
+      const upper = String(code).toUpperCase();
+      const country = COUNTRIES.find((c) => c.code.toUpperCase() === upper);
+
+      if (!country) {
+        // Stop re-attempting on every render.
+        set({ resolved: true });
+        return;
+      }
+
+      const nextRegion = country.code.toUpperCase();
+      const nextLanguage = country.defaultLanguage || DEFAULT_LANGUAGE;
+
+      set({
+        region: nextRegion,
+        language: nextLanguage,
+        hydrated: true,
+        resolved: true,
+        hasUserChoice: false,
+      });
+
+      AsyncStorage.setItem(REGION_KEY, nextRegion).catch(() => {});
+      AsyncStorage.setItem(LANG_KEY, nextLanguage).catch(() => {});
+      // NOTE: We intentionally do NOT set USER_CHOICE_KEY here.
+    })();
+  },
+
+  markResolved() {
+    const prev = get();
+    set({ resolved: true, hydrated: prev.hydrated || true });
   },
 }));
+
+let __regionHydrateStarted = false;
+try {
+  if (!__regionHydrateStarted) {
+    __regionHydrateStarted = true;
+    void useRegion.getState().hydrate();
+  }
+} catch {
+  // no-op
+}
