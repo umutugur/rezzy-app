@@ -593,6 +593,43 @@
     "rescan": "Tekrar Tara",
     "invalidQrTitle": "Geçersiz QR kodu",
     "invalidQrMessage": "Bu QR kodundan restoran bilgisi alınamadı."
+  },
+  "delivery": {
+    "address": {
+      "title": "Adres Ekle",
+      "subtitle": "Paket servis için konum (pin) zorunludur.",
+      "permissionTitle": "Konum İzni Gerekli",
+      "permissionBody": "Adres eklemek ve paket servis eşleştirmesi yapmak için konum izni vermen gerekiyor.",
+      "locationFail": "Konum alınamadı.",
+      "saveFail": "Adres eklenemedi.",
+      "pinTitle": "Konum (Pin)",
+      "pinHint": "Haritadan pin’i sürükleyerek tam konumu seçebilirsin.",
+      "requestPermission": "Konum izni ver",
+      "selectedCoords": "Seçili: {{lat}}, {{lng}}",
+      "noPin": "Henüz konum seçilmedi.",
+      "labelTitle": "Adres Başlığı",
+      "placeholderTitle": "Ev / İş",
+      "labelAddress": "Adres Bilgileri",
+      "district": "Mahalle",
+      "districtPh": "Örn: Küçük Kaymaklı",
+      "street": "Sokak / Cadde",
+      "streetPh": "Örn: Atatürk Caddesi",
+      "buildingNo": "Bina No",
+      "doorNo": "Kapı No",
+      "town": "İlçe",
+      "townPh": "Örn: Lefkoşa",
+      "city": "İl",
+      "cityPh": "Örn: KKTC",
+      "note": "Not (Opsiyonel)",
+      "notePh": "Kapı şifresi, tarif...",
+      "makeDefault": "Varsayılan adres yap",
+      "missingTitle": "Eksik Bilgi",
+      "missingBody": "Lütfen adres bilgilerini daha detaylı doldur.",
+      "pinRequiredTitle": "Konum Gerekli",
+      "pinRequiredBody": "Bu sistemde adres için konum (pin) zorunlu.",
+       "home": "Ev",
+      "work": "İş"
+    }
   }
 }
 

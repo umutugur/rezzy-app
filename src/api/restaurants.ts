@@ -21,6 +21,16 @@ export type ListRestaurantsParams = {
   limit?: number;
   cursor?: string;
 
+  // Landing / shortcut preset filters (optional)
+  /** Restaurant business type filter (e.g. "bar", "meyhane", "cafe") */
+  businessType?: string;
+  /** Only restaurants that offer delivery / takeout */
+  deliveryOnly?: boolean;
+  /** Only restaurants that serve the user's currently selected address */
+  mustServeSelectedAddress?: boolean;
+  /** Optional explicit address id (if you prefer not to rely on server-side selected address) */
+  addressId?: string;
+
   // Assistant / filtre destek alanları (tamamı opsiyonel)
   people?: number;
   /** YYYY-MM-DD veya benzeri tarih string’i */

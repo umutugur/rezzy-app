@@ -225,3 +225,4 @@ api.interceptors.response.use(
 );
 
 export const API_BASE_URL = BASE_URL;
+export default api;

@@ -11,6 +11,7 @@ import {
   Alert,
   Modal,
   TextInput,
+  Switch,
   Platform,
   LayoutChangeEvent,
 } from "react-native";
@@ -35,6 +36,7 @@ import { createTableServiceRequest } from "../api/tableService";
 import { useQrCart, selectCount, selectTotal } from "../store/useQrCart";
 import { useAuth } from "../store/useAuth";
 import { useI18n } from "../i18n";
+import QrItemModifiersModal, { type SelectedModifiersState } from "../components/QrItemModifiersModal";
 
 type Restaurant = ApiRestaurant;
 
@@ -72,6 +74,76 @@ const formatCurrency = (amount: number, currency: string, localeForIntl: string)
     return `${n} ${currency}`;
   }
 };
+type ModifierOption = {
+  _id?: string;
+  id?: string;
+  title?: string;
+  name?: string;
+  price?: number;
+  extraPrice?: number;
+};
+
+type ModifierGroup = {
+  _id?: string;
+  id?: string;
+  title?: string;
+  name?: string;
+  min?: number;
+  max?: number;
+  required?: boolean;
+  multiple?: boolean;
+  allowMultiple?: boolean;
+  options?: ModifierOption[];
+  items?: ModifierOption[];
+};
+
+const getId = (x: any): string => String(x?._id ?? x?.id ?? "");
+const getTitle = (x: any): string => String(x?.title ?? x?.name ?? "");
+const getPrice = (x: any): number => Number(x?.price ?? x?.extraPrice ?? 0) || 0;
+
+function extractModifierGroups(it: any): ModifierGroup[] {
+  const raw =
+    it?.modifierGroups ||
+    it?.modifiers ||
+    it?.options ||
+    it?.modifier_groups ||
+    [];
+  return Array.isArray(raw) ? raw : [];
+}
+
+function isModifierItem(it: any): boolean {
+  const groups = extractModifierGroups(it);
+  return Array.isArray(groups) && groups.length > 0;
+}
+
+function computeModsExtra(groups: ModifierGroup[], selected: SelectedModifiersState): number {
+  let total = 0;
+  for (const g of groups) {
+    const gid = getId(g);
+    const chosen = selected?.[gid] || [];
+    const opts: ModifierOption[] = Array.isArray((g as any)?.options)
+      ? (g as any).options
+      : Array.isArray((g as any)?.items)
+      ? (g as any).items
+      : [];
+
+    for (const oid of chosen) {
+      const opt = opts.find((o) => getId(o) === oid);
+      if (opt) total += getPrice(opt);
+    }
+  }
+  return total;
+}
+
+function buildLineKey(itemId: string, selected: SelectedModifiersState): string {
+  const parts: string[] = [];
+  const groupIds = Object.keys(selected || {}).sort();
+  for (const gid of groupIds) {
+    const ids = (selected[gid] || []).slice().sort();
+    if (ids.length) parts.push(`${gid}:${ids.join(",")}`);
+  }
+  return `${itemId}__${parts.join("|")}`;
+}
 
 export default function QrMenuScreen() {
   const nav = useNavigation<any>();
@@ -110,7 +182,10 @@ export default function QrMenuScreen() {
   const [expandedCatId, setExpandedCatId] = useState<string | null>(null);
   const [expandAll, setExpandAll] = useState(false);
   const [previewItem, setPreviewItem] = useState<ALaCarteItem | null>(null);
-
+  // ✅ modifier modal
+  const [modsOpen, setModsOpen] = useState(false);
+  const [modsItem, setModsItem] = useState<ALaCarteItem | null>(null);
+  const [modsGroups, setModsGroups] = useState<ModifierGroup[]>([]);
   const [payMethod, setPayMethod] = useState<"card" | "pay_at_venue">("card");
   const [sessionId, setSessionId] = useState<string | null>(sessionIdFromQr);
 
@@ -180,7 +255,10 @@ export default function QrMenuScreen() {
             itemId: x.itemId,
             title: x.title,
             qty: x.qty,
-            price: x.price,
+            price: Number(x.unitTotal ?? x.price ?? 0) || 0,
+            unitTotal: x.unitTotal,
+            modifiers: x.modifiers,
+            lineKey: x.lineKey,
           })),
           notes: notes?.trim() || undefined,
           paymentMethod: methodToUse,
@@ -223,7 +301,10 @@ export default function QrMenuScreen() {
           itemId: x.itemId,
           title: x.title,
           qty: x.qty,
-          price: x.price,
+          price: Number(x.unitTotal ?? x.price ?? 0) || 0,
+          unitTotal: x.unitTotal,
+          modifiers: x.modifiers,
+          lineKey: x.lineKey,
         })),
         notes: notes?.trim() || undefined,
         paymentMethod: methodToUse,
@@ -456,21 +537,34 @@ export default function QrMenuScreen() {
   const bottomPad = CTA_HEIGHT + insets.bottom + 18;
 
   const cartMap = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const it of items) m.set(it.itemId, it.qty);
-    return m;
-  }, [items]);
+  const m = new Map<string, number>();
+  for (const it of items as any[]) {
+    const id = String(it?.itemId ?? "");
+    if (!id) continue;
+    const q = Number(it?.qty ?? 0) || 0;
+    m.set(id, (m.get(id) || 0) + q);
+  }
+  return m;
+}, [items]);
 
   const onAdd = (it: ALaCarteItem, catId?: string) => {
-    if (!(it?.isAvailable ?? true)) return;
-    addItem({
-      itemId: it._id,
-      title: it.title,
-      price: Number(it.price) || 0,
-      photoUrl: it.photoUrl,
-      categoryId: catId,
-    });
-  };
+  if (!((it as any)?.isAvailable ?? true)) return;
+
+  if (isModifierItem(it as any)) {
+    setModsItem({ ...(it as any), __catId: catId } as any);
+    setModsGroups(extractModifierGroups(it as any));
+    setModsOpen(true);
+    return;
+  }
+
+  addItem({
+    itemId: (it as any)._id,
+    title: (it as any).title,
+    price: Number((it as any).price) || 0,
+    photoUrl: (it as any).photoUrl,
+    categoryId: catId,
+  } as any);
+};
   // ✅ Garson çağır / Hesap iste quick action
   const handleQuickRequest = React.useCallback(
     async (kind: "waiter" | "bill") => {
@@ -770,8 +864,9 @@ export default function QrMenuScreen() {
                       {isOpen && (
                         <View style={{ paddingTop: 10, gap: 10 }}>
                           {catItems.map((it) => {
-                            const qty = cartMap.get(it._id) || 0;
-                            const disabled = !(it?.isAvailable ?? true);
+                            const qty = cartMap.get((it as any)._id) || 0;
+const disabled = !((it as any)?.isAvailable ?? true);
+const hasMods = isModifierItem(it as any);
 
                             return (
                               <View key={it._id} style={styles.itemRow}>
@@ -818,49 +913,36 @@ export default function QrMenuScreen() {
                                   </Text>
 
                                   {disabled ? (
-                                    <Text style={styles.itemUnavailable}>
-                                      {t("qrMenu.outOfStock")}
-                                    </Text>
-                                  ) : qty === 0 ? (
-                                    <TouchableOpacity
-                                      onPress={() => onAdd(it, c._id)}
-                                      style={styles.addBtn}
-                                      activeOpacity={0.85}
-                                    >
-                                      <Ionicons
-                                        name="add"
-                                        size={16}
-                                        color="#fff"
-                                      />
-                                      <Text style={styles.addBtnText}>
-                                        {t("qrMenu.add")}
-                                      </Text>
-                                    </TouchableOpacity>
-                                  ) : (
-                                    <View style={styles.qtyRow}>
-                                      <TouchableOpacity
-                                        onPress={() => dec(it._id)}
-                                        style={styles.qtyBtn}
-                                      >
-                                        <Ionicons
-                                          name="remove"
-                                          size={14}
-                                          color={C.primary}
-                                        />
-                                      </TouchableOpacity>
-                                      <Text style={styles.qtyText}>{qty}</Text>
-                                      <TouchableOpacity
-                                        onPress={() => inc(it._id)}
-                                        style={styles.qtyBtn}
-                                      >
-                                        <Ionicons
-                                          name="add"
-                                          size={14}
-                                          color={C.primary}
-                                        />
-                                      </TouchableOpacity>
-                                    </View>
-                                  )}
+  <Text style={styles.itemUnavailable}>{t("qrMenu.outOfStock")}</Text>
+) : hasMods ? (
+  <TouchableOpacity
+    onPress={() => onAdd(it, c._id)}
+    style={styles.addBtn}
+    activeOpacity={0.85}
+  >
+    <Ionicons name="options-outline" size={16} color="#fff" />
+    <Text style={styles.addBtnText}>{t("qrMenu.add")}</Text>
+  </TouchableOpacity>
+) : qty === 0 ? (
+  <TouchableOpacity
+    onPress={() => onAdd(it, c._id)}
+    style={styles.addBtn}
+    activeOpacity={0.85}
+  >
+    <Ionicons name="add" size={16} color="#fff" />
+    <Text style={styles.addBtnText}>{t("qrMenu.add")}</Text>
+  </TouchableOpacity>
+) : (
+  <View style={styles.qtyRow}>
+    <TouchableOpacity onPress={() => dec((it as any)._id)} style={styles.qtyBtn}>
+      <Ionicons name="remove" size={14} color={C.primary} />
+    </TouchableOpacity>
+    <Text style={styles.qtyText}>{qty}</Text>
+    <TouchableOpacity onPress={() => inc((it as any)._id)} style={styles.qtyBtn}>
+      <Ionicons name="add" size={14} color={C.primary} />
+    </TouchableOpacity>
+  </View>
+)}
                                 </View>
                               </View>
                             );
@@ -1125,7 +1207,33 @@ export default function QrMenuScreen() {
           </View>
         </View>
       </Modal>
+        <QrItemModifiersModal
+  visible={modsOpen}
+  item={modsItem as any}
+  groups={modsGroups as any}
+  fmt={fmt}
+  onClose={() => setModsOpen(false)}
+  onConfirm={({ selected, modifiersOut, unitTotal }) => {
+    if (!modsItem) return;
 
+    const basePrice = Number((modsItem as any)?.price || 0) || 0;
+    const itemId = String((modsItem as any)?._id ?? "");
+    const lineKey = buildLineKey(itemId, selected);
+
+    addItem({
+      itemId,
+      title: String((modsItem as any)?.title || ""),
+      price: basePrice,
+      unitTotal,
+      lineKey,
+      modifiers: modifiersOut,
+      photoUrl: (modsItem as any)?.photoUrl,
+      categoryId: (modsItem as any)?.__catId,
+    } as any);
+
+    setModsOpen(false);
+  }}
+/>
       {/* Preview modal */}
       <Modal
         visible={!!previewItem}

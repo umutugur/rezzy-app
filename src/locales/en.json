@@ -692,5 +692,42 @@
     "rescan": "Rescan",
     "invalidQrTitle": "Invalid QR code",
     "invalidQrMessage": "The scanned QR code does not contain valid restaurant information."
+  },
+  "delivery": {
+    "address": {
+      "title": "Add Address",
+      "subtitle": "A location pin is required for delivery service.",
+      "permissionTitle": "Location Permission Required",
+      "permissionBody": "You need to allow location access to add an address and match delivery services.",
+      "locationFail": "Unable to get location.",
+      "saveFail": "Address could not be saved.",
+      "pinTitle": "Location (Pin)",
+      "pinHint": "Drag the pin on the map to select the exact location.",
+      "requestPermission": "Allow location access",
+      "selectedCoords": "Selected: {{lat}}, {{lng}}",
+      "noPin": "No location selected yet.",
+      "labelTitle": "Address Label",
+      "placeholderTitle": "Home / Work",
+      "labelAddress": "Address Details",
+      "district": "Neighborhood",
+      "districtPh": "e.g. Kucuk Kaymakli",
+      "street": "Street / Avenue",
+      "streetPh": "e.g. Ataturk Avenue",
+      "buildingNo": "Building No",
+      "doorNo": "Apartment No",
+      "town": "District",
+      "townPh": "e.g. Nicosia",
+      "city": "City",
+      "cityPh": "e.g. TRNC",
+      "note": "Note (Optional)",
+      "notePh": "Door code, directions...",
+      "makeDefault": "Set as default address",
+      "missingTitle": "Missing Information",
+      "missingBody": "Please fill in the address details more completely.",
+      "pinRequiredTitle": "Location Required",
+      "pinRequiredBody": "A location pin is required to add an address.",
+      "home": "Home",
+      "work": "Work"
+    }
   }
 }

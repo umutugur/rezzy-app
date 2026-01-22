@@ -1,14 +1,36 @@
 // src/store/useQrCart.ts
 import { create } from "zustand";
 
+export type QrCartModifierSelection = {
+  groupId: string;
+  optionId: string;
+  groupTitle?: string;
+  optionTitle: string;
+  priceDelta: number;
+};
+
 export type QrCartItem = {
   itemId: string;
   title: string;
-  price: number;
+  price: number; // base price
   qty: number;
   photoUrl?: string;
   categoryId?: string;
+
+  // modifier support
+  modifiers?: QrCartModifierSelection[];
+  unitTotal?: number; // base + modifiers (single unit)
+  lineKey?: string;   // unique per item+modifier set
 };
+function buildLineKey(itemId: string, mods?: QrCartModifierSelection[]) {
+  if (!mods || mods.length === 0) return itemId;
+  const sig = mods
+    .slice()
+    .sort((a, b) => (a.groupId + a.optionId).localeCompare(b.groupId + b.optionId))
+    .map((m) => `${m.groupId}:${m.optionId}`)
+    .join("|");
+  return `${itemId}__${sig}`;
+}
 
 type QrCartState = {
   restaurantId: string | null;
@@ -60,42 +82,72 @@ export const useQrCart = create<QrCartState>((set, get) => ({
 
   addItem: (it) =>
     set((s) => {
-      const found = s.items.find((x) => x.itemId === it.itemId);
+      const mods = (it as any).modifiers as QrCartModifierSelection[] | undefined;
+      const lineKey = buildLineKey(it.itemId, mods);
+
+      const found = s.items.find(
+        (x) => (x.lineKey ?? x.itemId) === lineKey
+      );
+
       if (found) {
         return {
           ...s,
           items: s.items.map((x) =>
-            x.itemId === it.itemId ? { ...x, qty: x.qty + 1 } : x
+            (x.lineKey ?? x.itemId) === lineKey ? { ...x, qty: x.qty + 1 } : x
           ),
         };
       }
-      return { ...s, items: [...s.items, { ...it, qty: 1 }] };
+
+      return {
+        ...s,
+        items: [
+          ...s.items,
+          {
+            ...(it as any),
+            qty: 1,
+            lineKey,
+          },
+        ],
+      };
     }),
 
-  removeItem: (itemId) =>
-    set((s) => ({ ...s, items: s.items.filter((x) => x.itemId !== itemId) })),
-
-  inc: (itemId) =>
+  removeItem: (lineKeyOrItemId) =>
     set((s) => ({
       ...s,
-      items: s.items.map((x) =>
-        x.itemId === itemId ? { ...x, qty: x.qty + 1 } : x
+      items: s.items.filter(
+        (x) => (x.lineKey ?? x.itemId) !== lineKeyOrItemId
       ),
     })),
 
-  dec: (itemId) =>
+  inc: (lineKeyOrItemId) =>
+    set((s) => ({
+      ...s,
+      items: s.items.map((x) =>
+        (x.lineKey ?? x.itemId) === lineKeyOrItemId
+          ? { ...x, qty: x.qty + 1 }
+          : x
+      ),
+    })),
+
+  dec: (lineKeyOrItemId) =>
     set((s) => ({
       ...s,
       items: s.items
-        .map((x) => (x.itemId === itemId ? { ...x, qty: x.qty - 1 } : x))
+        .map((x) =>
+          (x.lineKey ?? x.itemId) === lineKeyOrItemId
+            ? { ...x, qty: x.qty - 1 }
+            : x
+        )
         .filter((x) => x.qty > 0),
     })),
 
-  setQty: (itemId, qty) =>
+  setQty: (lineKeyOrItemId, qty) =>
     set((s) => ({
       ...s,
       items: s.items
-        .map((x) => (x.itemId === itemId ? { ...x, qty } : x))
+        .map((x) =>
+          (x.lineKey ?? x.itemId) === lineKeyOrItemId ? { ...x, qty } : x
+        )
         .filter((x) => x.qty > 0),
     })),
 
@@ -122,7 +174,12 @@ export const useQrCart = create<QrCartState>((set, get) => ({
 }));
 
 export const selectTotal = (s: QrCartState) =>
-  s.items.reduce((sum, it) => sum + it.price * it.qty, 0);
+  s.items.reduce((sum, it) => {
+    const unit = isFinite(it.unitTotal as any)
+      ? Number(it.unitTotal)
+      : Number(it.price) || 0;
+    return sum + unit * it.qty;
+  }, 0);
 
 export const selectCount = (s: QrCartState) =>
   s.items.reduce((sum, it) => sum + it.qty, 0);

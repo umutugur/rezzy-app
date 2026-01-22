@@ -14,7 +14,7 @@ import {
 import { Text } from "../components/Themed";
 import Card from "../components/Card";
 import { listRestaurants, type Restaurant } from "../api/restaurants";
-import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { useNavigation, useFocusEffect, useRoute } from "@react-navigation/native";
 import HomeHeader from "./_HomeHeader";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useNotifications } from "../store/useNotifications";
@@ -37,6 +37,16 @@ const TIME_OPTIONS: string[] = Array.from({ length: 25 }, (_, index) => {
 
 export default function HomeScreen() {
   const nav = useNavigation<any>();
+  const route = useRoute<any>();
+
+  // Optional preset filters passed from another screen.
+  // Defaults preserve current behavior when no params exist.
+  const preset = route?.params?.preset || {};
+  const presetBusinessType: string | undefined =
+    typeof preset?.businessType === "string" ? preset.businessType : undefined;
+  const presetDeliveryOnly: boolean = preset?.deliveryOnly === true;
+  const presetMustServeSelectedAddress: boolean =
+    preset?.mustServeSelectedAddress === true;
 
   // ✅ Region store hydrate tamamlanmadan ilk /restaurants çağrısını tetikleme.
   // Not: Store'a henüz `hydrated` eklenmediyse `initialized` ile fallback yapıyoruz.
@@ -150,6 +160,9 @@ export default function HomeScreen() {
         lat: coords?.lat ?? null,
         lng: coords?.lng ?? null,
         mode,
+        businessType: presetBusinessType ?? null,
+        deliveryOnly: presetDeliveryOnly || null,
+        mustServeSelectedAddress: presetMustServeSelectedAddress || null,
       });
 
       if (inflightRef.current && sig === lastSigRef.current) return;
@@ -176,7 +189,12 @@ export default function HomeScreen() {
           query: queryParam,
           lat: coords?.lat,
           lng: coords?.lng,
-        });
+
+          // Optional preset filters
+          businessType: presetBusinessType,
+          deliveryOnly: presetDeliveryOnly ? true : undefined,
+          mustServeSelectedAddress: presetMustServeSelectedAddress ? true : undefined,
+        } as any);
 
         setData(list || []);
       } catch (e: any) {
@@ -193,7 +211,14 @@ export default function HomeScreen() {
       }
     },
     // IMPORTANT: do NOT depend on `t` directly, it may be unstable and cause infinite effects.
-    [region, coords?.lat, coords?.lng]
+    [
+      region,
+      coords?.lat,
+      coords?.lng,
+      presetBusinessType,
+      presetDeliveryOnly,
+      presetMustServeSelectedAddress,
+    ]
   );
 
   // ---- Region -> City bootstrap (after hydration) ----

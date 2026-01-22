@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import RestaurantPanelNavigator from "../navigation/RestaurantPanelNavigator";
 import LoginScreen from "../screens/LoginScreen";
 import HomeScreen from "../screens/HomeScreen";
+import HomeLandingScreen from "../screens/HomeLandingScreen";
 import RestaurantMapScreen from "../screens/RestaurantMapScreen";
 import RestaurantDetailScreen from "../screens/RestaurantDetailScreen";
 import ReservationStep1Screen from "../screens/ReservationStep1Screen";
@@ -34,6 +35,8 @@ import AssistantScreen from "../screens/AssistantScreen";
 import QrMenuScreen from "../screens/QrMenuScreen";
 import QrScanScreen from "../screens/QrScanScreen";
 
+import DeliveryNavigator from "../navigation/DeliveryNavigator";
+
 import { useAuth } from "../store/useAuth";
 import { useRegion } from "../store/useRegion";
 import { useNotifications } from "../store/useNotifications";
@@ -41,8 +44,9 @@ import AppHeaderTitle from "../components/AppHeaderTitle";
 import AdminPanelNavigator from "./AdminPanelNavigator";
 import { useI18n } from "../i18n";
 
-const Stack = createStackNavigator();
+const RootStack = createStackNavigator();
 const Tabs = createBottomTabNavigator();
+const ExploreStack = createStackNavigator();
 
 /** Ortadaki floating QR buton */
 function QrTabButton({
@@ -63,7 +67,6 @@ function QrTabButton({
   );
 }
 
-// Dummy component (render olmaz, sadece buton için)
 function EmptyScreen() {
   return null;
 }
@@ -80,12 +83,8 @@ function useTabScreenOptions(headerBellPress: () => void) {
 
   const labels = {
     explore: { tr: "Keşfet", en: "Explore", ru: "Исследовать", el: "Εξερεύνηση" },
-    reservations: {
-      tr: "Rezervasyonlarım",
-      en: "My Reservations",
-      ru: "Бронирования",
-      el: "Κρατήσεις",
-    },
+    reservations: { tr: "Rezervasyonlarım", en: "My Reservations", ru: "Бронирования", el: "Κρατήσεις" },
+    orders: { tr: "Siparişlerim", en: "My Orders", ru: "Мои заказы", el: "Οι παραγγελίες μου" },
     profile: { tr: "Profil", en: "Profile", ru: "Профиль", el: "Προφίλ" },
     qr: { tr: "QR Menü", en: "QR Menu", ru: "QR Меню", el: "QR Μενού" },
   };
@@ -100,6 +99,9 @@ function useTabScreenOptions(headerBellPress: () => void) {
     } else if (route.name === "Rezervasyonlar") {
       iconName = "calendar-outline";
       label = labels.reservations[lang];
+    } else if (route.name === "Siparişlerim") {
+      iconName = "receipt-outline";
+      label = labels.orders[lang];
     } else if (route.name === "Profil") {
       iconName = "person-circle-outline";
       label = labels.profile[lang];
@@ -127,9 +129,7 @@ function useTabScreenOptions(headerBellPress: () => void) {
 
       tabBarLabel: label,
       tabBarIcon: ({ color, size }) =>
-        route.name === "QR" ? null : (
-          <Ionicons name={iconName} size={size} color={color} />
-        ),
+        route.name === "QR" ? null : <Ionicons name={iconName} size={size} color={color} />,
 
       headerRight: () => (
         <Pressable onPress={headerBellPress} style={{ paddingRight: 6 }}>
@@ -140,12 +140,25 @@ function useTabScreenOptions(headerBellPress: () => void) {
   };
 }
 
+/**
+ * ✅ Keşfet sekmesi için nested stack.
+ * Tab bar kaybolmadan HomeLanding -> HomeScreen geçişi burada yapılacak.
+ */
+function ExploreNavigator() {
+  return (
+    <ExploreStack.Navigator screenOptions={{ headerShown: false }}>
+      <ExploreStack.Screen name="KeşfetLanding" component={HomeLandingScreen} />
+      <ExploreStack.Screen name="KeşfetListe" component={HomeScreen} />
+    </ExploreStack.Navigator>
+  );
+}
+
 function AppTabs({ navigation }: any) {
   const opts = useTabScreenOptions(() => navigation.navigate("Bildirimler"));
 
   return (
     <Tabs.Navigator screenOptions={opts}>
-      <Tabs.Screen name="Keşfet" component={HomeScreen} />
+      <Tabs.Screen name="Keşfet" component={ExploreNavigator} />
 
       <Tabs.Screen
         name="QR"
@@ -163,6 +176,7 @@ function AppTabs({ navigation }: any) {
       />
 
       <Tabs.Screen name="Rezervasyonlar" component={BookingsScreen} />
+      <Tabs.Screen name="Siparişlerim" component={QrMenuScreen} />
       <Tabs.Screen name="Profil" component={ProfileScreen} />
     </Tabs.Navigator>
   );
@@ -173,7 +187,7 @@ function GuestTabs({ navigation }: any) {
 
   return (
     <Tabs.Navigator screenOptions={opts}>
-      <Tabs.Screen name="Keşfet" component={HomeScreen} />
+      <Tabs.Screen name="Keşfet" component={ExploreNavigator} />
 
       <Tabs.Screen
         name="QR"
@@ -191,11 +205,8 @@ function GuestTabs({ navigation }: any) {
       />
 
       <Tabs.Screen name="Rezervasyonlar" component={BookingsScreen} />
-      <Tabs.Screen
-        name="Profil"
-        component={LoginScreen}
-        options={{ headerShown: false }}
-      />
+      <Tabs.Screen name="Siparişlerim" component={LoginScreen} options={{ headerShown: false }} />
+      <Tabs.Screen name="Profil" component={LoginScreen} options={{ headerShown: false }} />
     </Tabs.Navigator>
   );
 }
@@ -207,14 +218,11 @@ export default function RootNavigator() {
   const regionHydrated = useRegion((s) => s.hydrated);
   const regionResolved = useRegion((s) => s.resolved);
 
-  // ✅ Sadece auth durumunda remount (login/logout).
-  // Region/language değişimi NavigationContainer'ı remount etmemeli.
   const navKey = token ? "auth" : "guest";
 
   const fetchUnreadCount = useNotifications((s) => s.fetchUnreadCount);
 
   React.useEffect(() => {
-    // Token yoksa unread sayısı anlamsız; boşuna request atma.
     if (!token) return;
     fetchUnreadCount().catch(() => {});
   }, [token, fetchUnreadCount]);
@@ -228,8 +236,6 @@ export default function RootNavigator() {
     headerRightContainerStyle: { width: 44 },
   };
 
-  // ✅ İlk açılış: auth hydrate + region hydrate + region resolve bitmeden UI'ı başlatma.
-  // Böylece Home doğru region ile gelir; ilk render sonrası region flip / tab reset yaşanmaz.
   if (!authHydrated || !regionHydrated || !regionResolved) {
     return (
       <View style={{ flex: 1, backgroundColor: "#fff", alignItems: "center", justifyContent: "center" }}>
@@ -243,55 +249,67 @@ export default function RootNavigator() {
 
   return (
     <NavigationContainer key={navKey}>
-      <Stack.Navigator screenOptions={stackOptions}>
+      <RootStack.Navigator screenOptions={stackOptions}>
         {token ? (
           <>
-            <Stack.Screen name="Tabs" component={AppTabs} options={{ headerShown: false }} />
-            <Stack.Screen name="Bildirimler" component={NotificationsScreen} />
-            <Stack.Screen name="Restoran" component={RestaurantDetailScreen} />
-            <Stack.Screen name="Harita" component={RestaurantMapScreen} />
-            <Stack.Screen name="Rezervasyon - Tarih" component={ReservationStep1Screen} />
-            <Stack.Screen name="Rezervasyon - Menü" component={ReservationStep2Screen} />
-            <Stack.Screen name="Rezervasyon - Özet" component={ReservationStep3Screen} />
-            <Stack.Screen name="Rezervasyon Detayı" component={ReservationDetailScreen} />
+            <RootStack.Screen name="Tabs" component={AppTabs} options={{ headerShown: false }} />
+            {/* KeşfetListe artık ExploreNavigator içinde, burada tekrar tanımlama YOK */}
+            <RootStack.Screen name="Bildirimler" component={NotificationsScreen} />
+            <RootStack.Screen name="Restoran" component={RestaurantDetailScreen} />
+            <RootStack.Screen name="Harita" component={RestaurantMapScreen} />
+            <RootStack.Screen name="Rezervasyon - Tarih" component={ReservationStep1Screen} />
+            <RootStack.Screen name="Rezervasyon - Menü" component={ReservationStep2Screen} />
+            <RootStack.Screen name="Rezervasyon - Özet" component={ReservationStep3Screen} />
+            <RootStack.Screen name="Rezervasyon Detayı" component={ReservationDetailScreen} />
 
-            <Stack.Screen name="QR Menü" component={QrMenuScreen} />
-            <Stack.Screen name="QR Tara" component={QrScanScreen} />
+            <RootStack.Screen name="QR Menü" component={QrMenuScreen} />
+            <RootStack.Screen name="QR Tara" component={QrScanScreen} />
 
-            <Stack.Screen name="RestaurantPanel" component={RestaurantPanelNavigator} options={{ headerShown: false }} />
-            <Stack.Screen name="AdminPanel" component={AdminPanelNavigator} options={{ headerShown: false }} />
-            <Stack.Screen name="Terms" component={TermsScreen} />
-            <Stack.Screen name="Privacy" component={PrivacyPolicyScreen} />
-            <Stack.Screen name="Help" component={HelpSupportScreen} />
-            <Stack.Screen name="Contact" component={ContactScreen} />
-            <Stack.Screen name="About" component={AboutScreen} />
-            <Stack.Screen name="Licenses" component={LicensesScreen} />
-            <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
-            <Stack.Screen name="Asistan" component={AssistantScreen} />
+            <RootStack.Screen name="RestaurantPanel" component={RestaurantPanelNavigator} options={{ headerShown: false }} />
+            <RootStack.Screen name="AdminPanel" component={AdminPanelNavigator} options={{ headerShown: false }} />
+            <RootStack.Screen name="Terms" component={TermsScreen} />
+            <RootStack.Screen name="Privacy" component={PrivacyPolicyScreen} />
+            <RootStack.Screen name="Help" component={HelpSupportScreen} />
+            <RootStack.Screen name="Contact" component={ContactScreen} />
+            <RootStack.Screen name="About" component={AboutScreen} />
+            <RootStack.Screen name="Licenses" component={LicensesScreen} />
+            <RootStack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
+            <RootStack.Screen name="Asistan" component={AssistantScreen} />
+            <RootStack.Screen
+  name="Delivery"
+  component={DeliveryNavigator}
+  options={{ headerShown: false }}
+/>
           </>
         ) : (
           <>
-            <Stack.Screen name="TabsGuest" component={GuestTabs} options={{ headerShown: false }} />
-            <Stack.Screen name="Giriş" component={LoginScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Restoran" component={RestaurantDetailScreen} />
-            <Stack.Screen name="Harita" component={RestaurantMapScreen} />
-            <Stack.Screen name="Rezervasyon - Tarih" component={ReservationStep1Screen} />
-            <Stack.Screen name="Rezervasyon - Menü" component={ReservationStep2Screen} />
-            <Stack.Screen name="Rezervasyon - Özet" component={ReservationStep3Screen} />
+            <RootStack.Screen name="TabsGuest" component={GuestTabs} options={{ headerShown: false }} />
+            {/* KeşfetListe artık ExploreNavigator içinde, burada tekrar tanımlama YOK */}
+            <RootStack.Screen name="Giriş" component={LoginScreen} options={{ headerShown: false }} />
+            <RootStack.Screen name="Restoran" component={RestaurantDetailScreen} />
+            <RootStack.Screen name="Harita" component={RestaurantMapScreen} />
+            <RootStack.Screen name="Rezervasyon - Tarih" component={ReservationStep1Screen} />
+            <RootStack.Screen name="Rezervasyon - Menü" component={ReservationStep2Screen} />
+            <RootStack.Screen name="Rezervasyon - Özet" component={ReservationStep3Screen} />
 
-            <Stack.Screen name="QR Menü" component={QrMenuScreen} />
-            <Stack.Screen name="QR Tara" component={QrScanScreen} />
+            <RootStack.Screen name="QR Menü" component={QrMenuScreen} />
+            <RootStack.Screen name="QR Tara" component={QrScanScreen} />
 
-            <Stack.Screen name="Terms" component={TermsScreen} />
-            <Stack.Screen name="Privacy" component={PrivacyPolicyScreen} />
-            <Stack.Screen name="Help" component={HelpSupportScreen} />
-            <Stack.Screen name="Contact" component={ContactScreen} />
-            <Stack.Screen name="About" component={AboutScreen} />
-            <Stack.Screen name="Licenses" component={LicensesScreen} />
-            <Stack.Screen name="Asistan" component={AssistantScreen} />
+            <RootStack.Screen name="Terms" component={TermsScreen} />
+            <RootStack.Screen name="Privacy" component={PrivacyPolicyScreen} />
+            <RootStack.Screen name="Help" component={HelpSupportScreen} />
+            <RootStack.Screen name="Contact" component={ContactScreen} />
+            <RootStack.Screen name="About" component={AboutScreen} />
+            <RootStack.Screen name="Licenses" component={LicensesScreen} />
+            <RootStack.Screen name="Asistan" component={AssistantScreen} />
+            <RootStack.Screen
+  name="Delivery"
+  component={DeliveryNavigator}
+  options={{ headerShown: false }}
+/>
           </>
         )}
-      </Stack.Navigator>
+      </RootStack.Navigator>
     </NavigationContainer>
   );
 }

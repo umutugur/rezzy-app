@@ -13,11 +13,35 @@ export type OpenOrderSessionPayload = {
   reservationId?: string | null;
 };
 
+export type OrderItemModifierPayload = {
+  groupId: string;
+  optionId: string;
+  groupTitle?: string;
+  optionTitle: string;
+
+  // ✅ store/useQrCart standardı
+  priceDelta: number;
+
+  // ✅ back-compat: bazı yerlerde price gelebilir
+  price?: number;
+};
+
 export type OrderItemPayload = {
   itemId: string;
   title: string;        // ✅ backend zorunlu istiyor
   qty: number;
+
+  // base price
   price?: number;
+
+  // ✅ modifiers support
+  modifiers?: OrderItemModifierPayload[];
+
+  // ✅ unique per item+modifier set
+  lineKey?: string;
+
+  // ✅ opsiyonel: base + modifiers (1 adet)
+  unitTotal?: number;
 };
 
 export type CreateOrderPayload = {
@@ -87,12 +111,34 @@ export async function createOrder(
     reservationId: payload.reservationId,
     paymentMethod: payload.paymentMethod === "pay_at_venue" ? "venue" : "card", // ✅ backend uyumu
     notes: payload.notes,
-    items: (payload.items || []).map((x) => ({
-      itemId: normalizeMongoId(x.itemId),
-      title: x.title,
-      qty: x.qty,
-      price: x.price,
-    })),
+    items: (payload.items || []).map((x) => {
+      const basePrice = Number(x.price ?? 0) || 0;
+      const unitTotal = Number(x.unitTotal ?? x.price ?? 0) || 0;
+
+      return {
+        itemId: normalizeMongoId(x.itemId),
+        title: x.title,
+        qty: x.qty,
+
+        // ✅ backend eski contract (price) ile uyumlu kalsın:
+        // modifiers varsa unitTotal (modifiers dahil) gönder
+        price: unitTotal || basePrice,
+
+        // ✅ yeni alanlar (backend ignore edebilir)
+        unitTotal: unitTotal || undefined,
+        lineKey: x.lineKey,
+
+        modifiers: (x.modifiers || []).map((m) => ({
+          groupId: normalizeMongoId(m.groupId),
+          optionId: normalizeMongoId(m.optionId),
+          groupTitle: m.groupTitle,
+          optionTitle: m.optionTitle,
+
+          // ✅ tek kaynağa indir: priceDelta yoksa price'tan al
+          priceDelta: Number(m.priceDelta ?? m.price ?? 0) || 0,
+        })),
+      };
+    }),
   };
 
   return unwrap(api.post<OrderDto>(`/orders`, body));
