@@ -9,6 +9,7 @@ import CartScreen from "../screens/CartScreen";
 import PaymentScreen from "../screens/PaymentScreen";
 import DeliveryAddressPickerScreen from "../screens/DeliveryAddressPickerScreen";
 import DeliveryCreateAddressScreen from "../screens/DeliveryCreateAddressScreen"; // ✅ yeni ekran
+import MyOrdersScreen from "../screens/MyOrdersScreen";
 
 const Stack = createStackNavigator<DeliveryStackParams>();
 
@@ -25,6 +26,11 @@ export default function DeliveryNavigator() {
         name={DeliveryRoutes.AddressPicker}
         component={DeliveryAddressPickerScreen}
         options={{ title: "Teslimat Adresi" }}
+      />
+      <Stack.Screen
+        name={DeliveryRoutes.Orders}
+        component={MyOrdersScreen}
+        options={{ title: "Siparişlerim" }}
       />
 
       <Stack.Screen

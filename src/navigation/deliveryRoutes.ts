@@ -3,6 +3,7 @@ export const DeliveryRoutes = {
   AddressPicker: "AddressPicker",
   CreateAddress: "CreateAddress", // ✅ yeni
   DeliveryHome: "DeliveryHome",
+  Orders: "Orders",
   DeliveryRestaurant: "DeliveryRestaurant",
   Cart: "Cart",
   Checkout: "Checkout",
@@ -18,6 +19,7 @@ export type DeliveryStackParams = {
   [DeliveryRoutes.CreateAddress]: { backTo?: DeliveryRouteName } | undefined;
 
   [DeliveryRoutes.DeliveryHome]: undefined;
+  [DeliveryRoutes.Orders]: undefined;
   [DeliveryRoutes.DeliveryRestaurant]: { restaurantId: string };
   [DeliveryRoutes.Cart]: undefined;
 

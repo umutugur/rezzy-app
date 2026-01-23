@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
-  Alert,
   Modal,
   TextInput,
   Switch,
@@ -99,8 +98,8 @@ type ModifierGroup = {
 
 const getId = (x: any): string => String(x?._id ?? x?.id ?? "");
 const getTitle = (x: any): string => String(x?.title ?? x?.name ?? "");
-const getPrice = (x: any): number => Number(x?.price ?? x?.extraPrice ?? 0) || 0;
-
+const getPrice = (x: any): number =>
+  Number(x?.priceDelta ?? x?.delta ?? x?.price ?? x?.extraPrice ?? 0) || 0;
 function extractModifierGroups(it: any): ModifierGroup[] {
   const raw =
     it?.modifierGroups ||
@@ -115,6 +114,7 @@ function isModifierItem(it: any): boolean {
   const groups = extractModifierGroups(it);
   return Array.isArray(groups) && groups.length > 0;
 }
+
 
 function computeModsExtra(groups: ModifierGroup[], selected: SelectedModifiersState): number {
   let total = 0;
@@ -144,8 +144,82 @@ function buildLineKey(itemId: string, selected: SelectedModifiersState): string 
   }
   return `${itemId}__${parts.join("|")}`;
 }
+function extractRootModifierGroups(resolved: any): ModifierGroup[] {
+  const root =
+    resolved?.modifierGroups ||
+    resolved?.modifier_groups ||
+    resolved?.modifiers?.groups ||
+    [];
+  return Array.isArray(root) ? root : [];
+}
 
+function resolveItemModifierGroups(
+  it: any,
+  groupsById: Record<string, ModifierGroup>
+): ModifierGroup[] {
+  // 1) Item içinde grup objeleri zaten varsa
+  const direct = extractModifierGroups(it);
+  if (Array.isArray(direct) && direct.length > 0) return direct;
+
+  // 2) Item modifierGroupIds ile geliyorsa
+  const idsRaw =
+    Array.isArray(it?.modifierGroupIds) ? it.modifierGroupIds :
+    Array.isArray(it?.modifier_group_ids) ? it.modifier_group_ids :
+    [];
+
+  const ids = (idsRaw || []).map((x: any) => String(x)).filter(Boolean);
+  if (ids.length === 0) return [];
+
+  const groups: ModifierGroup[] = [];
+  for (const id of ids) {
+    const g = groupsById[String(id)];
+    if (g) groups.push(g);
+  }
+  return groups;
+}
+
+function isModifierItemResolved(
+  it: any,
+  groupsById: Record<string, ModifierGroup>
+): boolean {
+  const groups = resolveItemModifierGroups(it, groupsById);
+  return Array.isArray(groups) && groups.length > 0;
+}
 export default function QrMenuScreen() {
+  // Toast state & helpers
+  const [toast, setToast] = useState<{ visible: boolean; type: "success" | "error" | "info"; message: string }>({
+    visible: false,
+    type: "info",
+    message: "",
+  });
+  const toastTimer = React.useRef<any>(null);
+  const showToast = (type: "success" | "error" | "info", message: string) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast({ visible: true, type, message });
+    toastTimer.current = setTimeout(() => {
+      setToast((p) => ({ ...p, visible: false }));
+    }, 2400);
+  };
+  useEffect(() => {
+    return () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+    };
+  }, []);
+
+  // Confirm modal state & helpers
+  const [confirm, setConfirm] = useState<{ open: boolean; title: string; message: string; onYes?: () => void }>({
+    open: false,
+    title: "",
+    message: "",
+  });
+  const openConfirm = (title: string, message: string, onYes: () => void) => {
+    setConfirm({ open: true, title, message, onYes });
+  };
+
+  // Cart modal state
+  const [cartModal, setCartModal] = useState(false);
+  // Inline cart clear confirmation overlay state
+  const [cartClearConfirmOpen, setCartClearConfirmOpen] = useState(false);
   const nav = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const route = useRoute<any>();
@@ -175,7 +249,7 @@ export default function QrMenuScreen() {
 
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [loading, setLoading] = useState(true);
-
+  const [modifierGroupsById, setModifierGroupsById] = useState<Record<string, ModifierGroup>>({});
   const [menuCats, setMenuCats] = useState<ALaCarteCategory[]>([]);
   const [menuItemsByCat, setMenuItemsByCat] = useState<ALaCarteItemsByCat>({});
   const [menuLoading, setMenuLoading] = useState(false);
@@ -214,7 +288,7 @@ export default function QrMenuScreen() {
     if (!restaurantId) return;
     if (creating || sheetBusy) return;
     if (items.length === 0) {
-      Alert.alert(t("qrMenu.cartEmptyTitle"), t("qrMenu.cartEmptyMessage"));
+      showToast("info", t("qrMenu.cartEmptyMessage") || "Sepet boş.");
       return;
     }
 
@@ -272,11 +346,11 @@ export default function QrMenuScreen() {
 
         if (!orderId) {
           console.log("[QrMenu] createOrder response:", order);
-          Alert.alert(t("common.error"), t("qrMenu.orderIdMissing"));
+          showToast("error", t("qrMenu.orderIdMissing"));
           return;
         }
 
-        Alert.alert(t("qrMenu.orderSuccessTitle"), t("qrMenu.orderSuccessMessage"));
+        showToast("success", t("qrMenu.orderSuccessMessage"));
         clearCart();
 
         nav.dispatch(
@@ -318,7 +392,7 @@ export default function QrMenuScreen() {
 
       if (!orderId) {
         console.log("[QrMenu] createOrder response:", order);
-        Alert.alert(t("common.error"), t("qrMenu.orderIdMissing"));
+        showToast("error", t("qrMenu.orderIdMissing"));
         return;
       }
 
@@ -329,7 +403,7 @@ export default function QrMenuScreen() {
       });
 
       if (!setup?.paymentIntentClientSecret || !setup?.customerId || !setup?.ephemeralKey) {
-        Alert.alert(t("qrMenu.stripeMissingTitle"), t("qrMenu.stripeMissingMessage"));
+        showToast("error", t("qrMenu.stripeMissingMessage"));
         // ödeme bilgileri eksikse order'ı iptal et
         try {
           await cancelOrder(createdOrderId);
@@ -367,7 +441,7 @@ export default function QrMenuScreen() {
       });
 
       if (initError) {
-        Alert.alert(t("qrMenu.stripeInitErrorTitle"), initError.message);
+        showToast("error", initError.message || t("qrMenu.stripeInitErrorTitle"));
         try {
           await cancelOrder(createdOrderId);
         } catch {}
@@ -382,13 +456,13 @@ export default function QrMenuScreen() {
         } catch {}
 
         if (presentError.code !== "Canceled") {
-          Alert.alert(t("qrMenu.stripeFailTitle"), presentError.message);
+          showToast("error", presentError.message || t("qrMenu.stripeFailTitle"));
         }
         return;
       }
 
       // ✅ ödeme başarılı: başarı UI
-      Alert.alert(t("qrMenu.orderSuccessTitle"), t("qrMenu.orderSuccessMessage"));
+      showToast("success", t("qrMenu.orderSuccessMessage"));
       clearCart();
 
       nav.dispatch(
@@ -405,8 +479,8 @@ export default function QrMenuScreen() {
         } catch {}
       }
 
-      Alert.alert(
-        t("common.error"),
+      showToast(
+        "error",
         e?.response?.data?.message || e?.message || t("qrMenu.orderErrorFallback")
       );
     } finally {
@@ -439,8 +513,8 @@ export default function QrMenuScreen() {
         if (!alive) return;
         setRestaurant(r);
       } catch (e: any) {
-        Alert.alert(
-          t("common.error"),
+        showToast(
+          "error",
           e?.response?.data?.message || e?.message || t("qrMenu.restaurantLoadError")
         );
       } finally {
@@ -458,7 +532,15 @@ export default function QrMenuScreen() {
     setMenuLoading(true);
     try {
       const resolved: any = await rpGetPublicResolvedMenu(restaurantId);
-
+      // ✅ Root modifier groups cache (resolved menu contract)
+const rootGroups = extractRootModifierGroups(resolved);
+const map: Record<string, ModifierGroup> = {};
+for (const g of rootGroups) {
+  const id = getId(g);
+  if (!id) continue;
+  map[id] = g;
+}
+setModifierGroupsById(map);
       const cats: ALaCarteCategory[] = Array.isArray(resolved?.categories)
         ? resolved.categories
         : Array.isArray(resolved?.cats)
@@ -550,12 +632,14 @@ export default function QrMenuScreen() {
   const onAdd = (it: ALaCarteItem, catId?: string) => {
   if (!((it as any)?.isAvailable ?? true)) return;
 
-  if (isModifierItem(it as any)) {
-    setModsItem({ ...(it as any), __catId: catId } as any);
-    setModsGroups(extractModifierGroups(it as any));
-    setModsOpen(true);
-    return;
-  }
+  const groups = resolveItemModifierGroups(it as any, modifierGroupsById);
+
+if (groups.length > 0) {
+  setModsItem({ ...(it as any), __catId: catId } as any);
+  setModsGroups(groups);
+  setModsOpen(true);
+  return;
+}
 
   addItem({
     itemId: (it as any)._id,
@@ -600,19 +684,13 @@ export default function QrMenuScreen() {
         });
 
         if (kind === "waiter") {
-          Alert.alert(
-            t("qrMenu.waiterCallSuccessTitle"),
-            t("qrMenu.waiterCallSuccessMessage")
-          );
+          showToast("success", t("qrMenu.waiterCallSuccessMessage"));
         } else {
-          Alert.alert(
-            t("qrMenu.billRequestSuccessTitle"),
-            t("qrMenu.billRequestSuccessMessage")
-          );
+          showToast("success", t("qrMenu.billRequestSuccessMessage"));
         }
       } catch (e: any) {
-        Alert.alert(
-          t("common.error"),
+        showToast(
+          "error",
           e?.response?.data?.message ||
             e?.message ||
             t("qrMenu.quickRequestError")
@@ -724,21 +802,16 @@ export default function QrMenuScreen() {
           <TouchableOpacity onPress={openBill} style={styles.topBtn}>
             <Ionicons name="receipt-outline" size={20} color={C.primary} />
           </TouchableOpacity>
-
           <TouchableOpacity
             onPress={() => {
               if (items.length === 0) return;
-              Alert.alert(
+              openConfirm(
                 t("qrMenu.clearCartTitle"),
                 t("qrMenu.clearCartMessage"),
-                [
-                  { text: t("qrMenu.clearCartCancel"), style: "cancel" },
-                  {
-                    text: t("qrMenu.clearCartConfirm"),
-                    style: "destructive",
-                    onPress: clearCart,
-                  },
-                ]
+                () => {
+                  clearCart();
+                  showToast("success", t("qrMenu.cleared") || "Sepet temizlendi.");
+                }
               );
             }}
             style={styles.topBtn}
@@ -866,8 +939,7 @@ export default function QrMenuScreen() {
                           {catItems.map((it) => {
                             const qty = cartMap.get((it as any)._id) || 0;
 const disabled = !((it as any)?.isAvailable ?? true);
-const hasMods = isModifierItem(it as any);
-
+const hasMods = isModifierItemResolved(it as any, modifierGroupsById);
                             return (
                               <View key={it._id} style={styles.itemRow}>
                                 {it.photoUrl ? (
@@ -965,14 +1037,24 @@ const hasMods = isModifierItem(it as any);
           { paddingBottom: Math.max(12, 12 + insets.bottom) },
         ]}
       >
-        <View style={{ flex: 1 }}>
+        <TouchableOpacity
+          style={{ flex: 1 }}
+          activeOpacity={0.85}
+          onPress={() => {
+            if (items.length === 0) {
+              showToast("info", t("qrMenu.cartEmptyMessage") || "Sepet boş.");
+              return;
+            }
+            setCartModal(true);
+          }}
+        >
           <Text style={styles.ctaTitle}>
             {t("qrMenu.cartLabel", { count })}
           </Text>
           <Text style={styles.ctaTotal}>
             {t("qrMenu.cartTotal", { amount: fmt(total) })}
           </Text>
-        </View>
+        </TouchableOpacity>
 
         <TouchableOpacity
           onLayout={onCtaLayout} // ✅ ölçüm
@@ -1003,6 +1085,242 @@ const hasMods = isModifierItem(it as any);
           </View>
         </TouchableOpacity>
       </View>
+      {/* Confirm Modal */}
+      <Modal
+        visible={confirm.open}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setConfirm((p) => ({ ...p, open: false }))}
+      >
+        <View style={styles.confirmBackdrop}>
+          <TouchableOpacity
+            style={styles.confirmBackdropPress}
+            activeOpacity={1}
+            onPress={() => setConfirm((p) => ({ ...p, open: false }))}
+          />
+          <View style={styles.confirmCard}>
+            <View style={styles.confirmHeader}>
+              <Text style={styles.confirmTitle}>{confirm.title}</Text>
+              <TouchableOpacity
+                onPress={() => setConfirm((p) => ({ ...p, open: false }))}
+                style={styles.confirmClose}
+              >
+                <Ionicons name="close" size={18} color={C.text} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.confirmMessage}>{confirm.message}</Text>
+            <View style={styles.confirmRow}>
+              <TouchableOpacity
+                style={styles.confirmBtnSecondary}
+                activeOpacity={0.9}
+                onPress={() => setConfirm((p) => ({ ...p, open: false }))}
+              >
+                <Text style={styles.confirmBtnSecondaryText}>{t("common.cancel") || "Vazgeç"}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.confirmBtnPrimary}
+                activeOpacity={0.9}
+                onPress={() => {
+                  const fn = confirm.onYes;
+                  setConfirm((p) => ({ ...p, open: false }));
+                  fn?.();
+                }}
+              >
+                <Text style={styles.confirmBtnPrimaryText}>{t("common.confirm") || "Onayla"}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Cart Modal */}
+      <Modal
+        visible={cartModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setCartClearConfirmOpen(false);
+          setCartModal(false);
+        }}
+      >
+        <View style={styles.cartBackdrop}>
+          <TouchableOpacity
+            style={styles.cartBackdropPress}
+            activeOpacity={1}
+            onPress={() => {
+              setCartClearConfirmOpen(false);
+              setCartModal(false);
+            }}
+          />
+          <View style={styles.cartCard}>
+            <View style={styles.cartHeader}>
+              <Text style={styles.cartTitle}>{t("qrMenu.cartTitle") || "Sepet"}</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setCartClearConfirmOpen(false);
+                  setCartModal(false);
+                }}
+                style={styles.cartClose}
+              >
+                <Ionicons name="close" size={18} color={C.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              style={{ maxHeight: 520 }}
+              contentContainerStyle={{ paddingBottom: 10 }}
+            >
+              {(items as any[]).map((row, idx) => {
+                const key = String(row?.lineKey || row?.itemId || idx);
+                const title = String(row?.title || "");
+                const qty = Number(row?.qty || 0) || 0;
+                const unit = Number(row?.unitTotal ?? row?.price ?? 0) || 0;
+                const lineTotal = unit * qty;
+                const mods = Array.isArray(row?.modifiers) ? row.modifiers : [];
+
+                return (
+                  <View key={key} style={styles.cartRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.cartItemTitle} numberOfLines={2}>{title}</Text>
+                      {mods.length > 0 && (
+                        <View style={{ marginTop: 6, gap: 4 }}>
+                          {mods.map((m: any, mi: number) => (
+                            <Text key={mi} style={styles.cartModText} numberOfLines={2}>
+                              • {String(m?.optionTitle || m?.title || "")} {Number(m?.priceDelta || 0) > 0 ? `(+${fmt(Number(m.priceDelta))})` : ""}
+                            </Text>
+                          ))}
+                        </View>
+                      )}
+                      <Text style={styles.cartUnitText}>{t("qrMenu.unit") || "Birim"}: {fmt(unit)} · {t("qrMenu.line") || "Satır"}: {fmt(lineTotal)}</Text>
+                    </View>
+
+                    <View style={styles.cartQtyCol}>
+                      <View style={styles.cartQtyRow}>
+                        <TouchableOpacity
+                          onPress={() => dec(String(row?.lineKey || row?.itemId))}
+                          style={styles.cartQtyBtn}
+                          activeOpacity={0.9}
+                        >
+                          <Ionicons name="remove" size={14} color={C.primary} />
+                        </TouchableOpacity>
+                        <Text style={styles.cartQtyText}>{qty}</Text>
+                        <TouchableOpacity
+                          onPress={() => inc(String(row?.lineKey || row?.itemId))}
+                          style={styles.cartQtyBtn}
+                          activeOpacity={0.9}
+                        >
+                          <Ionicons name="add" size={14} color={C.primary} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+
+              {items.length === 0 && (
+                <View style={{ paddingVertical: 18, alignItems: "center" }}>
+                  <Text style={styles.cartEmptyText}>{t("qrMenu.cartEmptyMessage") || "Sepet boş."}</Text>
+                </View>
+              )}
+            </ScrollView>
+
+            <View style={styles.cartFooter}>
+              <TouchableOpacity
+                style={styles.cartClearBtn}
+                activeOpacity={0.9}
+                onPress={() => {
+                  if (items.length === 0) return;
+                  setCartClearConfirmOpen(true);
+                }}
+              >
+                <Ionicons name="trash-outline" size={16} color={C.muted} />
+                <Text style={styles.cartClearText}>{t("qrMenu.clearCartConfirm") || "Sepeti Temizle"}</Text>
+              </TouchableOpacity>
+
+              <View style={{ flex: 1, alignItems: "flex-end" }}>
+                <Text style={styles.cartTotalText}>{t("qrMenu.cartTotalShort") || "Toplam"}: {fmt(total)}</Text>
+              </View>
+            </View>
+            {/* Inline Cart Clear Confirmation Overlay */}
+            {cartClearConfirmOpen && (
+              <View style={styles.cartConfirmOverlay}>
+                <TouchableOpacity
+                  style={styles.cartConfirmBackdropPress}
+                  activeOpacity={1}
+                  onPress={() => setCartClearConfirmOpen(false)}
+                />
+
+                <View style={styles.cartConfirmCard}>
+                  <View style={styles.cartConfirmHeader}>
+                    <Text style={styles.cartConfirmTitle}>{t("qrMenu.clearCartTitle")}</Text>
+                    <TouchableOpacity
+                      onPress={() => setCartClearConfirmOpen(false)}
+                      style={styles.cartConfirmClose}
+                    >
+                      <Ionicons name="close" size={18} color={C.text} />
+                    </TouchableOpacity>
+                  </View>
+
+                  <Text style={styles.cartConfirmMessage}>{t("qrMenu.clearCartMessage")}</Text>
+
+                  <View style={styles.cartConfirmRow}>
+                    <TouchableOpacity
+                      style={styles.cartConfirmBtnSecondary}
+                      activeOpacity={0.9}
+                      onPress={() => setCartClearConfirmOpen(false)}
+                    >
+                      <Text style={styles.cartConfirmBtnSecondaryText}>{t("common.cancel") || "Vazgeç"}</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.cartConfirmBtnPrimary}
+                      activeOpacity={0.9}
+                      onPress={() => {
+                        clearCart();
+                        setCartClearConfirmOpen(false);
+                        showToast("success", t("qrMenu.cleared") || "Sepet temizlendi.");
+                      }}
+                    >
+                      <Text style={styles.cartConfirmBtnPrimaryText}>{t("qrMenu.clearCartConfirm") || (t("common.confirm") || "Onayla")}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
+      {/* Toast UI */}
+      {toast.visible && (
+        <View pointerEvents="none" style={styles.toastWrap}>
+          <View
+            style={[
+              styles.toast,
+              toast.type === "error"
+                ? styles.toastError
+                : toast.type === "success"
+                ? styles.toastSuccess
+                : styles.toastInfo,
+            ]}
+          >
+            <Ionicons
+              name={
+                toast.type === "error"
+                  ? "alert-circle"
+                  : toast.type === "success"
+                  ? "checkmark-circle"
+                  : "information-circle"
+              }
+              size={18}
+              color="#fff"
+            />
+            <Text style={styles.toastText} numberOfLines={3}>
+              {toast.message}
+            </Text>
+          </View>
+        </View>
+      )}
 
       {/* ✅ Ödeme yöntem popover */}
       <Modal
@@ -1639,4 +1957,215 @@ const styles = StyleSheet.create({
   billScrollContent: {
     paddingBottom: 8,
   },
-});
+  toastWrap: {
+    position: "absolute",
+    left: 16,
+    right: 16,
+    top: 10,
+    zIndex: 999,
+  },
+  toast: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    ...cardShadow,
+  },
+  toastError: { backgroundColor: "#B91C1C" },
+  toastSuccess: { backgroundColor: "#15803D" },
+  toastInfo: { backgroundColor: C.primary },
+  toastText: { color: "#fff", fontWeight: "900", fontSize: 13, flex: 1 },
+
+  confirmBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 18,
+  },
+  confirmBackdropPress: { ...StyleSheet.absoluteFillObject },
+  confirmCard: {
+    width: "100%",
+    maxWidth: 520,
+    backgroundColor: "#fff",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: 14,
+    ...cardShadow,
+  },
+  confirmHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  confirmTitle: { fontSize: 16, fontWeight: "900", color: C.text },
+  confirmClose: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F3F4F6",
+  },
+  confirmMessage: { color: C.muted, fontSize: 13, fontWeight: "800", lineHeight: 18, marginBottom: 12 },
+  confirmRow: { flexDirection: "row", gap: 10 },
+  confirmBtnSecondary: {
+    flex: 1,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  confirmBtnSecondaryText: { fontWeight: "900", color: C.text },
+  confirmBtnPrimary: {
+    flex: 1,
+    backgroundColor: C.primary,
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  confirmBtnPrimaryText: { fontWeight: "900", color: "#fff" },
+
+  cartBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 18,
+  },
+  cartBackdropPress: { ...StyleSheet.absoluteFillObject },
+  cartCard: {
+    width: "100%",
+    maxWidth: 560,
+    backgroundColor: "#fff",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: 14,
+    ...cardShadow,
+  },
+  cartHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
+  cartTitle: { fontSize: 17, fontWeight: "900", color: C.text },
+  cartClose: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F3F4F6",
+  },
+  cartRow: {
+    flexDirection: "row",
+    gap: 10,
+    borderWidth: 1,
+    borderColor: C.border,
+    backgroundColor: "#FAFAFA",
+    borderRadius: 14,
+    padding: 10,
+    marginTop: 10,
+  },
+  cartItemTitle: { fontWeight: "900", color: C.text, fontSize: 14 },
+  cartModText: { color: C.muted, fontSize: 12, fontWeight: "800" },
+  cartUnitText: { marginTop: 8, color: C.primary, fontSize: 12, fontWeight: "900" },
+  cartQtyCol: { justifyContent: "center" },
+  cartQtyRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  cartQtyBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: C.primary,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cartQtyText: { minWidth: 18, textAlign: "center", fontWeight: "900", color: C.text },
+  cartEmptyText: { color: C.muted, fontSize: 13, fontWeight: "800" },
+  cartFooter: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 12 },
+  cartClearBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderColor: C.border,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    borderRadius: 14,
+    backgroundColor: "#fff",
+  },
+  cartClearText: { fontWeight: "900", color: C.muted, fontSize: 12 },
+  cartTotalText: { fontWeight: "900", color: C.primary, fontSize: 15 },
+  cartConfirmOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 14,
+    zIndex: 50,
+  },
+  cartConfirmBackdropPress: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.25)",
+    borderRadius: 18,
+  },
+  cartConfirmCard: {
+    width: "100%",
+    maxWidth: 520,
+    backgroundColor: "#fff",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: 14,
+    ...cardShadow,
+  },
+  cartConfirmHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  cartConfirmTitle: { fontSize: 16, fontWeight: "900", color: C.text },
+  cartConfirmClose: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F3F4F6",
+  },
+  cartConfirmMessage: {
+    color: C.muted,
+    fontSize: 13,
+    fontWeight: "800",
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  cartConfirmRow: { flexDirection: "row", gap: 10 },
+  cartConfirmBtnSecondary: {
+    flex: 1,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cartConfirmBtnSecondaryText: { fontWeight: "900", color: C.text },
+  cartConfirmBtnPrimary: {
+    flex: 1,
+    backgroundColor: C.primary,
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cartConfirmBtnPrimaryText: { fontWeight: "900", color: "#fff" },
+  });

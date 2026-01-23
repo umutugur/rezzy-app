@@ -91,7 +91,22 @@ export default function QrScanScreen() {
       setTimeout(() => setScanned(false), 800);
       return;
     }
+const DEV_RID = "695d73f6e98967aaba07c694";
+const DEV_TID = "69713f78bc4f2ca2a53deb20";
 
+useEffect(() => {
+  // Sadece dev/simulator: QR ekranını bypass edip direkt menüye git
+  if (!__DEV__) return;
+
+  // İstersen sadece simulator için daha da kısıtlarız, şimdilik dev yeterli:
+  nav.replace("QR Menü", {
+    restaurantId: DEV_RID,
+    tableId: DEV_TID,
+    sessionId: null,
+    reservationId: null,
+    _devBypass: true,
+  });
+}, [nav]);
     nav.navigate("QR Menü", {
       restaurantId: parsed.restaurantId,
       tableId: parsed.tableId || null,

@@ -3,13 +3,13 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   Image,
   Pressable,
   ScrollView,
   FlatList,
   ActivityIndicator,
 } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useNavigation } from "@react-navigation/native";
 import Card from "../components/Card";
@@ -37,6 +37,7 @@ const BUSINESS_TYPE_MAP: Record<
 
 export default function HomeLandingScreen() {
   const nav = useNavigation<any>();
+  const insets = useSafeAreaInsets();
 
   const { region, regionHydrated } = useRegion(
     useShallow((s: any) => ({
@@ -78,21 +79,24 @@ export default function HomeLandingScreen() {
     };
   }, [regionHydrated, region]);
 
-  const renderFeatured = ({ item }: { item: Restaurant }) => (
-    <View style={{ width: 260, marginRight: 12 }}>
-      <Card
-        photo={item.photos?.[0]}
-        title={item.name}
-        subtitle={[item.city, item.priceRange || "₺₺"].filter(Boolean).join(" • ")}
-        onPress={() => nav.navigate("Restoran", { id: item._id })}
-      />
-    </View>
-  );
+  const renderFeatured = ({ item, index }: { item: Restaurant; index: number }) => {
+    const isRight = index % 2 === 1;
+    return (
+      <View style={[styles.featuredItem, isRight && styles.featuredItemRight]}>
+        <Card
+          photo={item.photos?.[0]}
+          title={item.name}
+          subtitle={[item.city, item.priceRange || "₺₺"].filter(Boolean).join(" • ")}
+          onPress={() => nav.navigate("Restoran", { id: item._id })}
+        />
+      </View>
+    );
+  };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={["left", "right", "bottom"]}>
       <ScrollView
-        contentContainerStyle={styles.container}
+        contentContainerStyle={[styles.container, { paddingBottom: 24 + insets.bottom + 90 }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.bannerCard}>
@@ -181,8 +185,9 @@ export default function HomeLandingScreen() {
             data={featured}
             keyExtractor={(i) => String(i._id)}
             renderItem={renderFeatured}
-            horizontal
-            showsHorizontalScrollIndicator={false}
+            numColumns={2}
+            scrollEnabled={false}
+            showsVerticalScrollIndicator={false}
             contentContainerStyle={{
               paddingHorizontal: 16,
               paddingTop: 10,
@@ -197,11 +202,11 @@ export default function HomeLandingScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#fff" },
-  container: { paddingBottom: 120 },
+  container: { paddingBottom: 120, flexGrow: 1 },
 
   bannerCard: {
     marginHorizontal: 16,
-    marginTop: 6,
+    marginTop: 10,
     borderRadius: 18,
     overflow: "hidden",
     backgroundColor: "#EEE",
@@ -243,10 +248,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 12,
+    justifyContent: "space-between",
   },
   gridItem: {
-    width: "30.8%",
+    width: "31.5%", // 3'lü görünüm
     backgroundColor: "#fff",
     borderRadius: 14,
     paddingVertical: 14,
@@ -259,12 +264,14 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
     elevation: 2,
+    marginBottom: 12,
   },
   gridLabel: {
     marginTop: 8,
     fontSize: 13,
     fontWeight: "700",
     color: "#2A2A2A",
+    textAlign: "center",
   },
 
   exploreBtn: {
@@ -286,4 +293,12 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   exploreTitle: { fontSize: 22, fontWeight: "900", color: "#1E1E1E" },
+
+  featuredItem: {
+    flex: 1,
+    marginBottom: 12,
+  },
+  featuredItemRight: {
+    marginLeft: 12,
+  },
 });

@@ -31,6 +31,7 @@ import AboutScreen from "../screens/AboutScreen";
 import LicensesScreen from "../screens/LicensesScreen";
 import DeleteAccountScreen from "../screens/DeleteAccountScreen";
 import AssistantScreen from "../screens/AssistantScreen";
+import MyOrdersScreen from "../screens/MyOrdersScreen";
 
 import QrMenuScreen from "../screens/QrMenuScreen";
 import QrScanScreen from "../screens/QrScanScreen";
@@ -43,6 +44,11 @@ import { useNotifications } from "../store/useNotifications";
 import AppHeaderTitle from "../components/AppHeaderTitle";
 import AdminPanelNavigator from "./AdminPanelNavigator";
 import { useI18n } from "../i18n";
+
+const DEV_QR = {
+  restaurantId: "695d73f6e98967aaba07c694",
+  tableId: "69713f78bc4f2ca2a53deb20",
+};
 
 const RootStack = createStackNavigator();
 const Tabs = createBottomTabNavigator();
@@ -160,23 +166,33 @@ function AppTabs({ navigation }: any) {
     <Tabs.Navigator screenOptions={opts}>
       <Tabs.Screen name="Keşfet" component={ExploreNavigator} />
 
-      <Tabs.Screen
-        name="QR"
-        component={EmptyScreen}
-        options={{
-          tabBarButton: (props) => (
-            <QrTabButton
-              {...props}
-              onPress={() => {
-                navigation.navigate("QR Tara");
-              }}
-            />
-          ),
+     <Tabs.Screen
+  name="QR"
+  component={EmptyScreen}
+  options={{
+    tabBarButton: (props) => (
+      <QrTabButton
+        {...props}
+        onPress={() => {
+          if (__DEV__) {
+            navigation.navigate("QR Menü", {
+              restaurantId: DEV_QR.restaurantId,
+              tableId: DEV_QR.tableId,
+              sessionId: null,
+              reservationId: null,
+              _devBypass: true,
+            });
+            return;
+          }
+
+          navigation.navigate("QR Tara");
         }}
       />
-
+    ),
+  }}
+/>
       <Tabs.Screen name="Rezervasyonlar" component={BookingsScreen} />
-      <Tabs.Screen name="Siparişlerim" component={QrMenuScreen} />
+      <Tabs.Screen name="Siparişlerim" component={MyOrdersScreen} />
       <Tabs.Screen name="Profil" component={ProfileScreen} />
     </Tabs.Navigator>
   );
@@ -189,21 +205,31 @@ function GuestTabs({ navigation }: any) {
     <Tabs.Navigator screenOptions={opts}>
       <Tabs.Screen name="Keşfet" component={ExploreNavigator} />
 
-      <Tabs.Screen
-        name="QR"
-        component={EmptyScreen}
-        options={{
-          tabBarButton: (props) => (
-            <QrTabButton
-              {...props}
-              onPress={() => {
-                navigation.navigate("QR Tara");
-              }}
-            />
-          ),
+     <Tabs.Screen
+  name="QR"
+  component={EmptyScreen}
+  options={{
+    tabBarButton: (props) => (
+      <QrTabButton
+        {...props}
+        onPress={() => {
+          if (__DEV__) {
+            navigation.navigate("QR Menü", {
+              restaurantId: DEV_QR.restaurantId,
+              tableId: DEV_QR.tableId,
+              sessionId: null,
+              reservationId: null,
+              _devBypass: true,
+            });
+            return;
+          }
+
+          navigation.navigate("QR Tara");
         }}
       />
-
+    ),
+  }}
+/>
       <Tabs.Screen name="Rezervasyonlar" component={BookingsScreen} />
       <Tabs.Screen name="Siparişlerim" component={LoginScreen} options={{ headerShown: false }} />
       <Tabs.Screen name="Profil" component={LoginScreen} options={{ headerShown: false }} />

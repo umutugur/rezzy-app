@@ -9,11 +9,15 @@ import {
   Platform,
   ScrollView,
   Animated,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from "react-native";
 import * as Location from "expo-location";
 import MapView, { Marker, Region } from "react-native-maps";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Text } from "../components/Themed";
 import { createAddress, type UserAddress } from "../api/addresses";
@@ -104,6 +108,7 @@ function ModernField({
 export default function DeliveryCreateAddressScreen() {
   const nav = useNavigation<any>();
   const route = useRoute<any>();
+  const insets = useSafeAreaInsets();
   const params = (route.params || undefined) as RouteParams;
 
   const { t } = useI18n();
@@ -253,12 +258,19 @@ export default function DeliveryCreateAddressScreen() {
   }, [buildFullAddress, coords, title, note, makeDefault, setSelected, nav, params, t]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
-      <ScrollView
-        contentContainerStyle={{ paddingBottom: 24, gap: 16 }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: "#F9FAFB" }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      // Header + safe-area offset so focused inputs are pushed above the keyboard
+      keyboardVerticalOffset={Platform.OS === "ios" ? Math.max(insets.top, 12) + 12 : 0}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <View style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
+          <ScrollView
+            contentContainerStyle={{ paddingBottom: 24, gap: 16 }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
         {/* Modern header */}
         <View
           style={{
@@ -559,7 +571,9 @@ export default function DeliveryCreateAddressScreen() {
             )}
           </Pressable>
         </View>
-      </ScrollView>
-    </View>
+          </ScrollView>
+        </View>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }

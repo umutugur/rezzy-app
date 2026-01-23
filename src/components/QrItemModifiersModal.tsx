@@ -59,6 +59,85 @@ const getId = (x: any): string => String(x?._id ?? x?.id ?? "");
 const getTitle = (x: any): string => String(x?.title ?? x?.name ?? "");
 const getPrice = (x: any): number => Number(x?.price ?? x?.extraPrice ?? 0) || 0;
 
+// Robust numeric parsing for max/min coming from different backends (string, {$numberInt}, etc.)
+const toNum = (v: any): number | undefined => {
+  if (v == null) return undefined;
+  if (typeof v === "number") return Number.isFinite(v) ? v : undefined;
+  if (typeof v === "string") {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : undefined;
+  }
+  if (typeof v === "object") {
+    const maybe = (v as any).$numberInt ?? (v as any).$numberDouble ?? (v as any).value;
+    if (maybe != null) {
+      const n = Number(maybe);
+      return Number.isFinite(n) ? n : undefined;
+    }
+  }
+  const n = Number(v);
+  return Number.isFinite(n) ? n : undefined;
+};
+
+const boolish = (v: any): boolean => {
+  if (v == null) return false;
+  if (typeof v === "boolean") return v;
+  if (typeof v === "number") return v !== 0;
+  if (typeof v === "string") {
+    const s = v.trim().toLowerCase();
+    if (!s) return false;
+    return s === "true" || s === "1" || s === "yes" || s === "y";
+  }
+  return Boolean(v);
+};
+
+const pickFirstNum = (...vals: any[]): number | undefined => {
+  for (const v of vals) {
+    const n = toNum(v);
+    if (n != null) return n;
+  }
+  return undefined;
+};
+
+const getMin = (g: any): number => {
+  // Common aliases across different menu/override contracts
+  const n = pickFirstNum(
+    g?.min,
+    g?.minSelect,
+    g?.minSelections,
+    g?.minSelectable,
+    g?.selectionMin,
+    g?.constraints?.min,
+    g?.rules?.min
+  );
+  return n != null && n > 0 ? Math.floor(n) : 0;
+};
+
+const getMax = (g: any): number | undefined => {
+  // Common aliases across different menu/override contracts
+  const n = pickFirstNum(
+    g?.max,
+    g?.maxSelect,
+    g?.maxSelections,
+    g?.maxSelectable,
+    g?.selectionMax,
+    g?.constraints?.max,
+    g?.rules?.max
+  );
+  if (n == null) return undefined;
+  const m = Math.floor(n);
+  return m > 0 ? m : undefined;
+};
+
+const isMultiple = (g: any): boolean => {
+  // Prefer explicit boolean flags when present
+  if (boolish(g?.multiple) || boolish(g?.allowMultiple)) return true;
+  if (boolish(g?.multi) || boolish(g?.isMultiple) || boolish(g?.isMulti)) return true;
+
+  // Otherwise infer from max
+  const max = getMax(g);
+  return typeof max === "number" ? max > 1 : false;
+};
+
 function computeModsExtra(groups: ModifierGroup[], selected: SelectedModifiersState): number {
   let total = 0;
   for (const g of groups) {
@@ -82,9 +161,8 @@ function validate(groups: ModifierGroup[], selected: SelectedModifiersState): { 
   for (const g of groups) {
     const gid = getId(g);
     const title = getTitle(g) || "Seçim";
-    const min = Number((g as any)?.min ?? 0) || 0;
-    const maxRaw = (g as any)?.max;
-    const max = maxRaw == null ? undefined : Number(maxRaw);
+    const min = getMin(g);
+    const max = getMax(g);
     const required = Boolean((g as any)?.required) || min > 0;
     const chosen = selected?.[gid] || [];
 
@@ -138,14 +216,10 @@ export default function QrItemModifiersModal({ visible, item, groups, fmt, onClo
             {(groups || []).map((g) => {
               const gid = getId(g);
               const gTitle = getTitle(g) || "Seçenek";
-              const min = Number((g as any)?.min ?? 0) || 0;
-              const maxRaw = (g as any)?.max;
-              const max = maxRaw == null ? undefined : Number(maxRaw);
+              const min = getMin(g);
+              const max = getMax(g);
               const required = Boolean((g as any)?.required) || min > 0;
-              const multiple =
-                Boolean((g as any)?.multiple) ||
-                Boolean((g as any)?.allowMultiple) ||
-                (typeof max === "number" ? max > 1 : false);
+              const multiple = isMultiple(g);
 
               const selectedIds = selected[gid] || [];
               const opts: ModifierOption[] = Array.isArray((g as any)?.options)
@@ -176,7 +250,11 @@ export default function QrItemModifiersModal({ visible, item, groups, fmt, onClo
                         if (!multiple) return { ...prev, [gid]: checked ? [] : [oid] };
 
                         const next = checked ? cur.filter((x) => x !== oid) : [...cur, oid];
-                        if (typeof max === "number" && max > 0 && next.length > max) return prev;
+                        if (typeof max === "number" && max > 0 && next.length > max) {
+                          // keep previous state; show a quick UX message
+                          Alert.alert("Limit", `${gTitle} için en fazla ${max} seçim yapabilirsin.`);
+                          return prev;
+                        }
                         return { ...prev, [gid]: next };
                       });
                     };

@@ -520,6 +520,13 @@
   "apply": "Mekan Bul"
 },
 "qrMenu": {
+   "cartTitle": "Sepet",
+    "cartTotalShort": "Toplam",
+    "cleared": "Sepet temizlendi.",
+    "unit": "Fiyat",
+    "line": "Tutar",
+    "cartClearTitle": "Sepeti Temizle",
+    "cartClearMessage": "Sepetteki tüm ürünler silinsin mi?",
     "loading": "Yükleniyor…",
     "cartEmptyTitle": "Sepet boş",
     "cartEmptyMessage": "Lütfen ürün seçin.",

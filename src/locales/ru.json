@@ -537,6 +537,13 @@
   "apply": "Найти заведение"
 },
  "qrMenu": {
+   "cartTitle": "Корзина",
+  "cartTotalShort": "Итого",
+  "cleared": "Корзина очищена.",
+  "unit": "Цена за единицу",
+  "line": "Промежуточный итог",
+  "cartClearTitle": "Очистить корзину",
+  "cartClearMessage": "Удалить все товары из корзины?",
     "loading": "Загрузка…",
     "cartEmptyTitle": "Корзина пуста",
     "cartEmptyMessage": "Пожалуйста, выберите хотя бы одно блюдо.",

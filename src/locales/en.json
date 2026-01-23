@@ -619,6 +619,13 @@
   "apply": "Find a place"
 },
  "qrMenu": {
+  "cartTitle": "Cart",
+  "cartTotalShort": "Total",
+  "cleared": "Cart cleared.",
+  "unit": "Unit price",
+  "line": "Subtotal",
+  "cartClearTitle": "Clear cart",
+  "cartClearMessage": "Remove all items from the cart?",
     "loading": "Loading…",
     "cartEmptyTitle": "Cart is empty",
     "cartEmptyMessage": "Please select at least one item.",
