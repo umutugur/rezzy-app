@@ -42,6 +42,7 @@ export default function HomeScreen() {
   // Optional preset filters passed from another screen.
   // Defaults preserve current behavior when no params exist.
   const preset = route?.params?.preset || {};
+  const presetKey = route?.params?.presetKey;
   const presetBusinessType: string | undefined =
     typeof preset?.businessType === "string" ? preset.businessType : undefined;
   const presetDeliveryOnly: boolean = preset?.deliveryOnly === true;
@@ -163,6 +164,7 @@ export default function HomeScreen() {
         businessType: presetBusinessType ?? null,
         deliveryOnly: presetDeliveryOnly || null,
         mustServeSelectedAddress: presetMustServeSelectedAddress || null,
+        presetKey: presetKey ?? null,
       });
 
       if (inflightRef.current && sig === lastSigRef.current) return;
@@ -218,6 +220,7 @@ export default function HomeScreen() {
       presetBusinessType,
       presetDeliveryOnly,
       presetMustServeSelectedAddress,
+      presetKey,
     ]
   );
 

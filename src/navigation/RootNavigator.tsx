@@ -9,6 +9,7 @@ import {
 } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Constants from "expo-constants";
 
 import RestaurantPanelNavigator from "../navigation/RestaurantPanelNavigator";
 import LoginScreen from "../screens/LoginScreen";
@@ -174,7 +175,8 @@ function AppTabs({ navigation }: any) {
       <QrTabButton
         {...props}
         onPress={() => {
-          if (__DEV__) {
+          // DEV bypass sadece emulator/simulator'da çalışsın; fiziksel cihazda QR tarama açık kalsın
+          if (__DEV__ && !Constants.isDevice) {
             navigation.navigate("QR Menü", {
               restaurantId: DEV_QR.restaurantId,
               tableId: DEV_QR.tableId,
@@ -213,7 +215,8 @@ function GuestTabs({ navigation }: any) {
       <QrTabButton
         {...props}
         onPress={() => {
-          if (__DEV__) {
+          // DEV bypass sadece emulator/simulator'da çalışsın; fiziksel cihazda QR tarama açık kalsın
+          if (__DEV__ && !Constants.isDevice) {
             navigation.navigate("QR Menü", {
               restaurantId: DEV_QR.restaurantId,
               tableId: DEV_QR.tableId,
