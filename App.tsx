@@ -3,7 +3,7 @@ import React from "react";
 import { StatusBar } from "expo-status-bar";
 import RootNavigator from "./src/navigation/RootNavigator";
 import { SafeAreaProvider, initialWindowMetrics } from "react-native-safe-area-context";
-import { View, ActivityIndicator, Text, TextInput, Platform } from "react-native";
+import { View, ActivityIndicator, Text, TextInput, Platform, AppState } from "react-native";
 import * as Notifications from "expo-notifications";
 import * as Location from "expo-location";
 import { useAuth } from "./src/store/useAuth";
@@ -19,15 +19,31 @@ if ((TextInput as any).defaultProps == null) (TextInput as any).defaultProps = {
 (Text as any).defaultProps.maxFontSizeMultiplier = 1.2;
 (TextInput as any).defaultProps.maxFontSizeMultiplier = 1.2;
 
-// Bildirim davranışı
+const ORDER_READY_CHANNEL = "order_ready";
+const ORDER_READY_SOUND_IOS = "order_ready.wav"; // iOS bundle sound filename
+
+// Bildirim davranışı (foreground'da local show yapacağız)
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
+  handleNotification: async (notification) => {
+    const data: any = notification?.request?.content?.data || {};
+    const isLocal = data.__local === true;
+    if (isLocal) {
+      return {
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      };
+    }
+    return {
+      shouldShowAlert: false,
+      shouldPlaySound: false,
+      shouldSetBadge: true,
+      shouldShowBanner: false,
+      shouldShowList: false,
+    };
+  },
 });
 
 async function ensureAndroidChannel() {
@@ -35,6 +51,13 @@ async function ensureAndroidChannel() {
   await Notifications.setNotificationChannelAsync("default", {
     name: "default",
     importance: Notifications.AndroidImportance.MAX,
+  });
+  await Notifications.setNotificationChannelAsync(ORDER_READY_CHANNEL, {
+    name: "Sipariş Hazır",
+    importance: Notifications.AndroidImportance.MAX,
+    sound: "order_ready", // android/app/src/main/res/raw/order_ready.wav
+    vibrationPattern: [0, 250, 250, 250],
+    lightColor: "#FFC400",
   });
 }
 
@@ -133,6 +156,34 @@ export default function App() {
       }
     })();
   }, [authBootstrapped]);
+
+  // Foreground push -> local notification (banner + sound)
+  React.useEffect(() => {
+    const sub = Notifications.addNotificationReceivedListener((n) => {
+      try {
+        if (AppState.currentState !== "active") return;
+        const data: any = n?.request?.content?.data || {};
+        if (data.__local === true) return;
+
+        const title = n?.request?.content?.title || "";
+        const body = n?.request?.content?.body || "";
+        const type = String(data?.type || "");
+
+        const channelId = type === "order_ready" ? ORDER_READY_CHANNEL : "default";
+        const trigger = Platform.OS === "android" ? { channelId } : null;
+        Notifications.scheduleNotificationAsync({
+          content: {
+            title,
+            body,
+            data: { ...data, __local: true },
+            sound: type === "order_ready" ? ORDER_READY_SOUND_IOS : "default",
+          },
+          trigger,
+        }).catch(() => {});
+      } catch {}
+    });
+    return () => sub.remove();
+  }, []);
 
   // Login / logout sonrası cihaz eşleştirme
   React.useEffect(() => {
