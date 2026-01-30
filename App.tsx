@@ -10,8 +10,10 @@ import { useAuth } from "./src/store/useAuth";
 import { useRegion } from "./src/store/useRegion";
 import { registerPushToken, attachDeviceAfterLogin } from "./src/hooks/usePushToken";
 import InAppToast from "./src/components/InAppToast";
+import GetStartedModal from "./src/components/GetStartedModal";
 import { StripeProvider } from "@stripe/stripe-react-native";
 import Constants from "expo-constants";
+import { useGetStarted } from "./src/store/useGetStarted";
 
 // Global font scale
 if ((Text as any).defaultProps == null) (Text as any).defaultProps = {};
@@ -82,6 +84,7 @@ export default function App() {
   const setRegion = useRegion((s) => s.setRegion);
   const setLanguage = useRegion((s) => s.setLanguage);
   const markRegionResolved = useRegion((s) => s.markResolved);
+  const initGetStarted = useGetStarted((s) => s.init);
 
   // Region auto-resolution completed? (prevents CY default render -> UK flip)
   // Removed local state in favor of store's resolved state
@@ -146,6 +149,11 @@ export default function App() {
       cancelled = true;
     };
   }, [authBootstrapped, token, fetchMe]);
+
+  // "Get Started" modal: show only once on first open
+  React.useEffect(() => {
+    initGetStarted().catch(() => {});
+  }, [initGetStarted]);
 
   // İlk açılışta push token
   React.useEffect(() => {
@@ -298,6 +306,7 @@ export default function App() {
       >
         <StatusBar style="dark" />
         <RootNavigator />
+        <GetStartedModal />
         <InAppToast />
       </StripeProvider>
     </SafeAreaProvider>

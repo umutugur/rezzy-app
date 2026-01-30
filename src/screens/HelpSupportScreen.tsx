@@ -188,7 +188,7 @@ export default function HelpSupportScreen() {
         <TouchableOpacity
           activeOpacity={0.85}
           onPress={() => {
-            const email = "rezvixapp7@gmail.com";
+            const email = "info@rezvix.co.uk";
             const subject = encodeURIComponent("Rezvix - Yardım Talebi");
             const body = encodeURIComponent(
               "Merhaba Rezvix ekibi,\n\nUygulama ile ilgili yardım almak istiyorum.\n\nCihaz / Platform:\nAçıklama:"

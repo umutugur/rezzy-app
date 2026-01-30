@@ -110,6 +110,7 @@
     "legal": {
       "terms": "Terms of Use",
       "privacy": "Privacy Policy",
+      "howToUse": "How to use",
       "help": "Help & Support",
       "contact": "Contact",
       "licenses": "Licenses",
@@ -440,25 +441,25 @@
 },
 "about": {
   "title": "About",
-  "subtitle": "Designed to make restaurant reservations fair, transparent and effortless for both guests and venues.",
-  "headline": "We make reservations smarter and safer.",
-  "description": "Rezvix combines deposits, QR check-in and real-time occupancy tracking. Guests enjoy a smooth experience while venues keep full control over their night.",
+  "subtitle": "A fast, secure, and transparent experience for reservations, delivery, and QR menu orders.",
+  "headline": "Discover, order, and pay with confidence — all in Rezvix.",
+  "description": "Rezvix brings reservations, delivery orders, and the QR menu experience into one place. It supports online payments (Stripe) and pay-at-door options, plus location-based discovery and real-time notifications.",
   "features": {
     "smartBooking": {
-      "title": "Smart booking flow",
-      "desc": "Table, party size, date and time selections are suggested in line with the venue’s opening hours and capacity."
+      "title": "Smart booking & ordering",
+      "desc": "Create reservations and delivery orders quickly with date, time, party size, and address details."
     },
     "deposit": {
-      "title": "Deposit & reliability",
-      "desc": "Reduces no-show risk for venues while giving guests confidence that their table is truly reserved."
+      "title": "Payment options",
+      "desc": "Online payment via Stripe or pay-at-door with card/cash for flexible and secure checkout."
     },
     "qr": {
-      "title": "Fast QR check-in",
-      "desc": "Reservations are verified at the door by scanning a QR code and actual arrivals are recorded instantly."
+      "title": "QR menu & instant orders",
+      "desc": "Order from the QR menu on-site, choose a payment method, and send your order instantly."
     },
     "transparency": {
-      "title": "Transparent performance",
-      "desc": "Reservation history, cancellation rates and occupancy metrics are visible to venues in a single view."
+      "title": "Real-time status & alerts",
+      "desc": "Track order, delivery, and reservation updates with timely notifications."
     }
   },
   "meta": {
@@ -472,7 +473,7 @@
 
   "contact": {
     "title": "Contact",
-    "subtitle": "You can reach out to us so we can assist you as quickly and accurately as possible.",
+    "subtitle": "Reach us about reservations, delivery, QR menu, or payments.",
 
     "emailTitle": "Support via Email",
     "emailDesc": "You can send us an email for any questions, feedback, or support requests.",
@@ -482,7 +483,7 @@
     "workhours": "09:00 — 18:00",
 
     "moreInfo": "More Information",
-    "moreInfoDesc": "Soon you will find more information and support channels about Rezvix right here."
+    "moreInfoDesc": "Soon you will find more information and additional support channels about Rezvix right here."
   },
   "deleteAccount": {
     "title": "Delete Account",
@@ -501,27 +502,27 @@
     "successMessage": "Your account and personal data have been successfully deleted.",
     "errorGeneric": "An error occurred while deleting your account."
   },
-  "helpSupport": {
+"helpSupport": {
   "title": "Help & Support",
-  "subtitle": "Quickly review the most common questions about reservations, notifications and using the app.",
+  "subtitle": "Quickly review the most common questions about delivery, QR menu, payments and notifications.",
   "faq": {
     "title": "Frequently Asked Questions",
     "subtitle": "We have collected the most common topics for you.",
-    "q1": "How do I make a reservation?",
-    "q2": "How can I cancel my reservation?",
-    "q3": "How do I track the status of my reservation?",
-    "q4": "Why am I not receiving notifications?",
-     "a1": "With Rezvix you can quickly book tables at partner restaurants, securely pay any required deposit, and verify your reservation in seconds using a QR check-in.",
-    "a2": "You can track your reservation status, cancellations and check-in records on the reservation detail screen and via in-app notifications.",
-    "a3": "Cancellation rules may vary by restaurant. The policy shown while creating the reservation is the one that applies.",
-    "a4": "You can reach us through the Help & Support section in the app or by sending an email to our contact address."
+    "q1": "How do I place a delivery order or make a reservation?",
+    "q2": "How do I order using the QR menu?",
+    "q3": "Payment failed or the payment screen won’t open. What should I do?",
+    "q4": "Why do you need location and notification permissions?",
+     "a1": "Choose a restaurant and enter date, time, and party size for reservations. For delivery, select your address, build your cart, and confirm the order.",
+    "a2": "Scan the QR code at the venue, pick your items from the menu, choose a payment method, and send your order.",
+    "a3": "Check your internet connection, update the app, and try again. Online payments are processed securely by Stripe; Rezvix does not store card details.",
+    "a4": "Location helps show nearby venues and improves delivery address selection. Notifications keep you updated on order and delivery status."
   },
   "tips": {
     "title": "Quick Tips",
     "subtitle": "Check these steps first to avoid most issues.",
-    "item1": "Make sure notification permission is granted and your internet connection is stable.",
+    "item1": "Make sure location and notification permissions are enabled.",
     "item2": "Ensure you are using the latest version of the Rezvix app.",
-    "item3": "If the issue continues, try closing and reopening the app or logging out and back in."
+    "item3": "If payment or ordering issues persist, try restarting the app."
   },
   "contact": {
     "title": "Still need help?",
@@ -549,18 +550,18 @@
     "subtitle": "Your privacy is important to us. Below you can find details about how Rezvix collects, uses and protects your data.",
 
     "collected": "Data We Collect",
-    "collected_id": "Identification information (name, email, phone)",
-    "collected_usage": "Reservation and app usage details",
-    "collected_device": "Device information (model, OS version, region/language)",
+    "collected_id": "Identity and contact details (name, email, phone) and delivery addresses",
+    "collected_usage": "Reservation, delivery and QR menu order details; payment preferences",
+    "collected_device": "Device/session information, push token and location data when permitted",
 
     "usage": "How We Use Your Data",
-    "usage_reservation": "To manage your reservations and provide accurate service",
-    "usage_notifications": "To send important updates and notifications",
-    "usage_security": "To improve security and prevent misuse",
+    "usage_reservation": "To manage reservations, delivery orders and QR menu orders",
+    "usage_notifications": "To send order, payment and delivery updates",
+    "usage_security": "To improve security, prevent fraud and meet legal obligations",
 
     "sharing": "Data Sharing",
-    "sharing_restaurants": "Reservation data may be shared with relevant restaurants",
-    "sharing_law": "Data may be shared if required by law or for safety",
+    "sharing_restaurants": "Order and reservation data may be shared with relevant restaurants",
+    "sharing_law": "Payment processing may involve trusted providers (e.g., Stripe) and legal obligations",
 
     "retention": "Data Retention",
     "retention_text": "Your data is stored only as long as necessary for operational, legal and security requirements.",
@@ -575,25 +576,25 @@
     "contact_text": "You can contact us for any questions, feedback, or requests regarding our privacy policy.",
     "disclaimer": "This privacy policy may be updated periodically to improve transparency and compliance."
   },
-  "terms": {
+"terms": {
     "title": "Terms of Use",
-    "subtitle": "By using Rezvix, you agree to the following terms and conditions.",
+    "subtitle": "By using Rezvix, you agree to the following terms covering reservations, delivery and payments.",
     "accountTitle": "Account & Security",
     "accountText": "You are responsible for keeping your account secure and your login details confidential. Any activity carried out via your account is deemed to be your responsibility. We recommend that you do not share your password with third parties.",
-    "reservationsTitle": "Reservations & Cancellations",
-    "reservationsText1": "Reservations are created based on date, time, party size and the specific policies of each restaurant. Some venues may require a deposit or a minimum spend.",
-    "reservationsText2": "Cancellation and modification rights are defined by each restaurant’s own policy. Please review the terms shown during the reservation flow carefully.",
+    "reservationsTitle": "Reservations, Delivery and QR Menu Orders",
+    "reservationsText1": "Reservations and delivery orders are created based on date/time, party size/address and restaurant policies. Some venues may require online payment, minimum order value or pay-at-door options.",
+    "reservationsText2": "For QR menu and delivery orders, accurate table/address details are the user’s responsibility. Cancellation and modification rights are defined by each restaurant’s policy.",
     "prohibitedTitle": "Prohibited Use",
-    "prohibitedText": "You may not use Rezvix for fraudulent, misleading, abusive or illegal purposes. Creating fake reservations, acting on behalf of others without permission, or abusing the system may result in permanent suspension of your account.",
+    "prohibitedText": "You may not use Rezvix for fraudulent, misleading, abusive or illegal purposes. Creating fake orders, payment fraud or location manipulation may result in permanent suspension of your account.",
     "liabilityTitle": "Limitation of Liability",
-    "liabilityText": "Rezvix is not directly responsible for the content, quality or delivery of services offered by restaurants. Rezvix acts as an intermediary platform that facilitates the reservation process.",
+    "liabilityText": "Rezvix is not directly responsible for the content, quality or delivery of services offered by restaurants. Online payments are processed by trusted providers (Stripe); card details are not stored by Rezvix.",
     "changesTitle": "Changes to These Terms",
     "changesText": "These terms may be updated from time to time. Changes take effect as soon as they are published within the app. Your continued use of Rezvix after changes have been published constitutes acceptance of the updated terms.",
     "legalTitle": "Legal Information & Contact",
     "legalText1": "This text is for general information only and does not constitute legal advice. You are expected to comply with all applicable local laws and regulations while using the app.",
-    "legalText2": "If you have any legal or contract-related questions about Rezvix, please reach out to us via the contact screen or by email.",
+    "legalText2": "If you have any legal or contract-related questions about Rezvix, please reach out to us via the Contact screen.",
     "disclaimer": "*This text is for informational purposes only and does not replace professional legal advice.",
-    "lastUpdate": "Last updated: 2025"
+    "lastUpdate": "Last updated: 2026"
   },
   "auth": {
   "emailLabel": "Email",

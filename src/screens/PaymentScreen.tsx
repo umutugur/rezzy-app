@@ -4,13 +4,16 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
-  Alert,
   TextInput,
   Platform,
   StyleSheet,
+  Modal,
+  LayoutChangeEvent,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { useStripe } from "@stripe/stripe-react-native";
+import * as Linking from "expo-linking";
 
 import { Text } from "../components/Themed";
 import { useI18n } from "../i18n";
@@ -30,7 +33,7 @@ import { formatMoney, currencySymbolFromRegion, pickDeliveryMeta } from "../deli
 import { DeliveryRoutes } from "../navigation/deliveryRoutes";
 import { useDeliveryAddress } from "../store/useDeliveryAddress";
 
-type PaymentMethod = "cash" | "card";
+type PaymentMethod = "cash" | "card" | "card_on_delivery";
 
 export default function PaymentScreen() {
   const nav = useNavigation<any>();
@@ -87,8 +90,31 @@ export default function PaymentScreen() {
   const [submitting, setSubmitting] = React.useState(false);
   const [r, setR] = React.useState<DeliveryRestaurant | null>(null);
 
-  const [method, setMethod] = React.useState<PaymentMethod>("cash");
+  const [method, setMethod] = React.useState<PaymentMethod>("card");
+  const [doorOpen, setDoorOpen] = React.useState(false);
+  const [doorAnchor, setDoorAnchor] = React.useState<{ x: number; width: number } | null>(null);
+  const [methodRowLayout, setMethodRowLayout] = React.useState<{ y: number; height: number } | null>(null);
   const [note, setNote] = React.useState("");
+  const [stripeBusy, setStripeBusy] = React.useState(false);
+
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+
+  const [msgOpen, setMsgOpen] = React.useState(false);
+  const [msgTitle, setMsgTitle] = React.useState("");
+  const [msgBody, setMsgBody] = React.useState("");
+  const [msgKind, setMsgKind] = React.useState<"info" | "warn" | "error">("info");
+  const [msgAction, setMsgAction] = React.useState<null | { label: string; onPress: () => void }>(null);
+
+  const showMsg = React.useCallback(
+    (title: string, body?: string, kind: "info" | "warn" | "error" = "info", action?: { label: string; onPress: () => void }) => {
+      setMsgTitle(title);
+      setMsgBody(body || "");
+      setMsgKind(kind);
+      setMsgAction(action || null);
+      setMsgOpen(true);
+    },
+    []
+  );
 
   React.useEffect(() => {
     let alive = true;
@@ -183,38 +209,45 @@ const meta = React.useMemo(() => (metaSrc ? pickDeliveryMeta(metaSrc) : null), [
     count > 0 &&
     !!addressId &&
     (minOrder == null ? true : subtotal >= minOrder) &&
-    !submitting;
+    !submitting &&
+    !stripeBusy;
 
   const onSubmit = async () => {
     if (!token) {
-      Alert.alert(
+      showMsg(
         safeT("delivery.loginRequiredTitle", { defaultValue: "Giriş gerekli" }),
-        safeT("delivery.loginRequiredBody", { defaultValue: "Sipariş vermek için giriş yapmalısınız." })
+        safeT("delivery.loginRequiredBody", { defaultValue: "Sipariş vermek için giriş yapmalısınız." }),
+        "warn",
+        {
+          label: safeT("common.login", { defaultValue: "Giriş" }),
+          onPress: () => nav.navigate("Giriş"),
+        }
       );
-      nav.navigate("Giriş");
       return;
     }
 
     if (!r?._id) return;
 
     if (!addressId) {
-      Alert.alert(
+      showMsg(
         safeT("delivery.addressRequiredTitle", { defaultValue: "Adres gerekli" }),
         safeT("delivery.addressRequiredBody", {
           defaultValue: "Sipariş için teslimat adresi seçmeniz gerekiyor.",
-        })
+        }),
+        "warn"
       );
       return;
     }
 
     if (minOrder != null && subtotal < minOrder) {
-      Alert.alert(
+      showMsg(
         safeT("delivery.minOrderTitle", { defaultValue: "Minimum sepet tutarı" }),
         safeT("delivery.minOrderBody", {
           defaultValue: `Minimum sepet: ${formatMoney(minOrder, symbol)}. Sepetinizi tamamlayın.`,
-        })
+        }),
+        "warn",
+        { label: safeT("common.ok", { defaultValue: "Tamam" }), onPress: () => nav.goBack() }
       );
-      nav.goBack();
       return;
     }
 
@@ -288,63 +321,86 @@ return {
 
       const res: any = await createDeliveryOrder(payload as any);
 
-      // ✅ CARD akışı: backend order yaratmıyor, attempt + clientSecret döner
+      // ✅ ONLINE ödeme: Stripe PaymentSheet
       if (method === "card") {
         const clientSecret = res?.payment?.clientSecret;
-        const attemptId = res?.attemptId;
-
-        if (!clientSecret || !attemptId) {
-          throw new Error("Kart ödemesi başlatılamadı. Lütfen tekrar deneyin.");
+        if (!clientSecret) {
+          showMsg(
+            safeT("delivery.paymentFailedTitle", { defaultValue: "Ödeme başlatılamadı" }),
+            safeT("delivery.paymentFailedBody", { defaultValue: "Kart ödemesi başlatılamadı. Lütfen tekrar deneyin." }),
+            "error"
+          );
+          return;
         }
 
-        Alert.alert(
-          safeT("delivery.paymentStartedTitle", { defaultValue: "Ödeme başlatıldı" }),
-          safeT("delivery.paymentStartedBody", {
-            defaultValue: "Kart ödemenizi tamamlamak için yönlendirileceksiniz.",
-          }),
-          [
-            {
-              text: safeT("common.ok", { defaultValue: "Tamam" }),
-              onPress: () => {
-                nav.navigate(DeliveryRoutes.Checkout, {
-                  mode: "card_confirm",
-                  attemptId,
-                  clientSecret,
-                  restaurantId: String(r._id),
-                  addressId: String(addressId),
-                  addressText,
-                  hexId,
-                });
-              },
-            },
-          ]
-        );
+        setStripeBusy(true);
+        const { error: initError } = await initPaymentSheet({
+          paymentIntentClientSecret: clientSecret,
+          merchantDisplayName: "Rezvix",
+          returnURL: Linking.createURL("stripe-redirect"),
+          allowsDelayedPaymentMethods: false,
+          style: "alwaysLight",
+        });
 
+        if (initError) {
+          showMsg(
+            safeT("delivery.paymentInitErrorTitle", { defaultValue: "Ödeme başlatılamadı" }),
+            initError.message || safeT("delivery.paymentInitErrorBody", { defaultValue: "Ödeme ekranı açılamadı." }),
+            "error"
+          );
+          return;
+        }
+
+        const { error: presentError } = await presentPaymentSheet();
+        if (presentError) {
+          if (presentError.code !== "Canceled") {
+            showMsg(
+              safeT("delivery.paymentFailedTitle", { defaultValue: "Ödeme başarısız" }),
+              presentError.message || safeT("delivery.paymentFailedBody", { defaultValue: "Ödeme tamamlanamadı." }),
+              "error"
+            );
+          }
+          return;
+        }
+
+        showMsg(
+          safeT("delivery.orderSuccessTitle", { defaultValue: "Ödeme alındı" }),
+          safeT("delivery.orderSuccessBody", {
+            defaultValue: "Ödemeniz alındı. Siparişiniz hazırlanıyor.",
+          }),
+          "info",
+          {
+            label: safeT("common.ok", { defaultValue: "Tamam" }),
+            onPress: () => {
+              clear?.();
+              nav.popToTop?.();
+            },
+          }
+        );
         return;
       }
 
-      // ✅ CASH: order yaratıldı -> sepet temizle
-      clear?.();
-
-      Alert.alert(
+      // ✅ KAPIDA: order yaratıldı -> sepet temizle
+      showMsg(
         safeT("delivery.orderSuccessTitle", { defaultValue: "Sipariş alındı" }),
         safeT("delivery.orderSuccessBody", { defaultValue: "Siparişiniz başarıyla oluşturuldu." }),
-        [
-          {
-            text: safeT("common.ok", { defaultValue: "Tamam" }),
-            onPress: () => {
-              nav.popToTop?.();
-            },
+        "info",
+        {
+          label: safeT("common.ok", { defaultValue: "Tamam" }),
+          onPress: () => {
+            clear?.();
+            nav.popToTop?.();
           },
-        ]
+        }
       );
     } catch (e: any) {
       const apiCode = e?.response?.data?.code;
       const apiMsg = e?.response?.data?.message;
       const msg = (apiCode ? `[${String(apiCode)}] ` : "") + (apiMsg || e?.message || safeT("common.error"));
-      Alert.alert(safeT("common.error"), msg);
+      showMsg(safeT("common.error"), msg, "error");
     } finally {
       setSubmitting(false);
+      setStripeBusy(false);
     }
   };
 
@@ -471,20 +527,101 @@ return {
             {safeT("delivery.paymentMethod", { defaultValue: "Ödeme Yöntemi" })}
           </Text>
 
-          <View style={{ flexDirection: "row", gap: 10 }}>
-            <MethodPill
-              active={method === "cash"}
-              icon="cash-outline"
-              label={safeT("delivery.payCash", { defaultValue: "Nakit" })}
-              onPress={() => setMethod("cash")}
-            />
+          <View style={styles.methodSection}>
+          <View
+            style={styles.methodRow}
+            onLayout={(e) => {
+              const layout = e.nativeEvent.layout;
+              setMethodRowLayout({ y: layout.y, height: layout.height });
+            }}
+          >
             <MethodPill
               active={method === "card"}
               icon="card-outline"
-              label={safeT("delivery.payCard", { defaultValue: "Kart" })}
-              onPress={() => setMethod("card")}
+              label={safeT("delivery.payOnline", { defaultValue: "Online Ödeme" })}
+              onPress={() => {
+                setMethod("card");
+                setDoorOpen(false);
+              }}
+            />
+            <MethodPill
+              active={method !== "card"}
+              icon="home-outline"
+              label={safeT("delivery.payAtDoor", { defaultValue: "Kapıda" })}
+              onLayout={(e) => {
+                const layout = e.nativeEvent.layout;
+                setDoorAnchor({ x: layout.x, width: layout.width });
+              }}
+              onPress={() => {
+                setDoorOpen((v) => !v);
+                if (method === "card") setMethod("cash");
+              }}
             />
           </View>
+
+          {doorOpen && (
+            <View
+              style={[
+                styles.doorOptions,
+                styles.doorOptionsFloat,
+                {
+                  top: (methodRowLayout ? methodRowLayout.y + methodRowLayout.height : 0) + 8,
+                  left: doorAnchor?.x ?? 0,
+                  width: doorAnchor?.width ?? "100%",
+                },
+              ]}
+            >
+              <Pressable
+                onPress={() => {
+                  setMethod("card_on_delivery");
+                  setDoorOpen(true);
+                }}
+                style={[
+                  styles.doorBtn,
+                  method === "card_on_delivery" ? styles.doorBtnActive : styles.doorBtnInactive,
+                ]}
+              >
+                <Ionicons
+                  name="card-outline"
+                  size={18}
+                  color={method === "card_on_delivery" ? "#fff" : DeliveryColors.primary}
+                />
+                <Text
+                  style={[
+                    styles.doorBtnText,
+                    { color: method === "card_on_delivery" ? "#fff" : DeliveryColors.primary },
+                  ]}
+                >
+                  {safeT("delivery.payDoorCard", { defaultValue: "Kapıda Kart" })}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => {
+                  setMethod("cash");
+                  setDoorOpen(true);
+                }}
+                style={[
+                  styles.doorBtn,
+                  method === "cash" ? styles.doorBtnActive : styles.doorBtnInactive,
+                ]}
+              >
+                <Ionicons
+                  name="cash-outline"
+                  size={18}
+                  color={method === "cash" ? "#fff" : DeliveryColors.primary}
+                />
+                <Text
+                  style={[
+                    styles.doorBtnText,
+                    { color: method === "cash" ? "#fff" : DeliveryColors.primary },
+                  ]}
+                >
+                  {safeT("delivery.payDoorCash", { defaultValue: "Kapıda Nakit" })}
+                </Text>
+              </Pressable>
+            </View>
+          )}
 
           {/* Not */}
           <View style={{ gap: 6, marginTop: 6 }}>
@@ -506,6 +643,7 @@ return {
             <Text secondary style={styles.noteHint}>
               {safeT("delivery.noteHint", { defaultValue: "Bu not siparişin tamamı için geçerlidir." })}
             </Text>
+          </View>
           </View>
         </Card>
 
@@ -547,7 +685,7 @@ return {
         ]}
       >
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-          {submitting ? (
+          {submitting || stripeBusy ? (
             <ActivityIndicator color="#fff" />
           ) : (
             <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
@@ -563,6 +701,58 @@ return {
 
         <Ionicons name="chevron-forward" size={20} color="#fff" />
       </Pressable>
+
+      {/* Uyarı / Bilgi Modal */}
+      <Modal visible={msgOpen} transparent animationType="fade" onRequestClose={() => setMsgOpen(false)}>
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.modalCard,
+              msgKind === "error"
+                ? { borderColor: "#FCA5A5" }
+                : msgKind === "warn"
+                ? { borderColor: "#FDE68A" }
+                : { borderColor: DeliveryColors.line },
+            ]}
+          >
+            <Text
+              style={[
+                styles.modalTitle,
+                msgKind === "error"
+                  ? { color: "#B91C1C" }
+                  : msgKind === "warn"
+                  ? { color: "#92400E" }
+                  : { color: DeliveryColors.text },
+              ]}
+            >
+              {msgTitle || safeT("common.info", { defaultValue: "Bilgi" })}
+            </Text>
+            {!!msgBody && <Text secondary style={styles.modalBody}>{msgBody}</Text>}
+
+            <View style={styles.modalActions}>
+              <Pressable onPress={() => setMsgOpen(false)} style={styles.modalBtnMuted}>
+                <Text style={styles.modalBtnMutedText}>
+                  {safeT("common.close", { defaultValue: "Kapat" })}
+                </Text>
+              </Pressable>
+              {msgAction && (
+                <Pressable
+                  onPress={() => {
+                    const cb = msgAction?.onPress;
+                    setMsgOpen(false);
+                    if (cb) cb();
+                  }}
+                  style={styles.modalBtnPrimary}
+                >
+                  <Text style={styles.modalBtnPrimaryText}>
+                    {msgAction.label || safeT("common.ok", { defaultValue: "Tamam" })}
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -584,10 +774,17 @@ function MetaChip(props: { icon: any; text: string }) {
   );
 }
 
-function MethodPill(props: { active: boolean; icon: any; label: string; onPress: () => void }) {
+function MethodPill(props: {
+  active: boolean;
+  icon: any;
+  label: string;
+  onPress: () => void;
+  onLayout?: (e: LayoutChangeEvent) => void;
+}) {
   return (
     <Pressable
       onPress={props.onPress}
+      onLayout={props.onLayout}
       style={[
         styles.methodPill,
         props.active ? styles.methodPillActive : null,
@@ -748,6 +945,28 @@ const styles = StyleSheet.create({
     backgroundColor: DeliveryColors.primary,
   },
   methodPillText: { fontWeight: "900", color: DeliveryColors.text },
+  methodSection: { position: "relative" },
+  methodRow: { flexDirection: "row", gap: 10 },
+  doorOptions: { gap: 8 },
+  doorOptionsFloat: { position: "absolute", zIndex: 5, elevation: 5 },
+  doorBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  doorBtnActive: {
+    backgroundColor: DeliveryColors.primary,
+    borderColor: DeliveryColors.primary,
+  },
+  doorBtnInactive: {
+    backgroundColor: "#fff",
+    borderColor: DeliveryColors.primary,
+  },
+  doorBtnText: { fontWeight: "900", fontSize: 13 },
 
   noteBox: {
     borderWidth: 1,
@@ -800,4 +1019,38 @@ const styles = StyleSheet.create({
   },
   bottomTitle: { color: "#fff", fontWeight: "900" },
   bottomValue: { color: "rgba(255,255,255,0.9)", fontWeight: "900", marginTop: 2 },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalCard: {
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    width: "100%",
+    padding: 16,
+    borderWidth: 1,
+  },
+  modalTitle: { fontSize: 16, fontWeight: "900", marginBottom: 6 },
+  modalBody: { marginBottom: 12 },
+  modalActions: { flexDirection: "row", justifyContent: "flex-end", gap: 10 },
+  modalBtnMuted: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: DeliveryColors.line,
+    backgroundColor: "#fff",
+  },
+  modalBtnMutedText: { fontWeight: "900", color: DeliveryColors.text },
+  modalBtnPrimary: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: DeliveryColors.primary,
+  },
+  modalBtnPrimaryText: { fontWeight: "900", color: "#fff" },
 });

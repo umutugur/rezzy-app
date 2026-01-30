@@ -111,6 +111,7 @@
     "legal": {
       "terms": "Kullanım Koşulları",
       "privacy": "Gizlilik Politikası",
+      "howToUse": "Nasıl kullanılır",
       "help": "Yardım & Destek",
       "contact": "İletişim",
       "licenses": "Lisanslar",
@@ -342,25 +343,25 @@
 },
 "about": {
   "title": "Hakkında",
-  "subtitle": "Rezervasyon tarafında hem misafirler hem de işletmeler için adil, şeffaf ve pratik bir deneyim sunar.",
-  "headline": "Rezervasyonları daha akıllı ve güvenli hâle getiriyoruz.",
-  "description": "Rezvix; depozitolu veya depozitosuz rezervasyonları, QR check-in ve gerçek zamanlı doluluk takibiyle bir araya getirir. Misafirler için zahmetsiz, işletmeler için kontrolü yüksek bir akşam akışı sağlar.",
+  "subtitle": "Rezervasyon, paket servis ve QR menü siparişlerinde hızlı, güvenli ve şeffaf bir deneyim sunar.",
+  "headline": "Keşfet, sipariş ver ve güvenle öde — hepsi Rezvix’te.",
+  "description": "Rezvix; rezervasyonları, paket servis siparişlerini ve QR menü deneyimini tek yerde toplar. Online ödeme (Stripe) ve kapıda ödeme seçenekleriyle süreci kolaylaştırır; konum bazlı keşif ve bildirimlerle akışı yönetmeni sağlar.",
   "features": {
     "smartBooking": {
-      "title": "Akıllı rezervasyon akışı",
-      "desc": "Masa, kişi sayısı, tarih ve saat seçimleri; işletmenin çalışma saatleri ve kapasitesiyle uyumlu şekilde önerilir."
+      "title": "Akıllı rezervasyon ve sipariş akışı",
+      "desc": "Rezervasyon ve paket servis siparişleri; tarih, saat, kişi sayısı ve adres bilgileriyle hızlıca oluşturulur."
     },
     "deposit": {
-      "title": "Depozito ve güvence",
-      "desc": "İşletmeler için no-show riskini azaltan, misafir içinse masanın gerçekten ayrıldığından emin olmasını sağlayan depozito süreçleri."
+      "title": "Ödeme seçenekleri",
+      "desc": "Online ödeme (Stripe) veya kapıda kart/nakit seçenekleriyle esnek ve güvenli bir ödeme deneyimi."
     },
     "qr": {
-      "title": "QR ile hızlı check-in",
-      "desc": "Girişte QR kod okutarak rezervasyon doğrulaması yapılır; gelen kişi sayısı anında sisteme yansır."
+      "title": "QR menü ve hızlı sipariş",
+      "desc": "Mekandayken QR menüden sipariş ver, ödeme yöntemini seç ve siparişini anında ilet."
     },
     "transparency": {
-      "title": "Şeffaf performans takibi",
-      "desc": "Rezervasyon geçmişi, iptal oranları ve doluluk gibi metrikler işletmeler için tek ekranda görünür olur."
+      "title": "Anlık durum ve bildirimler",
+      "desc": "Sipariş, teslimat ve rezervasyon durumlarını bildirimlerle takip et; süreçleri tek ekrandan yönet."
     }
   },
   "meta": {
@@ -373,17 +374,17 @@
 },
   "contact": {
     "title": "İletişim",
-    "subtitle": "Size en hızlı ve doğru şekilde yardımcı olabilmemiz için bizimle iletişime geçebilirsiniz.",
+    "subtitle": "Rezervasyon, paket servis, QR menü ve ödeme süreçleriyle ilgili her konuda bize ulaşabilirsiniz.",
 
     "emailTitle": "E-posta ile destek",
-    "emailDesc": "Her türlü soru, öneri veya destek talebiniz için bize e-posta gönderebilirsiniz.",
+    "emailDesc": "Sorularınız, önerileriniz veya destek talepleriniz için bize e-posta gönderebilirsiniz.",
 
     "workHoursTitle": "Çalışma Saatleri",
     "workdays": "Hafta içi",
     "workhours": "09:00 — 18:00",
 
     "moreInfo": "Ek Bilgi",
-    "moreInfoDesc": "Yakında Rezvix hakkında daha fazla bilgi ve destek kanallarını burada bulabileceksiniz."
+    "moreInfoDesc": "Yakında Rezvix hakkında daha fazla bilgi ve ek destek kanallarını burada bulabileceksiniz."
   },
   "deleteAccount": {
     "title": "Hesabı Sil",
@@ -404,25 +405,25 @@
   },
   "helpSupport": {
   "title": "Yardım & Destek",
-  "subtitle": "Rezervasyonlar, bildirimler ve uygulama kullanımıyla ilgili sık sorulan sorulara hızlıca göz at.",
+  "subtitle": "Paket servis, QR menü, ödemeler ve bildirimlerle ilgili sık sorulan sorulara hızlıca göz at.",
   "faq": {
     "title": "Sık Sorulan Sorular",
     "subtitle": "En çok merak edilen konuları senin için derledik.",
-    "q1": "Rezervasyon nasıl yapılır?",
-    "q2": "Rezervasyonumu nasıl iptal ederim?",
-    "q3": "Rezervasyon durumumu nasıl takip ederim?",
-    "q4": "Bildirimler neden gelmiyor?",
-    "a1": "Rezvix ile restoranlara hızlıca rezervasyon oluşturabilir, varsa ön ödemenizi güvenle yapabilir ve QR ile giriş yaparak rezervasyonunuzu saniyeler içinde doğrulatabilirsiniz.",
-    "a2": "Rezervasyonun onay durumu, iptal bilgisi ve giriş kaydı uygulama içindeki rezervasyon detay ekranında ve bildirimler ile takip edilebilir.",
-    "a3": "Rezervasyonun iptal koşulları her restoran için farklı olabilir. Rezervasyon oluştururken gördüğünüz iptal politikası geçerlidir.",
-    "a4": "Uygulama içinden Yardım & Destek alanını kullanarak bize ulaşabilir veya iletişim ekranındaki e-posta adresine yazabilirsiniz."
+    "q1": "Paket servis veya rezervasyon nasıl oluşturulur?",
+    "q2": "QR menü ile nasıl sipariş veririm?",
+    "q3": "Ödeme ekranı açılmıyor / ödeme başarısız oldu. Ne yapmalıyım?",
+    "q4": "Konum ve bildirim izinleri neden gerekli?",
+    "a1": "İstediğin restoranı seçip tarih, saat ve kişi sayısını girerek rezervasyon oluşturabilirsin. Paket servis için adresini seçip sepetini onaylaman yeterli.",
+    "a2": "Masadaki QR kodu tarayıp menüden ürünlerini seçebilir, ödeme yöntemini belirleyerek siparişini gönderebilirsin.",
+    "a3": "İnternet bağlantını kontrol et, uygulamayı güncelle ve tekrar dene. Online ödemeler Stripe üzerinden güvenle işlenir; kart bilgileri Rezvix’te saklanmaz.",
+    "a4": "Konum izni, yakınındaki mekanları göstermek ve paket servis adresini kolaylaştırmak için gerekir. Bildirimler ise sipariş ve teslimat durumlarını anında iletmek için kullanılır."
   },
   "tips": {
     "title": "Hızlı İpuçları",
     "subtitle": "Sorun yaşamamak için aşağıdaki adımları kontrol et.",
-    "item1": "Bildirim izninin açık olduğundan ve internet bağlantının stabil olduğundan emin ol.",
+    "item1": "Bildirim ve konum izinlerinin açık olduğundan emin ol.",
     "item2": "Rezvix uygulamasının en güncel sürümünü kullandığından emin ol.",
-    "item3": "Sorun devam ederse uygulamayı kapatıp yeniden başlatmayı veya çıkış yapıp tekrar giriş yapmayı deneyebilirsin."
+    "item3": "Ödeme veya sipariş sorunlarında uygulamayı yeniden başlatmayı deneyebilirsin."
   },
   "contact": {
     "title": "Hâlâ yardıma mı ihtiyacın var?",
@@ -447,21 +448,21 @@
 },
 "privacy": {
     "title": "Gizlilik Politikası",
-    "subtitle": "Gizliliğiniz bizim için önemlidir. Rezvix'nin verilerinizi nasıl topladığı, kullandığı ve koruduğunu aşağıda bulabilirsiniz.",
+    "subtitle": "Gizliliğiniz bizim için önemlidir. Rezvix’nin verilerinizi nasıl topladığı, kullandığı ve koruduğunu aşağıda bulabilirsiniz.",
 
     "collected": "Topladığımız Veriler",
-    "collected_id": "Kimlik bilgileri (isim, e-posta, telefon)",
-    "collected_usage": "Rezervasyon ve uygulama kullanım bilgileri",
-    "collected_device": "Cihaz bilgileri (model, işletim sistemi, bölge/dil)",
+    "collected_id": "Kimlik ve iletişim bilgileri (isim, e-posta, telefon) ve teslimat adresleri",
+    "collected_usage": "Rezervasyon, paket servis ve QR menü sipariş bilgileri; ödeme tercihleri",
+    "collected_device": "Cihaz/oturum bilgileri, push token ve izin verdiğinizde konum verisi",
 
     "usage": "Verilerin Kullanımı",
-    "usage_reservation": "Rezervasyonlarınızı yönetmek ve doğru hizmet sunmak için",
-    "usage_notifications": "Önemli bildirimler ve güncellemeler göndermek için",
-    "usage_security": "Güvenliği artırmak ve kötüye kullanımı önlemek için",
+    "usage_reservation": "Rezervasyonları ve paket servis siparişlerini yönetmek, QR menü siparişlerini işlemek için",
+    "usage_notifications": "Sipariş, ödeme ve teslimat durum bildirimleri göndermek için",
+    "usage_security": "Güvenliği artırmak, dolandırıcılığı önlemek ve yasal yükümlülükleri karşılamak için",
 
     "sharing": "Veri Paylaşımı",
-    "sharing_restaurants": "Rezervasyon bilgileri ilgili restoranlarla paylaşılabilir",
-    "sharing_law": "Yasal zorunluluk veya güvenlik nedeniyle paylaşım yapılabilir",
+    "sharing_restaurants": "Sipariş ve rezervasyon bilgileri ilgili restoranlarla paylaşılabilir",
+    "sharing_law": "Ödeme işlemleri için güvenilir ödeme sağlayıcılarıyla (ör. Stripe) ve yasal zorunluluklarda paylaşım yapılabilir",
 
     "retention": "Veri Saklama",
     "retention_text": "Verileriniz yalnızca operasyonel, yasal ve güvenlik gereksinimleri için gerekli süre boyunca saklanır.",
@@ -478,23 +479,23 @@
   },
   "terms": {
     "title": "Kullanım Koşulları",
-    "subtitle": "Rezvix’yi kullanarak aşağıdaki koşulları kabul etmiş olursunuz.",
+    "subtitle": "Rezvix’yi kullanarak rezervasyon, paket servis ve ödeme süreçlerine dair aşağıdaki koşulları kabul etmiş olursunuz.",
     "accountTitle": "Hesap ve Güvenlik",
     "accountText": "Hesabınızın güvenliğinden ve giriş bilgilerinizin gizli tutulmasından siz sorumlusunuz. Hesabınızda gerçekleşen tüm işlemlerden siz sorumlu kabul edilirsiniz. Şifrenizi üçüncü kişilerle paylaşmamanız önerilir.",
-    "reservationsTitle": "Rezervasyon ve İptal Koşulları",
-    "reservationsText1": "Rezervasyonlar; tarih, saat, kişi sayısı ve restoran politikalarına göre oluşturulur. Bazı restoranlar için ön ödeme veya minimum harcama şartı bulunabilir.",
-    "reservationsText2": "İptal ve değişiklik hakları, her restoranın kendi politikasına göre belirlenir. Rezervasyon sırasında gösterilen koşulları dikkatle incelemeniz tavsiye edilir.",
+    "reservationsTitle": "Rezervasyon, Paket Servis ve QR Menü Siparişleri",
+    "reservationsText1": "Rezervasyonlar ve paket servis siparişleri; tarih, saat, kişi sayısı/adres ve restoran politikalarına göre oluşturulur. Bazı restoranlar için online ödeme, minimum tutar veya kapıda ödeme seçenekleri bulunabilir.",
+    "reservationsText2": "QR menü siparişleri ve paket servis teslimatları için doğru masa/adres bilgisi sağlamak kullanıcının sorumluluğundadır. İptal ve değişiklik hakları restoran politikasına göre belirlenir.",
     "prohibitedTitle": "Yasaklı Kullanım",
-    "prohibitedText": "Rezvix’yi hileli, yanıltıcı, saldırgan veya yasa dışı herhangi bir amaçla kullanmak yasaktır. Sahte rezervasyon oluşturmak, farklı kişiler adına izinsiz işlem yapmak ve sistemi kötüye kullanmak hesabınızın kalıcı olarak kapatılmasına neden olabilir.",
+    "prohibitedText": "Rezvix’yi hileli, yanıltıcı, saldırgan veya yasa dışı herhangi bir amaçla kullanmak yasaktır. Sahte sipariş/rezervasyon oluşturmak, ödeme dolandırıcılığı veya konum manipülasyonu yapmak hesabınızın kalıcı olarak kapatılmasına neden olabilir.",
     "liabilityTitle": "Sorumluluk Reddi",
-    "liabilityText": "Rezvix, restoranların sunduğu hizmetlerin içeriğinden, kalitesinden veya yaşanabilecek aksaklıklardan doğrudan sorumlu değildir. Rezvix; rezervasyon sürecini kolaylaştıran bir aracı platformdur.",
+    "liabilityText": "Rezvix, restoranların sunduğu hizmetlerin içeriğinden, kalitesinden veya yaşanabilecek aksaklıklardan doğrudan sorumlu değildir. Online ödemeler güvenilir ödeme sağlayıcıları (Stripe) üzerinden işlenir; kart bilgileri Rezvix tarafından saklanmaz.",
     "changesTitle": "Koşullarda Değişiklik Hakkı",
     "changesText": "Kullanım koşulları zaman zaman güncellenebilir. Değişiklikler uygulama içerisinde yayınlandığı anda yürürlüğe girer. Rezvix’yi kullanmaya devam etmeniz, güncellenen koşulları kabul ettiğiniz anlamına gelir.",
     "legalTitle": "Yasal Bilgiler ve İletişim",
     "legalText1": "Bu metin genel bilgilendirme amacı taşır ve hukuki danışmanlık yerine geçmez. Uygulamayı kullanırken geçerli yerel yasa ve yönetmeliklere uymanız beklenir.",
-    "legalText2": "Rezvix ile ilgili hukuki veya sözleşmeye dair sorularınız için lütfen bizimle iletişim ekranı üzerinden veya e-posta adresimiz aracılığıyla iletişime geçin.",
+    "legalText2": "Rezvix ile ilgili hukuki veya sözleşmeye dair sorularınız için lütfen iletişim ekranı üzerinden bizimle iletişime geçin.",
     "disclaimer": "*Bu metin bilgilendirme amaçlıdır ve profesyonel hukuki danışmanlık yerine geçmez.",
-    "lastUpdate": "Son güncelleme tarihi: 2025"
+    "lastUpdate": "Son güncelleme tarihi: 2026"
   },
   "auth": {
   "emailLabel": "E-posta",
@@ -639,4 +640,3 @@
     }
   }
 }
-

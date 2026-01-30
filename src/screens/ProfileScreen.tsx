@@ -29,6 +29,7 @@ import { listFavorites, removeFavorite, type FavoriteRestaurant } from "../api/f
 import { useRegion } from "../store/useRegion";
 import { useI18n } from "../i18n";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useGetStarted } from "../store/useGetStarted";
 
 type RegionCode = "CY" | "UK";
 type LangCode = "tr" | "en" | "ru" | "el";
@@ -59,6 +60,7 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { region, language, setRegion, setLanguage } = useRegion();
   const { t, language: i18nLanguage, locale } = useI18n();
+  const openGetStarted = useGetStarted((s) => s.open);
 
   const [name, setName] = useState(user?.name || "");
   const [email, setEmail] = useState(user?.email || "");
@@ -1227,6 +1229,12 @@ export default function ProfileScreen() {
             icon="shield-lock-outline"
             label={t("profile.legal.privacy")}
             onPress={goPrivacy}
+          />
+          <Divider />
+          <ListRow
+            icon="book-open-variant"
+            label={t("profile.legal.howToUse")}
+            onPress={openGetStarted}
           />
           <Divider />
           <ListRow

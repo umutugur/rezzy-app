@@ -171,7 +171,7 @@ export default function AboutScreen() {
         />
         <MetaRow
           label={t("about.meta.contact")}
-          value="rezvixapp7@gmail.com"
+          value="info@rezvix.co.uk"
           icon="mail-outline"
         />
       </View>

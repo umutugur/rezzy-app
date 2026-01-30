@@ -290,9 +290,9 @@ export default function PrivacyPolicyScreen() {
         <Text style={sectionItem}>{t("privacy.contact_text") ?? ""}</Text>
         <Text
           style={[sectionItem, { color: T.colors.primary, marginTop: 4 }]}
-          onPress={() => Linking.openURL("mailto:rezvixapp7@gmail.com")}
+          onPress={() => Linking.openURL("mailto:info@rezvix.co.uk")}
         >
-          rezvixapp7@gmail.com
+          info@rezvix.co.uk
         </Text>
       </View>
 
