@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   Pressable,
   ActivityIndicator,
+  Alert,
   Platform,
   Keyboard,
   KeyboardAvoidingView,
@@ -210,6 +211,22 @@ export default function TaxiDestinationScreen({ navigation }: any) {
       setIsSearching(true);
       navigation.replace('TaxiMatched', { rideId: ride._id });
     } catch (e: any) {
+      // 409 — zaten aktif bir yolculuk var → mevcut yolculuğa yönlendir
+      if (e?.response?.status === 409 && e?.response?.data?.rideId) {
+        const existingId = e.response.data.rideId;
+        Alert.alert(
+          'Aktif Yolculuk',
+          'Devam eden bir yolculuğunuz var.',
+          [
+            {
+              text: 'Takip Et',
+              onPress: () => navigation.replace('TaxiMatched', { rideId: existingId }),
+            },
+            { text: 'İptal', style: 'cancel' },
+          ],
+        );
+        return;
+      }
       setError(e?.response?.data?.message ?? 'Yolculuk oluşturulamadı.');
     } finally {
       setLoadingCreate(false);
