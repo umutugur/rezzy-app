@@ -347,6 +347,21 @@ export default function MarketCartScreen() {
     paymentMethod,
   ]);
 
+  // ⚠️ renderItem MUST be before the early return — hooks cannot be called after a return
+  const renderItem = useCallback(
+    ({ item }: ListRenderItemInfo<MarketCartItem>) => (
+      <CartItemRow
+        item={item}
+        onIncrease={() => addItem(item.product)}
+        onDecrease={() => {
+          if (item.qty === 1) removeItem(item.product._id);
+          else updateQty(item.product._id, item.qty - 1);
+        }}
+      />
+    ),
+    [addItem, removeItem, updateQty],
+  );
+
   if (items.length === 0) {
     return (
       <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
@@ -362,20 +377,6 @@ export default function MarketCartScreen() {
       </View>
     );
   }
-
-  const renderItem = useCallback(
-    ({ item }: ListRenderItemInfo<MarketCartItem>) => (
-      <CartItemRow
-        item={item}
-        onIncrease={() => addItem(item.product)}
-        onDecrease={() => {
-          if (item.qty === 1) removeItem(item.product._id);
-          else updateQty(item.product._id, item.qty - 1);
-        }}
-      />
-    ),
-    [addItem, removeItem, updateQty],
-  );
 
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
