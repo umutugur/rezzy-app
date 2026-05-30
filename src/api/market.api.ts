@@ -34,7 +34,7 @@ export type MarketStore = {
 export type MarketProductCategory = {
   _id: string;
   key: string;
-  i18n?: Record<string, string>;
+  i18n?: Record<string, { title: string; description?: string }>;
 };
 
 export type MarketProduct = {
