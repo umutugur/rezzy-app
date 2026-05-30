@@ -254,7 +254,8 @@ export default function TaxiDestinationScreen({ navigation }: any) {
       : [];
 
   const hasRoute = routeCoords.length === 2;
-  const canCallTaxi = Boolean(pickupCoords && dropoffCoords && fareEstimate) && !loadingCreate && !stripeBusy;
+  // Koordinatlar set edilince buton aktif — fareEstimate beklemeye gerek yok (estimate güzel ama zorunlu değil)
+  const canCallTaxi = Boolean(pickupCoords && dropoffCoords) && !loadingEstimate && !loadingCreate && !stripeBusy;
   const isBusy = loadingCreate || stripeBusy;
 
   const s = styles(theme, insets);
@@ -398,8 +399,8 @@ export default function TaxiDestinationScreen({ navigation }: any) {
           </View>
         )}
 
-        {/* Ödeme yöntemi */}
-        {fareEstimate && !loadingEstimate && (
+        {/* Ödeme yöntemi — koordinatlar hazır olunca göster */}
+        {pickupCoords && dropoffCoords && (
           <View style={s.paymentSection}>
             <Text style={s.paymentLabel}>Ödeme Yöntemi</Text>
             <View style={s.paymentRow}>

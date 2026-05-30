@@ -6,7 +6,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   Platform,
   Pressable,
@@ -159,13 +158,9 @@ export default function TaxiHomeScreen({ navigation, route }: any) {
           <Text style={s.searchPlaceholder}>Nereye?</Text>
         </Pressable>
 
-        {/* Vehicle type carousel */}
+        {/* Vehicle type — ekrana tam oturan 4 eşit kart */}
         <Text style={s.carouselLabel}>Araç tipi</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={s.carouselContent}
-        >
+        <View style={s.carouselRow}>
           {VEHICLE_OPTIONS.map((opt) => {
             const active = selectedVehicleType === opt.type;
             return (
@@ -189,7 +184,7 @@ export default function TaxiHomeScreen({ navigation, route }: any) {
               </TouchableOpacity>
             );
           })}
-        </ScrollView>
+        </View>
       </View>
     </View>
   );
@@ -234,7 +229,6 @@ function styles(theme: ReturnType<typeof useTheme>, insets: ReturnType<typeof us
       bottom: 0,
       left: 0,
       right: 0,
-      minHeight: '40%',
       backgroundColor: theme.colors.surface,
       borderTopLeftRadius: theme.radius['2xl'],
       borderTopRightRadius: theme.radius['2xl'],
@@ -266,22 +260,20 @@ function styles(theme: ReturnType<typeof useTheme>, insets: ReturnType<typeof us
       color: theme.colors.textSecondary,
       marginBottom: theme.space[2],
     },
-    carouselContent: {
+    carouselRow: {
+      flexDirection: 'row',
       gap: theme.space[2],
-      paddingRight: theme.space[2],
     },
 
     vehicleCard: {
-      width: 80,
-      height: 90,
+      flex: 1,
       paddingVertical: theme.space[3],
-      paddingHorizontal: theme.space[2],
+      paddingHorizontal: theme.space[1],
       borderRadius: theme.radius.lg,
       borderWidth: 1.5,
       borderColor: theme.taxi.main,
       alignItems: 'center',
       justifyContent: 'center',
-      alignSelf: 'flex-start',
       gap: 4,
       backgroundColor: theme.colors.surface,
     },
