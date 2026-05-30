@@ -106,7 +106,7 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rideId]);
 
-  // Countdown timer
+  // Countdown timer + auto-cancel when searching and time is up
   useEffect(() => {
     progress.value = withTiming(0, {
       duration: FREE_CANCEL_SECONDS * 1000,
@@ -125,6 +125,27 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
 
     return () => { clearInterval(timerRef.current!); };
   }, [progress]);
+
+  // Süre dolunca sürücü bulunamadıysa otomatik iptal et
+  useEffect(() => {
+    if (secondsLeft !== 0) return;
+    if (ride?.status !== 'searching') return; // matched/inProgress ise dokunma
+
+    // Sürücü bulunamadı — otomatik iptal
+    cancelRide(rideId, 'Sürücü bulunamadı (zaman aşımı)')
+      .catch(() => {})
+      .finally(() => {
+        setActiveRide(null);
+        setIsSearching(false);
+        Alert.alert(
+          'Sürücü Bulunamadı',
+          '120 saniye içinde uygun sürücü bulunamadı. Lütfen tekrar deneyin.',
+          [{ text: 'Tamam', onPress: () => navigation.replace('TaxiDestination') }],
+        );
+      });
+  // secondsLeft 0'a düştüğünde bir kez çalışması yeterli
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [secondsLeft]);
 
   const handleCancel = useCallback(async () => {
     setCancelling(true);

@@ -90,6 +90,17 @@ export async function createRide(payload: {
   return data;
 }
 
+/** GET /api/taxi/rides/active — kullanıcının aktif yolculuğu (yoksa null) */
+export async function getActiveRide(): Promise<TaxiRide | null> {
+  try {
+    const { data } = await api.get('/taxi/rides/active');
+    return data;
+  } catch (e: any) {
+    if (e?.response?.status === 404) return null;
+    throw e;
+  }
+}
+
 /** GET /api/taxi/rides/:id */
 export async function getRide(id: string): Promise<TaxiRide> {
   const { data } = await api.get(`/taxi/rides/${id}`);

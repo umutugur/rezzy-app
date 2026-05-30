@@ -19,6 +19,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useTaxiStore } from '../../store/useTaxiStore';
 import { taxiSocket } from '../../services/taxiSocket.service';
 import { useAuth } from '../../store/useAuth';
+import { getActiveRide } from '../../api/taxi';
 import type { VehicleType } from '../../api/taxi';
 
 // ─── Vehicle type config ──────────────────────────────────────────────────────
@@ -47,6 +48,8 @@ export default function TaxiHomeScreen({ navigation, route }: any) {
 
   const selectedVehicleType = useTaxiStore((s) => s.selectedVehicleType);
   const setSelectedVehicleType = useTaxiStore((s) => s.setSelectedVehicleType);
+  const setActiveRide = useTaxiStore((s) => s.setActiveRide);
+  const setIsSearching = useTaxiStore((s) => s.setIsSearching);
   const nearbyDrivers = useTaxiStore((s) => s.nearbyDrivers);
   const updateNearbyDriver = useTaxiStore((s) => s.updateNearbyDriver);
   const setPickup = useTaxiStore((s) => s.setPickup);
@@ -57,6 +60,21 @@ export default function TaxiHomeScreen({ navigation, route }: any) {
     latitudeDelta: 0.05,
     longitudeDelta: 0.05,
   });
+
+  // Aktif yolculuk kontrolü — varsa direkt TaxiMatched'e yönlendir
+  useEffect(() => {
+    if (!token) return;
+    getActiveRide()
+      .then((ride) => {
+        if (ride) {
+          setActiveRide(ride);
+          setIsSearching(ride.status === 'searching');
+          navigation.replace('TaxiMatched', { rideId: ride._id });
+        }
+      })
+      .catch(() => {}); // aktif yolculuk yoksa sessiz geç
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   // Request location and connect socket
   useEffect(() => {
