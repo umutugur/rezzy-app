@@ -61,6 +61,8 @@ export type MarketOrderStatus =
   | "delivered"
   | "cancelled";
 
+export type PaymentMethod = "cash" | "card" | "online";
+
 export type MarketOrderItem = {
   productId: string;
   title: string;
@@ -103,6 +105,7 @@ export type CreateOrderPayload = {
   type: "pickup" | "delivery";
   deliveryAddressId?: string | null;
   note?: string;
+  paymentMethod?: PaymentMethod;
 };
 
 // ─── API Functions ──────────────────────────────────────────────────────────────
