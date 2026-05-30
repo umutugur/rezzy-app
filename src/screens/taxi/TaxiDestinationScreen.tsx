@@ -8,6 +8,7 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  Pressable,
   ActivityIndicator,
   Platform,
   Keyboard,
@@ -15,10 +16,12 @@ import {
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MapPin, Navigation, ChevronLeft } from 'lucide-react-native';
+import { MapPin, Navigation, ChevronLeft, Banknote, CreditCard, Smartphone } from 'lucide-react-native';
+import { useStripe } from '@stripe/stripe-react-native';
+import * as Linking from 'expo-linking';
 
 import { useTheme } from '../../contexts/ThemeContext';
-import { useTaxiStore } from '../../store/useTaxiStore';
+import { useTaxiStore, type TaxiPaymentMethod } from '../../store/useTaxiStore';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { PriceTag } from '../../components/ui/PriceTag';
@@ -45,7 +48,11 @@ export default function TaxiDestinationScreen({ navigation }: any) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
 
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+
   const selectedVehicleType = useTaxiStore((s) => s.selectedVehicleType);
+  const selectedPaymentMethod = useTaxiStore((s) => s.selectedPaymentMethod);
+  const setSelectedPaymentMethod = useTaxiStore((s) => s.setSelectedPaymentMethod);
   const fareEstimate = useTaxiStore((s) => s.fareEstimate);
   const setFareEstimate = useTaxiStore((s) => s.setFareEstimate);
   const setPickup = useTaxiStore((s) => s.setPickup);
@@ -64,6 +71,7 @@ export default function TaxiDestinationScreen({ navigation }: any) {
   const [activeField, setActiveField] = useState<'pickup' | 'dropoff' | null>(null);
   const [loadingEstimate, setLoadingEstimate] = useState(false);
   const [loadingCreate, setLoadingCreate] = useState(false);
+  const [stripeBusy, setStripeBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const pickupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -153,19 +161,59 @@ export default function TaxiDestinationScreen({ navigation }: any) {
     setLoadingCreate(true);
     setError(null);
     try {
-      const { ride } = await createRide({
+      const result = await createRide({
         pickup: { address: pickupAddress, coordinates: [pickupCoords.lng, pickupCoords.lat] },
         dropoff: { address: dropoffAddress, coordinates: [dropoffCoords.lng, dropoffCoords.lat] },
         vehicleType: selectedVehicleType,
-        paymentMethod: 'cash',
+        paymentMethod: selectedPaymentMethod,
       });
+
+      const { ride, payment } = result;
       setActiveRide(ride);
+
+      // ─── Online ödeme: Stripe PaymentSheet ──────────────────────────────
+      if (selectedPaymentMethod === 'online' && payment?.clientSecret) {
+        setLoadingCreate(false);
+        setStripeBusy(true);
+
+        const { error: initError } = await initPaymentSheet({
+          paymentIntentClientSecret: payment.clientSecret,
+          merchantDisplayName: 'Rezvix Taksi',
+          returnURL: Linking.createURL('stripe-redirect'),
+          allowsDelayedPaymentMethods: false,
+          style: 'alwaysLight',
+        });
+
+        if (initError) {
+          setError(initError.message ?? 'Ödeme ekranı açılamadı.');
+          setStripeBusy(false);
+          return;
+        }
+
+        const { error: presentError } = await presentPaymentSheet();
+        setStripeBusy(false);
+
+        if (presentError) {
+          if (presentError.code !== 'Canceled') {
+            setError(presentError.message ?? 'Ödeme tamamlanamadı.');
+          }
+          return;
+        }
+
+        // Ödeme başarılı → sürücü aramaya başla
+        setIsSearching(true);
+        navigation.replace('TaxiMatched', { rideId: ride._id });
+        return;
+      }
+
+      // ─── Nakit / Kart — direkt sürücü ara ───────────────────────────────
       setIsSearching(true);
       navigation.replace('TaxiMatched', { rideId: ride._id });
     } catch (e: any) {
       setError(e?.response?.data?.message ?? 'Yolculuk oluşturulamadı.');
     } finally {
       setLoadingCreate(false);
+      setStripeBusy(false);
     }
   }, [
     pickupCoords,
@@ -173,9 +221,12 @@ export default function TaxiDestinationScreen({ navigation }: any) {
     pickupAddress,
     dropoffAddress,
     selectedVehicleType,
+    selectedPaymentMethod,
     setActiveRide,
     setIsSearching,
     navigation,
+    initPaymentSheet,
+    presentPaymentSheet,
   ]);
 
   // ── Map region ───────────────────────────────────────────────────────────
@@ -203,7 +254,8 @@ export default function TaxiDestinationScreen({ navigation }: any) {
       : [];
 
   const hasRoute = routeCoords.length === 2;
-  const canCallTaxi = Boolean(pickupCoords && dropoffCoords && fareEstimate);
+  const canCallTaxi = Boolean(pickupCoords && dropoffCoords && fareEstimate) && !loadingCreate && !stripeBusy;
+  const isBusy = loadingCreate || stripeBusy;
 
   const s = styles(theme, insets);
 
@@ -346,6 +398,51 @@ export default function TaxiDestinationScreen({ navigation }: any) {
           </View>
         )}
 
+        {/* Ödeme yöntemi */}
+        {fareEstimate && !loadingEstimate && (
+          <View style={s.paymentSection}>
+            <Text style={s.paymentLabel}>Ödeme Yöntemi</Text>
+            <View style={s.paymentRow}>
+              {(
+                [
+                  { method: 'cash' as TaxiPaymentMethod, label: 'Nakit', Icon: Banknote },
+                  { method: 'card' as TaxiPaymentMethod, label: 'Kart', Icon: CreditCard },
+                  { method: 'online' as TaxiPaymentMethod, label: 'Online', Icon: Smartphone },
+                ] as const
+              ).map(({ method, label, Icon }) => {
+                const active = selectedPaymentMethod === method;
+                return (
+                  <Pressable
+                    key={method}
+                    onPress={() => setSelectedPaymentMethod(method)}
+                    style={[
+                      s.paymentPill,
+                      {
+                        backgroundColor: active ? theme.taxi.main : theme.colors.surfaceAlt,
+                        borderColor: active ? theme.taxi.main : theme.colors.borderDefault,
+                      },
+                    ]}
+                  >
+                    <Icon
+                      size={14}
+                      color={active ? '#fff' : theme.colors.textSecondary}
+                      strokeWidth={2}
+                    />
+                    <Text
+                      style={[
+                        s.paymentPillText,
+                        { color: active ? '#fff' : theme.colors.textPrimary },
+                      ]}
+                    >
+                      {label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
         {/* Error */}
         {error && <Text style={s.errorText}>{error}</Text>}
 
@@ -355,12 +452,12 @@ export default function TaxiDestinationScreen({ navigation }: any) {
           size="lg"
           fullWidth
           disabled={!canCallTaxi}
-          loading={loadingCreate}
+          loading={isBusy}
           onPress={handleCallTaxi}
           haptic="medium"
           style={{ backgroundColor: theme.taxi.main, marginTop: theme.space[3] }}
         >
-          Taksi Cagir
+          {selectedPaymentMethod === 'online' ? 'Öde ve Taksi Çağır' : 'Taksi Çağır'}
         </Button>
       </View>
     </KeyboardAvoidingView>
@@ -467,6 +564,34 @@ function styles(theme: ReturnType<typeof useTheme>, insets: ReturnType<typeof us
       color: theme.colors.error,
       marginTop: theme.space[2],
       textAlign: 'center',
+    },
+
+    paymentSection: {
+      marginTop: theme.space[3],
+      gap: theme.space[2],
+    },
+    paymentLabel: {
+      ...theme.typography.labelSm,
+      color: theme.colors.textSecondary,
+    },
+    paymentRow: {
+      flexDirection: 'row',
+      gap: theme.space[2],
+    },
+    paymentPill: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 5,
+      paddingVertical: theme.space[2],
+      paddingHorizontal: theme.space[2],
+      borderRadius: theme.radius.full,
+      borderWidth: 1,
+    },
+    paymentPillText: {
+      ...theme.typography.labelSm,
+      fontWeight: '700' as const,
     },
   });
 }
