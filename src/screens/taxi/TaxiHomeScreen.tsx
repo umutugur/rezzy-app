@@ -20,7 +20,6 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useTaxiStore } from '../../store/useTaxiStore';
 import { taxiSocket } from '../../services/taxiSocket.service';
 import { useAuth } from '../../store/useAuth';
-import { MapMarker } from '../../components/ui/MapMarker';
 import type { VehicleType } from '../../api/taxi';
 
 // ─── Vehicle type config ──────────────────────────────────────────────────────
