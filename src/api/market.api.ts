@@ -213,3 +213,59 @@ export async function cancelOrder(orderId: string): Promise<MarketOrder> {
   const res = await api.patch(`/market/orders/${orderId}/cancel`);
   return res.data?.order ?? (res.data as MarketOrder);
 }
+
+// ─── Kategori tipi ──────────────────────────────────────────────────────────────
+export type CoreCategory = {
+  _id: string;
+  key: string;
+  i18n?: {
+    tr?: { title: string; description?: string };
+    en?: { title: string; description?: string };
+    ru?: { title: string; description?: string };
+    el?: { title: string; description?: string };
+  };
+  order?: number;
+};
+
+// ─── Panel Store API ────────────────────────────────────────────────────────────
+
+/**
+ * Market sahibinin kendi store bilgisini çeker.
+ */
+export async function getMyPanelStore(): Promise<MarketStore> {
+  const res = await api.get("/market/panel/store");
+  return res.data as MarketStore;
+}
+
+/**
+ * Market sahibi kendi store'unu günceller.
+ * Sadece izin verilen alanlar gönderilebilir.
+ */
+export type UpdateStorePayload = Partial<Pick<
+  MarketStore,
+  | "name"
+  | "description"
+  | "address"
+  | "city"
+  | "workingHours"
+  | "deliveryZoneKm"
+  | "minOrderAmount"
+  | "deliveryFee"
+  | "freeDeliveryThreshold"
+  | "photos"
+>>;
+
+export async function updateMyPanelStore(payload: UpdateStorePayload): Promise<MarketStore> {
+  const res = await api.patch("/market/panel/store", payload);
+  return res.data as MarketStore;
+}
+
+// ─── Kategori API ────────────────────────────────────────────────────────────────
+
+/**
+ * Market ürün kategorilerini listeler (businessTypes: "market").
+ */
+export async function getMarketCategories(): Promise<{ items: CoreCategory[]; total: number }> {
+  const res = await api.get("/market/categories");
+  return res.data as { items: CoreCategory[]; total: number };
+}
