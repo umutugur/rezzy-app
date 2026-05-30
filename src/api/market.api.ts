@@ -152,12 +152,28 @@ export async function getProducts(
   return res.data as PaginatedResponse<MarketProduct>;
 }
 
+export type CreateOrderResult = {
+  order: MarketOrder;
+  payment: {
+    paymentIntentId: string;
+    clientSecret: string;
+    amount: number;
+    currency: string;
+  } | null;
+};
+
 /**
  * Sipariş oluştur.
+ * Online ödeme seçildiyse `payment.clientSecret` döner (Stripe PaymentSheet için).
+ * Nakit/kart seçildiyse `payment: null` döner.
  */
-export async function createOrder(payload: CreateOrderPayload): Promise<MarketOrder> {
+export async function createOrder(payload: CreateOrderPayload): Promise<CreateOrderResult> {
   const res = await api.post("/market/orders", payload);
-  return res.data as MarketOrder;
+  // Eski backend (sadece order döndürüyorsa) ile uyumluluk
+  if (res.data && !res.data.order) {
+    return { order: res.data as MarketOrder, payment: null };
+  }
+  return res.data as CreateOrderResult;
 }
 
 /**

@@ -15,6 +15,8 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useStripe } from "@stripe/stripe-react-native";
+import * as Linking from "expo-linking";
 
 import { useTheme } from "../../contexts/ThemeContext";
 import { Badge, Button, EmptyState, PriceTag } from "../../components/ui";
@@ -272,9 +274,12 @@ export default function MarketCartScreen() {
   const updateQty = useMarketCart((s) => s.updateQty);
   const clearCart = useMarketCart((s) => s.clearCart);
 
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+
   const [store, setStore] = useState<MarketStore | null>(null);
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [stripeBusy, setStripeBusy] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
 
   const subtotal = computeSubtotal(items);
@@ -318,7 +323,7 @@ export default function MarketCartScreen() {
     }
     setSubmitting(true);
     try {
-      const order = await createOrder({
+      const result = await createOrder({
         storeId,
         items: items.map((i) => ({ productId: i.product._id, qty: i.qty })),
         type: deliveryType,
@@ -326,6 +331,57 @@ export default function MarketCartScreen() {
           deliveryType === "delivery" ? selectedAddressId : null,
         paymentMethod,
       });
+
+      const { order, payment } = result;
+
+      // ─── Online ödeme: Stripe PaymentSheet ──────────────────────────────
+      if (paymentMethod === "online" && payment?.clientSecret) {
+        setSubmitting(false);
+        setStripeBusy(true);
+
+        const { error: initError } = await initPaymentSheet({
+          paymentIntentClientSecret: payment.clientSecret,
+          merchantDisplayName: "Rezvix Market",
+          returnURL: Linking.createURL("stripe-redirect"),
+          allowsDelayedPaymentMethods: false,
+          style: "alwaysLight",
+        });
+
+        if (initError) {
+          Alert.alert(
+            "Ödeme başlatılamadı",
+            initError.message ?? "Ödeme ekranı açılamadı. Tekrar deneyin.",
+          );
+          setStripeBusy(false);
+          return;
+        }
+
+        const { error: presentError } = await presentPaymentSheet();
+        setStripeBusy(false);
+
+        if (presentError) {
+          if (presentError.code !== "Canceled") {
+            Alert.alert(
+              "Ödeme başarısız",
+              presentError.message ?? "Ödeme tamamlanamadı. Tekrar deneyin.",
+            );
+          }
+          // Kullanıcı iptal etti veya hata aldı — siparişi silmiyoruz,
+          // webhook veya sipariş detay ekranından tekrar deneyebilir
+          return;
+        }
+
+        // Ödeme başarılı
+        clearCart();
+        Alert.alert(
+          "Ödeme alındı",
+          "Siparişiniz onaylandı. Market hazırlığa başlıyor.",
+          [{ text: "Tamam", onPress: () => navigation.navigate(MarketRoutes.OrderDetail, { orderId: order._id }) }],
+        );
+        return;
+      }
+
+      // ─── Nakit / Kart (kapıda) ───────────────────────────────────────────
       clearCart();
       navigation.navigate(MarketRoutes.OrderDetail, { orderId: order._id });
     } catch (err: any) {
@@ -334,6 +390,7 @@ export default function MarketCartScreen() {
       Alert.alert("Hata", msg);
     } finally {
       setSubmitting(false);
+      setStripeBusy(false);
     }
   }, [
     storeId,
@@ -345,6 +402,8 @@ export default function MarketCartScreen() {
     clearCart,
     navigation,
     paymentMethod,
+    initPaymentSheet,
+    presentPaymentSheet,
   ]);
 
   // ⚠️ renderItem MUST be before the early return — hooks cannot be called after a return
@@ -670,14 +729,14 @@ export default function MarketCartScreen() {
         <Button
           fullWidth
           size="lg"
-          disabled={belowMin || submitting}
+          disabled={belowMin || submitting || stripeBusy}
           onPress={handleOrder}
           style={{ backgroundColor: theme.market.main }}
         >
-          {submitting ? (
+          {submitting || stripeBusy ? (
             <ActivityIndicator color={theme.colors.textInverse} />
           ) : (
-            `Siparişi Ver · ₺${total.toFixed(2)}`
+            `${paymentMethod === "online" ? "Öde ve Siparişi Ver" : "Siparişi Ver"} · ₺${total.toFixed(2)}`
           )}
         </Button>
       </View>
