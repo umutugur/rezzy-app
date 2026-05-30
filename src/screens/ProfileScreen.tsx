@@ -1,5 +1,5 @@
 // src/screens/ProfileScreen.tsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -12,14 +12,22 @@ import {
   Platform,
   Animated,
   Easing,
+  StyleSheet,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 import * as Notifications from "expo-notifications";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Ionicons } from "@expo/vector-icons";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import {
+  CalendarDays,
+  Heart,
+  ShoppingBag,
+  Settings2,
+  Car,
+} from "lucide-react-native";
 import dayjs from "dayjs";
-import { lightTheme as T } from "../theme/theme";
 import { useAuth } from "../store/useAuth";
 import { getMyReservations } from "../api/reservations";
 import { getMe, patchMe, uploadAvatarRN, changePassword } from "../api/user";
@@ -30,6 +38,7 @@ import { useRegion } from "../store/useRegion";
 import { useI18n } from "../i18n";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetStarted } from "../store/useGetStarted";
+import { useTheme } from '../contexts/ThemeContext';
 
 type RegionCode = "CY" | "UK";
 type LangCode = "tr" | "en" | "ru" | "el";
@@ -47,14 +56,18 @@ const LANGUAGE_OPTIONS: { code: LangCode; label: string }[] = [
 ];
 
 /** para formatı */
-const Money = ({ n }: { n?: number }) => (
-  <Text style={{ fontWeight: "800", color: T.colors.text }}>
-    {n == null ? "₺0" : `₺${Number(n).toLocaleString("tr-TR")}`}
-  </Text>
-);
+const Money = ({ n }: { n?: number }) => {
+  const theme = useTheme();
+  return (
+    <Text style={{ fontWeight: "800", color: theme.colors.textPrimary }}>
+      {n == null ? "₺0" : `₺${Number(n).toLocaleString("tr-TR")}`}
+    </Text>
+  );
+};
 
 
 export default function ProfileScreen() {
+  const theme = useTheme();
   const navigation = useNavigation<any>();
   const { user, updateUser, clear } = useAuth();
   const insets = useSafeAreaInsets();
@@ -125,6 +138,12 @@ export default function ProfileScreen() {
   const highlightAnim = useState(new Animated.Value(0))[0];
   const [selectorOpen, setSelectorOpen] = useState<null | "region" | "language">(null);
   const sheetAnim = useState(new Animated.Value(0))[0];
+  const inputStyle = useInputStyle();
+
+  // Scroll refs for quick-action navigation
+  const scrollRef = useRef<ScrollView>(null);
+  const favsSectionY = useRef<number>(0);
+  const settingsSectionY = useRef<number>(0);
 
   const showMsg = (title: string, body?: string) => {
     setMsgKind("info");
@@ -372,9 +391,9 @@ export default function ProfileScreen() {
   function ReservationMini({ it }: { it: any }) {
     const m = statusMeta(it.status);
     return (
-      <View style={{ paddingVertical: 12, borderTopWidth: 1, borderColor: T.colors.border, gap: 6 }}>
+      <View style={{ paddingVertical: 12, borderTopWidth: 1, borderColor: theme.colors.borderDefault, gap: 6 }}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-          <Text style={{ fontWeight: "800", color: T.colors.text }}>
+          <Text style={{ fontWeight: "800", color: theme.colors.textPrimary }}>
             {t("profile.reservations.itemTitle", {
               date: dayjs(it.dateTimeUTC).format("DD MMM YYYY HH:mm"),
               count: it.partySize,
@@ -384,11 +403,11 @@ export default function ProfileScreen() {
             <Text style={{ color: m.fg, fontWeight: "800", fontSize: 12 }}>{m.label}</Text>
           </View>
         </View>
-        <Text style={{ color: T.colors.textSecondary }}>
+        <Text style={{ color: theme.colors.textSecondary }}>
           {String(it?.restaurantId?.name || t("profile.reservations.fallbackRestaurant"))}
         </Text>
         <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-          <Text style={{ color: T.colors.textSecondary }}>
+          <Text style={{ color: theme.colors.textSecondary }}>
             {t("profile.reservations.totalLabel")}
           </Text>
           <Money n={it.totalPrice} />
@@ -408,16 +427,16 @@ export default function ProfileScreen() {
           gap: 12,
           paddingVertical: 10,
           borderTopWidth: 1,
-          borderColor: T.colors.border,
+          borderColor: theme.colors.borderDefault,
         }}
       >
         <Image
           source={thumb ? { uri: thumb } : require("../assets/restaurant-placeholder.png")}
-          style={{ width: 72, height: 72, borderRadius: 8, backgroundColor: T.colors.muted }}
+          style={{ width: 72, height: 72, borderRadius: 8, backgroundColor: theme.colors.surfaceAlt }}
         />
         <View style={{ flex: 1 }}>
-          <Text style={{ color: T.colors.text, fontWeight: "800" }}>{it.name}</Text>
-          <Text style={{ color: T.colors.textSecondary }}>
+          <Text style={{ color: theme.colors.textPrimary, fontWeight: "800" }}>{it.name}</Text>
+          <Text style={{ color: theme.colors.textSecondary }}>
             {[it.city, it.priceRange].filter(Boolean).join(" • ")}
           </Text>
         </View>
@@ -467,22 +486,23 @@ export default function ProfileScreen() {
 
   const isRestaurant = user?.role === "restaurant" || hasRestaurantMembership;
   const isAdmin = user?.role === "admin";
+  const isDriver = (user as any)?.role === "driver" || (user as any)?.role === "taxi_driver";
 
   /** durum → {label,color} */
   const statusMeta = (s: string) => {
     switch (String(s)) {
       case "pending":
-        return { label: t("profile.reservations.status.pending"), bg: "#FEF3C7", fg: "#92400E" };
+        return { label: t("profile.reservations.status.pending"), bg: theme.colors.warningSoft, fg: theme.colors.warning };
       case "confirmed":
-        return { label: t("profile.reservations.status.confirmed"), bg: "#DCFCE7", fg: "#166534" };
+        return { label: t("profile.reservations.status.confirmed"), bg: theme.colors.successSoft, fg: theme.colors.success };
       case "arrived":
-        return { label: t("profile.reservations.status.arrived"), bg: "#DBEAFE", fg: "#1E40AF" };
+        return { label: t("profile.reservations.status.arrived"), bg: theme.colors.infoSoft, fg: theme.colors.info };
       case "no_show":
-        return { label: t("profile.reservations.status.noShow"), bg: "#FEE2E2", fg: "#991B1B" };
+        return { label: t("profile.reservations.status.noShow"), bg: theme.colors.errorSoft, fg: theme.colors.error };
       case "cancelled":
-        return { label: t("profile.reservations.status.cancelled"), bg: "#F3F4F6", fg: "#374151" };
+        return { label: t("profile.reservations.status.cancelled"), bg: theme.colors.surfaceAlt, fg: theme.colors.textSecondary };
       default:
-        return { label: s, bg: "#EEE", fg: "#111" };
+        return { label: s, bg: theme.colors.surfaceAlt, fg: theme.colors.textPrimary };
     }
   };
 
@@ -583,227 +603,172 @@ export default function ProfileScreen() {
 
   function AppPrefs() {
     return (
-      <Animated.View
-        style={{
-          marginTop: 4,
-          marginBottom: 10,
-          padding: 12,
-          borderRadius: 16,
-          borderWidth: 1,
-          borderColor: highlightAnim.interpolate({
-            inputRange: [0, 1],
-            outputRange: [T.colors.border, T.colors.primary],
-          }),
+      <>
+        {/* Bölge satırı */}
+        <Animated.View style={{
           backgroundColor: highlightAnim.interpolate({
             inputRange: [0, 1],
-            outputRange: ["#F9FAFB", "#FEF3F2"],
+            outputRange: ["#FFFFFF", "#FFFBF9"],
           }) as any,
-          shadowColor: "#000",
-          shadowOpacity: 0.06,
-          shadowRadius: 8,
-          shadowOffset: { width: 0, height: 3 },
-        }}
-      >
-        {/* Başlık */}
-        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
-          <View
-            style={{
-              width: 30,
-              height: 30,
-              borderRadius: 15,
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: "rgba(123,44,44,0.08)",
-              marginRight: 8,
-            }}
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: "#F0F0F0",
+        }}>
+          <TouchableOpacity
+            onPress={() => openSelector("region")}
+            activeOpacity={0.7}
+            style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 13, gap: 13 }}
           >
-            <Ionicons name="earth-outline" size={18} color={T.colors.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 15, fontWeight: "700", color: T.colors.text }}>
-              {t("profile.appPrefs.title")}
-            </Text>
-            <Text style={{ fontSize: 12, color: T.colors.textSecondary }}>
-              {t("profile.appPrefs.current")}: {currentRegionMeta.flag ? currentRegionMeta.flag + " " : ""}
-              {currentRegionMeta.label} • {currentLangMeta.label}
-            </Text>
-          </View>
-        </View>
-
-        {/* Bölge satırı */}
-        <TouchableOpacity
-          onPress={() => openSelector("region")}
-          activeOpacity={0.8}
-          style={{
-            paddingVertical: 10,
-            paddingHorizontal: 10,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: "#E5E7EB",
-            backgroundColor: "#FFFFFF",
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: 8,
-          }}
-        >
-          <View style={{ flexDirection: "column" }}>
-            <Text
-              style={{
-                fontSize: 12,
-                fontWeight: "600",
-                color: T.colors.textSecondary,
-                marginBottom: 2,
-              }}
-            >
-              {t("profile.appPrefs.region")}
-            </Text>
-            <Text
-              style={{
-                fontSize: 14,
-                fontWeight: "700",
-                color: T.colors.text,
-              }}
-            >
-              {currentRegionMeta.flag ? currentRegionMeta.flag + " " : ""}
-              {currentRegionMeta.label}
-            </Text>
-          </View>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-            <Text
-              style={{
-                fontSize: 11,
-                color: T.colors.primary,
-                fontWeight: "500",
-              }}
-            >
-              {t("profile.appPrefs.seeAllRegions")}
-            </Text>
-            <Ionicons name="chevron-forward" size={16} color={T.colors.primary} />
-          </View>
-        </TouchableOpacity>
+            <View style={{ width: 34, height: 34, borderRadius: 9, backgroundColor: "#FFF0F0", alignItems: "center", justifyContent: "center" }}>
+              <Ionicons name="earth-outline" size={18} color="#8B1A1A" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 10, fontWeight: "700", color: "#9CA3AF", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 3 }}>
+                {t("profile.appPrefs.region")}
+              </Text>
+              <Text style={{ fontSize: 14, fontWeight: "700", color: "#111827" }}>
+                {currentRegionMeta.flag ? currentRegionMeta.flag + " " : ""}{currentRegionMeta.label}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color="#D1D5DB" />
+          </TouchableOpacity>
+        </Animated.View>
 
         {/* Dil satırı */}
+        <Animated.View style={{
+          backgroundColor: highlightAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: ["#FFFFFF", "#FFFBF9"],
+          }) as any,
+        }}>
+          <TouchableOpacity
+            onPress={() => openSelector("language")}
+            activeOpacity={0.7}
+            style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 13, gap: 13 }}
+          >
+            <View style={{ width: 34, height: 34, borderRadius: 9, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center" }}>
+              <Ionicons name="language-outline" size={18} color="#1D4ED8" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 10, fontWeight: "700", color: "#9CA3AF", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 3 }}>
+                {t("profile.appPrefs.language")}
+              </Text>
+              <Text style={{ fontSize: 14, fontWeight: "700", color: "#111827" }}>
+                {currentLangMeta.label}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color="#D1D5DB" />
+          </TouchableOpacity>
+        </Animated.View>
+      </>
+    );
+  }
+
+  // ─── Brand colour constant ───────────────────────────────────────────────────
+  const BRAND = "#8B1A1A";
+
+  // ─── Premium FavCard (horizontal scroll) ────────────────────────────────────
+  function FavCard({ it }: { it: FavoriteRestaurant }) {
+    const thumb = it.photos?.[0];
+    const busy = favBusyId === it._id;
+    return (
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={() => navigation.navigate("Restoran", { id: it._id })}
+        style={ps.favCard}
+      >
+        {thumb ? (
+          <Image source={{ uri: thumb }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+        ) : (
+          <LinearGradient
+            colors={["#1A0610", "#8C244A"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFillObject}
+          />
+        )}
+        {/* Gradient overlay */}
+        <LinearGradient
+          colors={["transparent", "rgba(0,0,0,0.72)"]}
+          start={{ x: 0, y: 0.3 }}
+          end={{ x: 0, y: 1 }}
+          style={StyleSheet.absoluteFillObject}
+        />
+        {/* Remove button */}
         <TouchableOpacity
-          onPress={() => openSelector("language")}
+          style={ps.favCardRemove}
           activeOpacity={0.8}
-          style={{
-            paddingVertical: 10,
-            paddingHorizontal: 10,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: "#E5E7EB",
-            backgroundColor: "#FFFFFF",
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
+          onPress={async () => {
+            if (busy) return;
+            try {
+              setFavBusyId(it._id);
+              setFavs((prev) => prev.filter((f) => f._id !== it._id));
+              await removeFavorite(it._id);
+            } catch (e: any) {
+              setFavs((prev) =>
+                prev.some((f) => f._id === it._id) ? prev : [it, ...prev]
+              );
+              showError(
+                t("profile.toast.favoriteErrorTitle"),
+                e?.response?.data?.message || e?.message || t("profile.toast.favoriteErrorBody")
+              );
+            } finally {
+              setFavBusyId(null);
+            }
           }}
         >
-          <View style={{ flexDirection: "column" }}>
-            <Text
-              style={{
-                fontSize: 12,
-                fontWeight: "600",
-                color: T.colors.textSecondary,
-                marginBottom: 2,
-              }}
-            >
-              {t("profile.appPrefs.language")}
-            </Text>
-            <Text
-              style={{
-                fontSize: 14,
-                fontWeight: "700",
-                color: T.colors.text,
-              }}
-            >
-              {currentLangMeta.label}
-            </Text>
-          </View>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-            <Text
-              style={{
-                fontSize: 11,
-                color: T.colors.primary,
-                fontWeight: "500",
-              }}
-            >
-              {t("profile.appPrefs.seeAllLanguages")}
-            </Text>
-            <Ionicons name="chevron-forward" size={16} color={T.colors.primary} />
-          </View>
+          <Heart size={14} color={busy ? "#aaa" : "white"} strokeWidth={2.5} fill={busy ? "transparent" : "white"} />
         </TouchableOpacity>
-      </Animated.View>
+        {/* Info */}
+        <View style={ps.favCardInfo}>
+          <Text style={ps.favCardName} numberOfLines={1}>{it.name}</Text>
+          {!!it.city && <Text style={ps.favCardCity} numberOfLines={1}>{it.city}</Text>}
+        </View>
+      </TouchableOpacity>
     );
   }
 
   return (
     <ScrollView
-      contentContainerStyle={{ paddingBottom: 28 }}
-      style={{ flex: 1, backgroundColor: T.colors.background }}
+      ref={scrollRef}
+      contentContainerStyle={{ paddingBottom: 40 }}
+      style={{ flex: 1, backgroundColor: "#F7F7F8" }}
     >
-      {/* Kapak */}
-      <View
-        style={{
-          backgroundColor: T.colors.primary,
-          paddingHorizontal: 16,
-          paddingTop: 28,
-          paddingBottom: 20,
-          borderBottomLeftRadius: 24,
-          borderBottomRightRadius: 24,
-        }}
+      {/* ── HEADER ─────────────────────────────────────────────────────── */}
+      <LinearGradient
+        colors={["#1A0610", "#3D0A20", "#8C244A"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[ps.header, { paddingTop: insets.top + 14 }]}
       >
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-          <Text style={{ color: "#fff", fontSize: 22, fontWeight: "800" }}>{t("profile.title")}</Text>
-          <TouchableOpacity
-            onPress={logout}
-            style={{
-              backgroundColor: "rgba(255,255,255,0.12)",
-              borderWidth: 1,
-              borderColor: "rgba(255,255,255,0.35)",
-              paddingHorizontal: 12,
-              paddingVertical: 8,
-              borderRadius: 12,
-            }}
-          >
-            <Text style={{ color: "#fff", fontWeight: "700" }}>{t("profile.logout")}</Text>
+        {/* Decorative orbs */}
+        <View style={ps.orbTopRight} />
+        <View style={ps.orbBottomLeft} />
+
+        {/* Top bar */}
+        <View style={ps.headerTopBar}>
+          <Text style={ps.headerTitle}>{t("profile.title")}</Text>
+          <TouchableOpacity onPress={logout} style={ps.logoutBtn} activeOpacity={0.8}>
+            <Ionicons name="log-out-outline" size={20} color="rgba(255,255,255,0.9)" />
           </TouchableOpacity>
         </View>
 
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 14, marginTop: 16 }}>
-          <TouchableOpacity onPress={pickAvatar} activeOpacity={0.8}>
+        {/* Avatar + info */}
+        <View style={ps.avatarRow}>
+          <TouchableOpacity onPress={pickAvatar} activeOpacity={0.8} style={ps.avatarWrap}>
             <Image
               source={avatarUrl ? { uri: avatarUrl } : require("../assets/avatar-placeholder.png")}
-              style={{
-                width: 78,
-                height: 78,
-                borderRadius: 999,
-                backgroundColor: "#ffffff22",
-                borderWidth: 2,
-                borderColor: "#ffffff55",
-              }}
+              style={ps.avatarImg}
             />
+            <View style={ps.cameraBadge}>
+              <Ionicons name="camera" size={11} color="#1A0610" />
+            </View>
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 18, fontWeight: "800", color: "#fff" }}>
-              {name || "(İsimsiz)"}
-            </Text>
-            <Text style={{ color: "#fff", opacity: 0.9 }}>
-              {user?.email || user?.phone || "-"}
-            </Text>
-            <View
-              style={{
-                alignSelf: "flex-start",
-                marginTop: 8,
-                paddingHorizontal: 10,
-                paddingVertical: 6,
-                borderRadius: 999,
-                backgroundColor: "rgba(255,255,255,0.15)",
-                borderWidth: 1,
-                borderColor: "rgba(255,255,255,0.3)",
-              }}
-            >
-              <Text style={{ color: "#fff", fontWeight: "700" }}>
+            <Text style={ps.avatarName}>{name || t("profile.unnamed")}</Text>
+            <Text style={ps.avatarEmail}>{user?.email || user?.phone || "—"}</Text>
+            <View style={ps.roleBadge}>
+              <Text style={ps.roleBadgeText}>
+                ★{"  "}
                 {user?.role === "customer"
                   ? t("profile.role.customer")
                   : user?.role === "restaurant"
@@ -813,93 +778,174 @@ export default function ProfileScreen() {
             </View>
           </View>
         </View>
-      </View>
 
-      {/* Stat kartları */}
+        {/* Stats row — customer only */}
+        {user?.role === "customer" && (
+          <View style={ps.statsRow}>
+            <View style={ps.statCell}>
+              <Text style={ps.statValue}>{counts.upcoming}</Text>
+              <Text style={ps.statLabel}>{t("profile.stats.upcoming")}</Text>
+            </View>
+            <View style={ps.statCell}>
+              <Text style={ps.statValue}>{counts.confirmed}</Text>
+              <Text style={ps.statLabel}>{t("profile.stats.confirmed")}</Text>
+            </View>
+            <View style={ps.statCell}>
+              <Text style={ps.statValue}>{counts.cancelled}</Text>
+              <Text style={ps.statLabel}>{t("profile.stats.cancelled")}</Text>
+            </View>
+            <View style={[ps.statCell, ps.statCellLast]}>
+              <Text style={[ps.statValue, ps.statValueGold]}>
+                ₺{counts.spending > 0 ? Number(counts.spending).toLocaleString("tr-TR") : "0"}
+              </Text>
+              <Text style={ps.statLabel}>{t("profile.stats.spending")}</Text>
+            </View>
+          </View>
+        )}
+      </LinearGradient>
+
+      {/* ── QUICK ACTIONS ────────────────────────────────────────────── */}
       {user?.role === "customer" && (
-        <View style={{ paddingHorizontal: 16, marginTop: 14, flexDirection: "row", gap: 10 }}>
-          <StatCard title={t("profile.stats.upcoming")} value={String(counts.upcoming)} />
-          <StatCard title={t("profile.stats.confirmed")} value={String(counts.confirmed)} />
-          <StatCard title={t("profile.stats.cancelled")} value={String(counts.cancelled)} />
+        <View style={ps.quickActionsCard}>
+          {([
+            { Icon: CalendarDays, labelKey: "profile.quickAction.reservations", onPress: () => navigation.navigate("Rezervasyonlar") },
+            { Icon: Heart,         labelKey: "profile.quickAction.favorites",    onPress: () => scrollRef.current?.scrollTo({ y: favsSectionY.current, animated: true }) },
+            { Icon: ShoppingBag,   labelKey: "profile.quickAction.orders",       onPress: () => navigation.navigate("Siparişlerim") },
+            { Icon: Settings2,     labelKey: "profile.quickAction.settings",     onPress: () => scrollRef.current?.scrollTo({ y: settingsSectionY.current, animated: true }) },
+          ] as const).map(({ Icon, labelKey, onPress }) => (
+            <TouchableOpacity key={labelKey} style={ps.quickTile} onPress={onPress} activeOpacity={0.7}>
+              <Icon size={22} color={BRAND} strokeWidth={2} />
+              <Text style={ps.quickLabel}>{t(labelKey)}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
       )}
 
-      {/* Profil Bilgileri + Bildirim */}
+      {/* ── SPENDING CARD ────────────────────────────────────────────── */}
       {user?.role === "customer" && (
-        <Section title={t("profile.section.profileInfo")}>
-          <Label>{t("profile.field.name")}</Label>
-          <TextInput value={name} onChangeText={setName} style={inputStyle} />
-
-          <Label>{t("profile.field.email")}</Label>
-          <TextInput
-            value={email}
-            onChangeText={setEmail}
-            style={inputStyle}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-
-          <Label>{t("profile.field.phone")}</Label>
-          <TextInput
-            value={phone}
-            onChangeText={setPhone}
-            style={inputStyle}
-            keyboardType="phone-pad"
-          />
-
-          <Text
-            style={{
-              fontWeight: "800",
-              fontSize: 16,
-              marginTop: 12,
-              color: T.colors.text,
-            }}
-          >
-            {t("profile.section.notificationPrefs")}
+        <LinearGradient
+          colors={["#1A0610", "#5C1530"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={ps.spendingCard}
+        >
+          <Text style={ps.spendingLabel}>{t("profile.spending.title")}</Text>
+          <Text style={ps.spendingAmount}>
+            ₺{counts.spending > 0 ? Number(counts.spending).toLocaleString("tr-TR") : "0"}
           </Text>
-          <Toggle
-            label={t("profile.notify.push")}
-            value={!!prefs.push}
-            onChange={togglePushPref}
-          />
-          <Toggle
-            label={t("profile.notify.sms")}
-            value={!!prefs.sms}
-            onChange={() => {}}
-            disabled
-          />
-          <Toggle
-            label={t("profile.notify.email")}
-            value={!!prefs.email}
-            onChange={() => {}}
-            disabled
-          />
-
-          {/* Bölge & Dil Tercihi */}
-          <Text
-            style={{
-              fontWeight: "800",
-              fontSize: 16,
-              marginTop: 16,
-              marginBottom: 6,
-              color: T.colors.text,
-            }}
-          >
-            {t("profile.section.appPrefs")}
+          <Text style={ps.spendingSub}>
+            {t("profile.spending.sub", { count: resv.length })}
           </Text>
-          <AppPrefs />
-          <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>
-            <PrimaryButton
+        </LinearGradient>
+      )}
+
+      {/* ── SON REZERVASYONLAR (preview) ─────────────────────────────── */}
+      {user?.role === "customer" && resv.length > 0 && (
+        <View style={ps.recentSection}>
+          <View style={ps.recentHeader}>
+            <Text style={ps.recentTitle}>{t("profile.section.recentReservations")}</Text>
+            <TouchableOpacity onPress={() => navigation.navigate("Rezervasyonlar")} activeOpacity={0.7}>
+              <Text style={ps.recentSeeAll}>{t("profile.reservations.seeAll")}</Text>
+            </TouchableOpacity>
+          </View>
+          {resv.slice(0, 2).map((it) => {
+            const m = statusMeta(it.status);
+            return (
+              <View key={String(it._id)} style={ps.recentRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={ps.recentRowName} numberOfLines={1}>
+                    {String(it?.restaurantId?.name || t("profile.reservations.fallbackRestaurant"))}
+                  </Text>
+                  <Text style={ps.recentRowSub}>
+                    {t("profile.reservations.itemTitle", {
+                      date: dayjs(it.dateTimeUTC).format("DD MMM YYYY HH:mm"),
+                      count: it.partySize,
+                    })}
+                  </Text>
+                </View>
+                <View style={[ps.statusBadge, { backgroundColor: m.bg }]}>
+                  <Text style={[ps.statusBadgeText, { color: m.fg }]}>{m.label}</Text>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      )}
+
+      {/* ── FAVORİLERİM (premium yatay scroll) ───────────────────────── */}
+      {user?.role === "customer" && (
+        <View
+          style={ps.favSection}
+          onLayout={(e) => { favsSectionY.current = e.nativeEvent.layout.y; }}
+        >
+          <View style={[ps.recentHeader, { paddingHorizontal: 16 }]}>
+            <Text style={ps.recentTitle}>{t("profile.section.favorites")}</Text>
+            {favs.length > 0 && (
+              <Text style={ps.recentSub}>{favs.length}</Text>
+            )}
+          </View>
+          {favs.length > 0 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 16, gap: 10, paddingBottom: 2 }}
+            >
+              {favs.map((it) => <FavCard key={it._id} it={it} />)}
+            </ScrollView>
+          ) : (
+            <Text style={ps.emptyText}>{t("profile.favorites.empty")}</Text>
+          )}
+        </View>
+      )}
+
+      {/* ── PROFİL BİLGİLERİ ──────────────────────────────────────────── */}
+      {user?.role === "customer" && (
+        <View onLayout={(e) => { settingsSectionY.current = e.nativeEvent.layout.y; }}>
+
+          <PremiumSection title={t("profile.section.profileInfo")}>
+            <FieldRow label={t("profile.field.name")} value={name} onChangeText={setName} autoCapitalize="words" />
+            <FieldRow label={t("profile.field.email")} value={email} onChangeText={setEmail} keyboardType="email-address" />
+            <FieldRow label={t("profile.field.phone")} value={phone} onChangeText={setPhone} keyboardType="phone-pad" isLast />
+          </PremiumSection>
+
+          <PremiumSection title={t("profile.section.notificationPrefs")}>
+            <PremiumToggleRow
+              iconBg="#FFF0F0" iconColor="#8B1A1A"
+              iconName="bell-outline"
+              label={t("profile.notify.push")}
+              value={!!prefs.push} onChange={togglePushPref}
+            />
+            <PremiumToggleRow
+              iconBg="#F3F4F6" iconColor="#9CA3AF"
+              iconName="message-outline"
+              label={t("profile.notify.sms")}
+              value={!!prefs.sms} onChange={() => {}} disabled
+            />
+            <PremiumToggleRow
+              iconBg="#F3F4F6" iconColor="#9CA3AF"
+              iconName="email-outline"
+              label={t("profile.notify.email")}
+              value={!!prefs.email} onChange={() => {}} disabled isLast
+            />
+          </PremiumSection>
+
+          <PremiumSection title={t("profile.section.appPrefs")}>
+            <AppPrefs />
+          </PremiumSection>
+
+          <View style={{ paddingHorizontal: 16, marginTop: 4, marginBottom: 4 }}>
+            <GradientSaveButton
+              loading={loading}
               title={loading ? t("common.saving") : t("common.save")}
               onPress={onSave}
             />
           </View>
-        </Section>
+        </View>
       )}
       {(isAdmin || isRestaurant) && (
-        <Section title={t("profile.section.appPrefs")}>
+        <PremiumSection title={t("profile.section.appPrefs")}>
           <AppPrefs />
-        </Section>
+        </PremiumSection>
       )}
      {/* Bölge / Dil seçim bottom sheet */}
       {selectorOpen && (
@@ -914,97 +960,88 @@ export default function ProfileScreen() {
             onPress={closeSelector}
             style={{
               flex: 1,
-              backgroundColor: "rgba(0,0,0,0.35)",
+              backgroundColor: theme.colors.overlay,
             }}
           >
             <Animated.View
               style={{
                 position: "absolute",
-                left: 0,
-                right: 0,
-                bottom: 0,
-                padding: 16,
-                paddingBottom: 24 + (insets?.bottom || 0),
-                borderTopLeftRadius: 18,
-                borderTopRightRadius: 18,
-                backgroundColor: "#fff",
-                transform: [
-                  {
-                    translateY: sheetAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [260, 0],
-                    }),
-                  },
-                ],
+                left: 0, right: 0, bottom: 0,
+                paddingBottom: (insets?.bottom || 0) + 16,
+                borderTopLeftRadius: 24,
+                borderTopRightRadius: 24,
+                backgroundColor: "#FFFFFF",
+                shadowColor: "#000",
+                shadowOpacity: 0.18,
+                shadowRadius: 24,
+                shadowOffset: { width: 0, height: -4 },
+                elevation: 20,
+                transform: [{
+                  translateY: sheetAnim.interpolate({ inputRange: [0, 1], outputRange: [320, 0] }),
+                }],
               }}
             >
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: "800",
-                  marginBottom: 10,
-                  color: T.colors.text,
-                }}
-              >
-                {selectorOpen === "region"
-                  ? t("profile.appPrefs.selectRegion")
-                  : t("profile.appPrefs.selectLanguage")}
-              </Text>
-              {(selectorOpen === "region"
-                ? REGION_OPTIONS
-                : LANGUAGE_OPTIONS
-              ).map((opt: any) => {
-                const code = opt.code as string;
-                const isActive =
-                  selectorOpen === "region"
-                    ? prefRegion === code
-                    : prefLang === code;
-                const label =
-                  selectorOpen === "region"
-                    ? `${opt.flag ? opt.flag + " " : ""}${opt.label}`
+              {/* Handle */}
+              <View style={{ alignItems: "center", paddingTop: 12, paddingBottom: 4 }}>
+                <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: "#E5E7EB" }} />
+              </View>
+
+              {/* Header */}
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16 }}>
+                <View style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  backgroundColor: selectorOpen === "region" ? "#FFF0F0" : "#EFF6FF",
+                  alignItems: "center", justifyContent: "center",
+                }}>
+                  <Ionicons
+                    name={selectorOpen === "region" ? "earth-outline" : "language-outline"}
+                    size={19}
+                    color={selectorOpen === "region" ? "#8B1A1A" : "#1D4ED8"}
+                  />
+                </View>
+                <Text style={{ fontSize: 17, fontWeight: "800", color: "#111827" }}>
+                  {selectorOpen === "region"
+                    ? t("profile.appPrefs.selectRegion")
+                    : t("profile.appPrefs.selectLanguage")}
+                </Text>
+              </View>
+
+              {/* Options */}
+              <View style={{ marginHorizontal: 16, borderRadius: 16, overflow: "hidden", backgroundColor: "#F7F7F8" }}>
+                {(selectorOpen === "region" ? REGION_OPTIONS : LANGUAGE_OPTIONS).map((opt: any, idx: number, arr: any[]) => {
+                  const code = opt.code as string;
+                  const isActive = selectorOpen === "region" ? prefRegion === code : prefLang === code;
+                  const label = selectorOpen === "region"
+                    ? `${opt.flag ? opt.flag + "  " : ""}${opt.label}`
                     : opt.label;
-                return (
-                  <TouchableOpacity
-                    key={code}
-                    onPress={() => {
-                      if (selectorOpen === "region") {
-                        handleRegionSelect(code as RegionCode);
-                      } else {
-                        handleLangSelect(code as LangCode);
-                      }
-                      closeSelector();
-                    }}
-                    style={{
-                      paddingVertical: 10,
-                      paddingHorizontal: 8,
-                      borderRadius: 10,
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      marginBottom: 4,
-                      backgroundColor: isActive
-                        ? "rgba(123,44,44,0.06)"
-                        : "transparent",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: T.colors.text,
-                        fontWeight: isActive ? "700" : "500",
+                  const isLast = idx === arr.length - 1;
+                  return (
+                    <TouchableOpacity
+                      key={code}
+                      onPress={() => {
+                        if (selectorOpen === "region") handleRegionSelect(code as RegionCode);
+                        else handleLangSelect(code as LangCode);
+                        closeSelector();
                       }}
+                      activeOpacity={0.7}
+                      style={[
+                        { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14, backgroundColor: isActive ? "#FFF0F0" : "#FFFFFF" },
+                        !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#F0F0F0" },
+                      ]}
                     >
-                      {label}
-                    </Text>
-                    {isActive && (
-                      <Ionicons
-                        name="checkmark-circle"
-                        size={18}
-                        color={T.colors.primary}
-                      />
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
+                      <Text style={{ flex: 1, fontSize: 15, fontWeight: isActive ? "700" : "500", color: isActive ? "#8B1A1A" : "#111827" }}>
+                        {label}
+                      </Text>
+                      {isActive && (
+                        <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: "#8B1A1A", alignItems: "center", justifyContent: "center" }}>
+                          <Ionicons name="checkmark" size={13} color="#FFFFFF" />
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              <View style={{ height: 16 }} />
             </Animated.View>
           </TouchableOpacity>
         </Modal>
@@ -1012,160 +1049,42 @@ export default function ProfileScreen() {
 
       {/* Şifre Değiştirme */}
       {providers?.includes("password") && (
-        <Section title={t("profile.section.password")}>
-          {/* mevcut */}
-          <Label>{t("profile.password.current")}</Label>
-          <View style={{ position: "relative" }}>
-            <TextInput
-              value={curPw}
-              onChangeText={setCurPw}
-              style={inputStyle}
+        <>
+          <PremiumSection title={t("profile.section.password")}>
+            <FieldRow
+              label={t("profile.password.current")}
+              value={curPw} onChangeText={setCurPw}
               secureTextEntry={!showCur}
-              autoCapitalize="none"
+              showToggle onToggleShow={() => setShowCur((s) => !s)}
             />
-            <TouchableOpacity
-              onPress={() => setShowCur((s) => !s)}
-              style={{ position: "absolute", right: 12, top: 12, padding: 4 }}
-            >
-              <Ionicons
-                name={showCur ? "eye-off" : "eye"}
-                size={20}
-                color={T.colors.textSecondary}
-              />
-            </TouchableOpacity>
-          </View>
-
-          {/* yeni */}
-          <Label>{t("profile.password.new")}</Label>
-          <View style={{ position: "relative" }}>
-            <TextInput
-              value={newPw}
-              onChangeText={setNewPw}
-              style={inputStyle}
+            <FieldRow
+              label={t("profile.password.new")}
+              value={newPw} onChangeText={setNewPw}
               secureTextEntry={!showNew}
-              autoCapitalize="none"
+              showToggle onToggleShow={() => setShowNew((s) => !s)}
             />
-            <TouchableOpacity
-              onPress={() => setShowNew((s) => !s)}
-              style={{ position: "absolute", right: 12, top: 12, padding: 4 }}
-            >
-              <Ionicons
-                name={showNew ? "eye-off" : "eye"}
-                size={20}
-                color={T.colors.textSecondary}
-              />
-            </TouchableOpacity>
-          </View>
-
-          {/* tekrar */}
-          <Label>{t("profile.password.newConfirm")}</Label>
-          <View style={{ position: "relative" }}>
-            <TextInput
-              value={newPw2}
-              onChangeText={setNewPw2}
-              style={inputStyle}
+            <FieldRow
+              label={t("profile.password.newConfirm")}
+              value={newPw2} onChangeText={setNewPw2}
               secureTextEntry={!showNew2}
-              autoCapitalize="none"
+              showToggle onToggleShow={() => setShowNew2((s) => !s)}
+              isLast
             />
-            <TouchableOpacity
-              onPress={() => setShowNew2((s) => !s)}
-              style={{ position: "absolute", right: 12, top: 12, padding: 4 }}
-            >
-              <Ionicons
-                name={showNew2 ? "eye-off" : "eye"}
-                size={20}
-                color={T.colors.textSecondary}
-              />
-            </TouchableOpacity>
-          </View>
-
-          <View style={{ flexDirection: "row", gap: 10, marginTop: 12 }}>
-            <PrimaryButton
+          </PremiumSection>
+          <View style={{ paddingHorizontal: 16, marginTop: 4, marginBottom: 4 }}>
+            <GradientSaveButton
+              loading={pwLoading}
               title={pwLoading ? t("common.saving") : t("profile.password.update")}
               onPress={onChangePassword}
             />
           </View>
-        </Section>
+        </>
       )}
 
-      {/* Favorilerim */}
-      {user?.role === "customer" && (
-        <Section title={t("profile.section.favorites")}>
-          {favs?.length ? (
-            <>
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  marginBottom: 6,
-                }}
-              >
-                <Text style={{ color: T.colors.textSecondary }}>{t("profile.favorites.total")}</Text>
-                <Text
-                  style={{ fontWeight: "700", color: T.colors.text }}
-                >
-                  {favs.length}
-                </Text>
-              </View>
-              {favs.map((it) => (
-                <FavoriteRow key={it._id} it={it} />
-              ))}
-            </>
-          ) : (
-            <Text style={{ color: T.colors.textSecondary }}>
-              {t("profile.favorites.empty")}
-            </Text>
-          )}
-        </Section>
-      )}
-
-      {/* Rezervasyonlarım */}
-      {user?.role === "customer" && (
-        <Section title={t("profile.section.reservations")}>
-          {resv?.length ? (
-            <>
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  marginBottom: 6,
-                  alignItems: "center",
-                }}
-              >
-                <Text style={{ color: T.colors.textSecondary }}>{t("profile.reservations.total")}</Text>
-                <Text
-                  style={{ fontWeight: "700", color: T.colors.text }}
-                >
-                  {resv.length}
-                </Text>
-              </View>
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  marginBottom: 10,
-                }}
-              >
-                <Text style={{ color: T.colors.textSecondary }}>
-                  {t("profile.reservations.totalSpent")}
-                </Text>
-                <Money n={counts.spending} />
-              </View>
-              {resv.map((it) => (
-                <ReservationMini it={it} key={String(it._id)} />
-              ))}
-            </>
-          ) : (
-            <Text style={{ color: T.colors.textSecondary }}>
-              {t("profile.reservations.empty")}
-            </Text>
-          )}
-        </Section>
-      )}
 
       {/* Yönetim Kısayolları */}
       {(isRestaurant || isAdmin) && (
-        <Section title={t("profile.section.adminShortcuts")}>
+        <PremiumSection title={t("profile.section.adminShortcuts")}>
           <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap" }}>
             {isRestaurant && (
               <PrimaryButton
@@ -1213,72 +1132,57 @@ export default function ProfileScreen() {
               </>
             )}
           </View>
-        </Section>
+        </PremiumSection>
+      )}
+
+      {/* ── SÜRÜCÜ PANELİ ────────────────────────────────────────────── */}
+      {isDriver && (
+        <PremiumSection title="Sürücü">
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate("Driver")}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 12,
+              paddingHorizontal: 16,
+              paddingVertical: 14,
+              backgroundColor: "#FFFFFF",
+            }}
+          >
+            <View style={{
+              width: 38,
+              height: 38,
+              borderRadius: 10,
+              backgroundColor: theme.taxi.light,
+              alignItems: "center",
+              justifyContent: "center",
+            }}>
+              <Car size={20} color={theme.taxi.main} strokeWidth={2} />
+            </View>
+            <Text style={{ flex: 1, fontSize: 15, fontWeight: "700", color: theme.taxi.main }}>
+              Sürücü Paneli
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color={theme.taxi.main} />
+          </TouchableOpacity>
+        </PremiumSection>
       )}
 
       {/* Yasal & Destek */}
-      <Section title={t("profile.section.legalSupport")}>
-        <ListCard>
-          <ListRow
-            icon="file-document-outline"
-            label={t("profile.legal.terms")}
-            onPress={goTerms}
-          />
-          <Divider />
-          <ListRow
-            icon="shield-lock-outline"
-            label={t("profile.legal.privacy")}
-            onPress={goPrivacy}
-          />
-          <Divider />
-          <ListRow
-            icon="book-open-variant"
-            label={t("profile.legal.howToUse")}
-            onPress={openGetStarted}
-          />
-          <Divider />
-          <ListRow
-            icon="lifebuoy"
-            label={t("profile.legal.help")}
-            onPress={goSupport}
-          />
-          <Divider />
-          <ListRow
-            icon="email-outline"
-            label={t("profile.legal.contact")}
-            onPress={goContact}
-          />
-          <Divider />
-          <ListRow
-            icon="certificate-outline"
-            label={t("profile.legal.licenses")}
-            onPress={goLicenses}
-          />
-          <Divider />
-          <ListRow
-            icon="information-outline"
-            label={t("profile.legal.about")}
-            onPress={goAbout}
-          />
-          <Divider />
-          <ListRow
-            icon="trash-can-outline"
-            label={t("profile.legal.deleteAccount")}
-            destructive
-            onPress={goDelete}
-          />
-        </ListCard>
-      </Section>
-
-      {/* Alt Çıkış */}
-      <View style={{ paddingHorizontal: 16, marginTop: 8, marginBottom: 20 }}>
-        <SecondaryButton title={t("profile.logout")} onPress={logout} />
-      </View>
-
+      <PremiumSection title={t("profile.section.legalSupport")}>
+        <ListRow icon="file-document-outline"  label={t("profile.legal.terms")}         onPress={goTerms} />
+        <ListRow icon="shield-lock-outline"    label={t("profile.legal.privacy")}       onPress={goPrivacy} />
+        <ListRow icon="book-open-variant"      label={t("profile.legal.howToUse")}      onPress={openGetStarted} />
+        <ListRow icon="lifebuoy"               label={t("profile.legal.help")}          onPress={goSupport} />
+        <ListRow icon="email-outline"          label={t("profile.legal.contact")}       onPress={goContact} />
+        <ListRow icon="certificate-outline"    label={t("profile.legal.licenses")}      onPress={goLicenses} />
+        <ListRow icon="information-outline"    label={t("profile.legal.about")}         onPress={goAbout} />
+        <ListRow icon="trash-can-outline"      label={t("profile.legal.deleteAccount")} onPress={goDelete} destructive isLast />
+      </PremiumSection>
 
       {/* QR Kamera Modalı */}
       <Modal visible={qrOpen} animationType="slide" onRequestClose={() => setQrOpen(false)}>
-        <View style={{ flex: 1, backgroundColor: "#000" }}>
+        <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
           <CameraView
             style={{ flex: 1 }}
             barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
@@ -1324,7 +1228,7 @@ export default function ProfileScreen() {
         <View
           style={{
             flex: 1,
-            backgroundColor: "rgba(0,0,0,0.6)",
+            backgroundColor: theme.colors.overlay,
             justifyContent: "center",
             alignItems: "center",
             padding: 20,
@@ -1332,25 +1236,25 @@ export default function ProfileScreen() {
         >
           <View
             style={{
-              backgroundColor: "#fff",
+              backgroundColor: theme.colors.surface,
               borderRadius: 14,
               width: "100%",
               padding: 16,
               borderWidth: 1,
-              borderColor: T.colors.border,
+              borderColor: theme.colors.borderDefault,
             }}
           >
             <Text
               style={{
                 fontSize: 18,
                 fontWeight: "800",
-                color: T.colors.text,
+                color: theme.colors.textPrimary,
                 marginBottom: 10,
               }}
             >
               {t("profile.qr.arrivedCountTitle")}
             </Text>
-            <Text style={{ color: T.colors.textSecondary, marginBottom: 6 }}>
+            <Text style={{ color: theme.colors.textSecondary, marginBottom: 6 }}>
               {t("profile.qr.arrivedCountDescription")}
             </Text>
             <TextInput
@@ -1410,7 +1314,7 @@ export default function ProfileScreen() {
         <View
           style={{
             flex: 1,
-            backgroundColor: "rgba(0,0,0,0.6)",
+            backgroundColor: theme.colors.overlay,
             justifyContent: "center",
             alignItems: "center",
             padding: 20,
@@ -1418,25 +1322,25 @@ export default function ProfileScreen() {
         >
           <View
             style={{
-              backgroundColor: "#fff",
+              backgroundColor: theme.colors.surface,
               borderRadius: 14,
               width: "100%",
               padding: 16,
               borderWidth: 1,
-              borderColor: T.colors.border,
+              borderColor: theme.colors.borderDefault,
             }}
           >
             <Text
               style={{
                 fontSize: 18,
                 fontWeight: "800",
-                color: T.colors.text,
+                color: theme.colors.textPrimary,
                 marginBottom: 10,
               }}
             >
               {t("profile.checkin.manualTitle")}
             </Text>
-            <Label>{t("profile.checkin.ridLabel")}</Label>
+            <Text style={{ color: "#6B7280", marginBottom: 6, fontWeight: "600" }}>{t("profile.checkin.ridLabel")}</Text>
             <TextInput
               value={manualRid}
               onChangeText={setManualRid}
@@ -1444,7 +1348,7 @@ export default function ProfileScreen() {
               autoCapitalize="none"
               style={inputStyle}
             />
-            <Label>{t("profile.checkin.arrivedLabel")}</Label>
+            <Text style={{ color: "#6B7280", marginBottom: 6, fontWeight: "600", marginTop: 8 }}>{t("profile.checkin.arrivedLabel")}</Text>
             <TextInput
               value={manualArrived}
               onChangeText={setManualArrived}
@@ -1508,7 +1412,7 @@ export default function ProfileScreen() {
         <View
           style={{
             flex: 1,
-            backgroundColor: "rgba(0,0,0,0.6)",
+            backgroundColor: theme.colors.overlay,
             justifyContent: "center",
             alignItems: "center",
             padding: 20,
@@ -1516,17 +1420,17 @@ export default function ProfileScreen() {
         >
           <View
             style={{
-              backgroundColor: "#fff",
+              backgroundColor: theme.colors.surface,
               borderRadius: 14,
               width: "100%",
               padding: 16,
               borderWidth: 1,
               borderColor:
                 msgKind === "error"
-                  ? "#FCA5A5"
+                  ? theme.colors.errorSoft
                   : msgKind === "warn"
-                  ? "#FDE68A"
-                  : T.colors.border,
+                  ? theme.colors.warningSoft
+                  : theme.colors.borderDefault,
             }}
           >
             <Text
@@ -1535,10 +1439,10 @@ export default function ProfileScreen() {
                 fontWeight: "800",
                 color:
                   msgKind === "error"
-                    ? "#B91C1C"
+                    ? theme.colors.error
                     : msgKind === "warn"
-                    ? "#92400E"
-                    : T.colors.text,
+                    ? theme.colors.warning
+                    : theme.colors.textPrimary,
                 marginBottom: 8,
               }}
             >
@@ -1552,7 +1456,7 @@ export default function ProfileScreen() {
             {!!msgBody && (
               <Text
                 style={{
-                  color: T.colors.textSecondary,
+                  color: theme.colors.textSecondary,
                   marginBottom: 12,
                 }}
               >
@@ -1594,81 +1498,406 @@ export default function ProfileScreen() {
   );
 }
 
-/** ------ küçük UI yardımcıları ------ */
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+/** ------ Premium profile styles ------ */
+const ps = StyleSheet.create({
+  // Header
+  header: {
+    paddingHorizontal: 16,
+    paddingBottom: 22,
+    position: "relative",
+    overflow: "hidden",
+  },
+  orbTopRight: {
+    position: "absolute",
+    top: -40,
+    right: -40,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: "rgba(255,193,7,0.07)",
+  },
+  orbBottomLeft: {
+    position: "absolute",
+    bottom: -20,
+    left: -20,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: "rgba(140,36,74,0.3)",
+  },
+  headerTopBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  headerTitle: {
+    color: "white",
+    fontSize: 22,
+    fontWeight: "900",
+    letterSpacing: -0.5,
+  },
+  logoutBtn: {
+    backgroundColor: "rgba(255,255,255,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+    borderRadius: 10,
+    width: 38,
+    height: 38,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  // Avatar
+  avatarRow: { flexDirection: "row", alignItems: "center", gap: 14 },
+  avatarWrap: { position: "relative" },
+  avatarImg: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    borderWidth: 3,
+    borderColor: "rgba(255,193,7,0.45)",
+  },
+  cameraBadge: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#FFC107",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#1A0610",
+  },
+  avatarName: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "900",
+    letterSpacing: -0.3,
+  },
+  avatarEmail: { color: "rgba(255,255,255,0.65)", fontSize: 13, marginTop: 2 },
+  roleBadge: {
+    alignSelf: "flex-start",
+    marginTop: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,193,7,0.18)",
+    borderWidth: 1,
+    borderColor: "rgba(255,193,7,0.35)",
+  },
+  roleBadgeText: { color: "#FFC107", fontSize: 11, fontWeight: "700" },
+  // Stats
+  statsRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 16,
+  },
+  statCell: {
+    flex: 1,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.14)",
+    borderRadius: 12,
+    paddingVertical: 10,
+    alignItems: "center",
+  },
+  statCellLast: {
+    borderColor: "rgba(255,193,7,0.25)",
+    backgroundColor: "rgba(255,193,7,0.08)",
+  },
+  statValue: { color: "white", fontSize: 20, fontWeight: "900" },
+  statValueGold: { color: "#FFC107" },
+  statLabel: { color: "rgba(255,255,255,0.55)", fontSize: 10, fontWeight: "600", marginTop: 2 },
+  // Quick actions
+  quickActionsCard: {
+    flexDirection: "row",
+    backgroundColor: "white",
+    marginHorizontal: 16,
+    marginTop: 12,
+    borderRadius: 16,
+    padding: 14,
+    gap: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  quickTile: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "rgba(139,26,26,0.28)",
+    gap: 7,
+    backgroundColor: "white",
+  },
+  quickLabel: {
+    fontSize: 9,
+    fontWeight: "700",
+    color: "#111827",
+    textAlign: "center",
+  },
+  // Spending card
+  spendingCard: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    borderRadius: 14,
+    padding: 16,
+  },
+  spendingLabel: {
+    color: "rgba(255,255,255,0.6)",
+    fontSize: 11,
+    fontWeight: "600",
+    letterSpacing: 0.3,
+  },
+  spendingAmount: {
+    color: "#FFC107",
+    fontSize: 28,
+    fontWeight: "900",
+    marginTop: 4,
+  },
+  spendingSub: { color: "rgba(255,255,255,0.45)", fontSize: 11, marginTop: 6 },
+  // Recent reservations
+  recentSection: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    backgroundColor: "white",
+    borderRadius: 16,
+    padding: 14,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  recentHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  recentTitle: { fontSize: 15, fontWeight: "800", color: "#111827" },
+  recentSeeAll: { fontSize: 12, fontWeight: "600", color: "#8B1A1A" },
+  recentSub: { fontSize: 13, fontWeight: "700", color: "#6B7280" },
+  recentRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderColor: "#F3F4F6",
+    gap: 10,
+  },
+  recentRowName: { fontSize: 13, fontWeight: "800", color: "#111827" },
+  recentRowSub: { fontSize: 11, color: "#6B7280", marginTop: 2 },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  statusBadgeText: { fontSize: 11, fontWeight: "700" },
+  // Favorites section
+  favSection: {
+    marginTop: 12,
+    paddingVertical: 14,
+    backgroundColor: "white",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  favSectionHeader: {
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  emptyText: { color: "#9CA3AF", paddingHorizontal: 16 },
+  // FavCard
+  favCard: {
+    width: 140,
+    height: 110,
+    borderRadius: 14,
+    overflow: "hidden",
+    position: "relative",
+  },
+  favCardRemove: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  favCardInfo: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 10,
+  },
+  favCardName: { color: "white", fontSize: 12, fontWeight: "800" },
+  favCardCity: { color: "rgba(255,255,255,0.65)", fontSize: 10, marginTop: 2 },
+});
+
+/** ------ Premium UI bileşenleri ------ */
+
+// ─── Section wrapper ──────────────────────────────────────────────────────────
+function PremiumSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <View
-      style={{
-        marginTop: 16,
-        backgroundColor: T.colors.surface,
-        padding: 16,
-        borderRadius: 14,
-        borderWidth: 1,
-        borderColor: T.colors.border,
-        marginHorizontal: 16,
-      }}
-    >
-      <Text
-        style={{
-          fontWeight: "800",
-          fontSize: 18,
-          marginBottom: 10,
-          color: T.colors.text,
-        }}
-      >
-        {title}
-      </Text>
-      {children}
+    <View style={{ marginTop: 22, marginHorizontal: 16 }}>
+      {/* Label */}
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 8 }}>
+        <View style={{ width: 3, height: 14, borderRadius: 2, backgroundColor: "#8B1A1A" }} />
+        <Text style={{
+          fontSize: 11, fontWeight: "700", color: "#8B1A1A",
+          letterSpacing: 0.7, textTransform: "uppercase",
+        }}>
+          {title}
+        </Text>
+      </View>
+      {/* Card */}
+      <View style={{
+        backgroundColor: "#FFFFFF", borderRadius: 16, overflow: "hidden",
+        shadowColor: "#8B1A1A", shadowOpacity: 0.08, shadowRadius: 12,
+        shadowOffset: { width: 0, height: 3 }, elevation: 3,
+      }}>
+        {children}
+      </View>
     </View>
   );
 }
 
-function Label({ children }: { children: React.ReactNode }) {
+// ─── Editable field row (replaces Label + TextInput) ─────────────────────────
+function FieldRow({
+  label, value, onChangeText,
+  keyboardType, autoCapitalize,
+  secureTextEntry, showToggle, onToggleShow,
+  isLast,
+}: {
+  label: string; value: string; onChangeText: (v: string) => void;
+  keyboardType?: any; autoCapitalize?: any;
+  secureTextEntry?: boolean; showToggle?: boolean; onToggleShow?: () => void;
+  isLast?: boolean;
+}) {
+  const [focused, setFocused] = useState(false);
   return (
-    <Text
-      style={{
-        color: T.colors.textSecondary,
-        marginBottom: 6,
-        fontWeight: "600",
-      }}
-    >
-      {children}
-    </Text>
+    <View style={[
+      { paddingHorizontal: 16, paddingTop: 11, paddingBottom: 10 },
+      !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#F0F0F0" },
+      focused && { backgroundColor: "#FFFBF9" },
+    ]}>
+      <Text style={{ fontSize: 10, fontWeight: "700", color: focused ? "#8B1A1A" : "#9CA3AF", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 4 }}>
+        {label}
+      </Text>
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          style={{ flex: 1, fontSize: 15, fontWeight: "600", color: "#111827", padding: 0, margin: 0 }}
+          keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize || "none"}
+          secureTextEntry={secureTextEntry}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          placeholderTextColor="#C4C4C4"
+        />
+        {showToggle && (
+          <TouchableOpacity onPress={onToggleShow} style={{ padding: 4 }}>
+            <Ionicons name={secureTextEntry ? "eye-off-outline" : "eye-outline"} size={19} color="#9CA3AF" />
+          </TouchableOpacity>
+        )}
+      </View>
+      {focused && (
+        <View style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3, backgroundColor: "#8B1A1A", borderRadius: 2 }} />
+      )}
+    </View>
   );
 }
 
-function PrimaryButton({ title, onPress }: { title: string; onPress: () => void }) {
+// ─── Toggle row with icon (Bildirimler section) ───────────────────────────────
+function PremiumToggleRow({
+  iconName, iconBg, iconColor, label, value, onChange, disabled, isLast,
+}: {
+  iconName: React.ComponentProps<typeof MaterialCommunityIcons>["name"];
+  iconBg: string; iconColor: string;
+  label: string; value: boolean; onChange: () => void;
+  disabled?: boolean; isLast?: boolean;
+}) {
   return (
     <TouchableOpacity
-      onPress={onPress}
-      style={{
-        backgroundColor: T.colors.primary,
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        borderRadius: 12,
-        alignItems: "center",
-      }}
+      onPress={disabled ? undefined : onChange}
+      activeOpacity={disabled ? 1 : 0.7}
+      style={[
+        { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 13, gap: 12 },
+        !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#F0F0F0" },
+        disabled && { opacity: 0.4 },
+      ]}
     >
-      <Text style={{ color: "#fff", fontWeight: "700" }}>{title}</Text>
+      <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: iconBg, alignItems: "center", justifyContent: "center" }}>
+        <MaterialCommunityIcons name={iconName} size={17} color={iconColor} />
+      </View>
+      <Text style={{ flex: 1, fontSize: 14, fontWeight: "600", color: "#111827" }}>{label}</Text>
+      <View style={{
+        width: 46, height: 27, borderRadius: 14,
+        backgroundColor: value ? "#8B1A1A" : "#E5E7EB",
+        padding: 3, alignItems: value ? "flex-end" : "flex-start", justifyContent: "center",
+      }}>
+        <View style={{ width: 21, height: 21, borderRadius: 11, backgroundColor: "#FFFFFF",
+          shadowColor: "#000", shadowOpacity: 0.15, shadowRadius: 2, shadowOffset: { width: 0, height: 1 } }} />
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+// ─── Full-width gradient save button ─────────────────────────────────────────
+function GradientSaveButton({ title, onPress, loading }: { title: string; onPress: () => void; loading?: boolean }) {
+  return (
+    <TouchableOpacity onPress={onPress} activeOpacity={0.85} disabled={loading}>
+      <LinearGradient
+        colors={["#6E1515", "#8B1A1A"]}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+        style={{ borderRadius: 14, paddingVertical: 14, alignItems: "center",
+          shadowColor: "#8B1A1A", shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 5 }}
+      >
+        <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "800", letterSpacing: 0.3 }}>
+          {title}
+        </Text>
+      </LinearGradient>
+    </TouchableOpacity>
+  );
+}
+
+// ─── Legacy buttons (modals, shortcuts) ──────────────────────────────────────
+function PrimaryButton({ title, onPress }: { title: string; onPress: () => void }) {
+  const theme = useTheme();
+  return (
+    <TouchableOpacity onPress={onPress} style={{
+      backgroundColor: theme.colors.primary, paddingVertical: 12,
+      paddingHorizontal: 16, borderRadius: 12, alignItems: "center",
+    }}>
+      <Text style={{ color: theme.colors.textInverse, fontWeight: "700" }}>{title}</Text>
     </TouchableOpacity>
   );
 }
 
 function SecondaryButton({ title, onPress }: { title: string; onPress: () => void }) {
+  const theme = useTheme();
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      style={{
-        backgroundColor: T.colors.muted,
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        borderRadius: 12,
-        alignItems: "center",
-      }}
-    >
-      <Text style={{ color: T.colors.primary, fontWeight: "800" }}>
-        {title}
-      </Text>
+    <TouchableOpacity onPress={onPress} style={{
+      backgroundColor: theme.colors.surfaceAlt, paddingVertical: 12,
+      paddingHorizontal: 16, borderRadius: 12, alignItems: "center",
+    }}>
+      <Text style={{ color: theme.colors.primary, fontWeight: "800" }}>{title}</Text>
     </TouchableOpacity>
   );
 }
@@ -1684,6 +1913,7 @@ function Toggle({
   onChange: () => void;
   disabled?: boolean;
 }) {
+  const theme = useTheme();
   return (
     <TouchableOpacity
       onPress={disabled ? undefined : onChange}
@@ -1697,13 +1927,13 @@ function Toggle({
       }}
       disabled={disabled}
     >
-      <Text style={{ color: T.colors.text }}>{label}</Text>
+      <Text style={{ color: theme.colors.textPrimary }}>{label}</Text>
       <View
         style={{
           width: 52,
           height: 30,
           borderRadius: 999,
-          backgroundColor: value ? T.colors.success : T.colors.border,
+          backgroundColor: value ? theme.colors.success : theme.colors.borderDefault,
           padding: 4,
           alignItems: value ? "flex-end" : "flex-start",
         }}
@@ -1713,7 +1943,7 @@ function Toggle({
             width: 22,
             height: 22,
             borderRadius: 11,
-            backgroundColor: "#fff",
+            backgroundColor: theme.colors.textInverse,
           }}
         />
       </View>
@@ -1722,13 +1952,14 @@ function Toggle({
 }
 
 function StatCard({ title, value }: { title: string; value: string }) {
+  const theme = useTheme();
   return (
     <View
       style={{
         flex: 1,
-        backgroundColor: "#fff",
+        backgroundColor: theme.colors.surface,
         borderWidth: 1,
-        borderColor: T.colors.border,
+        borderColor: theme.colors.borderDefault,
         borderRadius: 12,
         paddingVertical: 12,
         paddingHorizontal: 12,
@@ -1736,7 +1967,7 @@ function StatCard({ title, value }: { title: string; value: string }) {
     >
       <Text
         style={{
-          color: T.colors.textSecondary,
+          color: theme.colors.textSecondary,
           fontWeight: "600",
         }}
       >
@@ -1744,7 +1975,7 @@ function StatCard({ title, value }: { title: string; value: string }) {
       </Text>
       <Text
         style={{
-          color: T.colors.text,
+          color: theme.colors.textPrimary,
           fontSize: 20,
           fontWeight: "800",
           marginTop: 4,
@@ -1756,81 +1987,54 @@ function StatCard({ title, value }: { title: string; value: string }) {
   );
 }
 
-const inputStyle = {
-  borderWidth: 1,
-  borderColor: T.colors.border,
-  borderRadius: 10,
-  paddingHorizontal: 10,
-  paddingVertical: 10,
-  backgroundColor: "#fff",
-  color: T.colors.text,
-} as const;
-
-function ListCard({ children }: { children: React.ReactNode }) {
-  return (
-    <View
-      style={{
-        backgroundColor: "#fff",
-        borderRadius: 14,
-        borderWidth: 1,
-        borderColor: T.colors.border,
-        overflow: "hidden",
-        shadowColor: "#000",
-        shadowOpacity: 0.06,
-        shadowRadius: 10,
-        shadowOffset: { width: 0, height: 4 },
-        elevation: 2,
-      }}
-    >
-      {children}
-    </View>
-  );
+function useInputStyle() {
+  const theme = useTheme();
+  return {
+    borderWidth: 1,
+    borderColor: theme.colors.borderDefault,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    backgroundColor: theme.colors.surface,
+    color: theme.colors.textPrimary,
+  };
 }
 
-function Divider() {
-  return <View style={{ height: 1, backgroundColor: "#EFEFEF" }} />;
-}
+// Icon accent palette for Yasal & Destek rows
+const ROW_ACCENT: Record<string, { bg: string; color: string }> = {
+  "file-document-outline": { bg: "#FFF7ED", color: "#C2410C" },
+  "shield-lock-outline":   { bg: "#EFF6FF", color: "#1D4ED8" },
+  "book-open-variant":     { bg: "#F0FDF4", color: "#15803D" },
+  "lifebuoy":              { bg: "#FFF0F0", color: "#8B1A1A" },
+  "email-outline":         { bg: "#FFF0F0", color: "#8B1A1A" },
+  "certificate-outline":   { bg: "#FFFBEB", color: "#B45309" },
+  "information-outline":   { bg: "#F5F3FF", color: "#6D28D9" },
+  "trash-can-outline":     { bg: "#FEF2F2", color: "#DC2626" },
+};
 
 function ListRow({
-  icon,
-  label,
-  destructive,
-  onPress,
+  icon, label, destructive, onPress, isLast,
 }: {
   icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"];
-  label: string;
-  destructive?: boolean;
-  onPress: () => void;
+  label: string; destructive?: boolean; onPress: () => void; isLast?: boolean;
 }) {
+  const accent = ROW_ACCENT[icon as string] ?? { bg: "#F3F4F6", color: "#6B7280" };
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          paddingHorizontal: 14,
-          paddingVertical: 14,
-          gap: 12,
-          backgroundColor: "#fff",
-        }}
-      >
-        <MaterialCommunityIcons
-          name={icon}
-          size={22}
-          color={destructive ? "#C0392B" : "#6B7280"}
-          style={{ width: 24 }}
-        />
-        <Text
-          style={{
-            flex: 1,
-            color: destructive ? "#C0392B" : T.colors.text,
-            fontWeight: destructive ? "800" : "600",
-          }}
-        >
-          {label}
-        </Text>
-        <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.7}
+      style={[
+        { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 13, gap: 13, backgroundColor: "#FFFFFF" },
+        !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#F0F0F0" },
+      ]}
+    >
+      <View style={{ width: 34, height: 34, borderRadius: 9, backgroundColor: destructive ? "#FEF2F2" : accent.bg, alignItems: "center", justifyContent: "center" }}>
+        <MaterialCommunityIcons name={icon} size={18} color={destructive ? "#DC2626" : accent.color} />
       </View>
+      <Text style={{ flex: 1, fontSize: 14, fontWeight: "600", color: destructive ? "#DC2626" : "#111827" }}>
+        {label}
+      </Text>
+      <Ionicons name="chevron-forward" size={16} color={destructive ? "#FCA5A5" : "#D1D5DB"} />
     </TouchableOpacity>
   );
 }
@@ -1844,6 +2048,7 @@ function Pill({
   active: boolean;
   onPress: () => void;
 }) {
+  const theme = useTheme();
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -1853,8 +2058,8 @@ function Pill({
         paddingVertical: 6,
         borderRadius: 999,
         borderWidth: active ? 0 : 1,
-        borderColor: active ? "transparent" : "#E5E7EB",
-        backgroundColor: active ? T.colors.primary : "#fff",
+        borderColor: active ? "transparent" : theme.colors.borderDefault,
+        backgroundColor: active ? theme.colors.primary : theme.colors.surface,
         flexDirection: "row",
         alignItems: "center",
         gap: 6,
@@ -1862,7 +2067,7 @@ function Pill({
     >
       <Text
         style={{
-          color: active ? "#fff" : T.colors.text,
+          color: active ? theme.colors.textInverse : theme.colors.textPrimary,
           fontWeight: active ? "700" : "500",
           fontSize: 13,
         }}
