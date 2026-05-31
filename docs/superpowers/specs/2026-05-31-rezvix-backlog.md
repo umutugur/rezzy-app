@@ -1,6 +1,6 @@
 # Rezvix — Yapılacaklar Listesi (Backlog)
 **Son güncelleme:** 2026-06-01  
-**Durum:** Aktif — Oturum 1 tamamlandı
+**Durum:** Aktif — Oturum 2 tamamlandı
 
 ---
 
@@ -31,6 +31,41 @@ Tüm modüller için tek Review sistemi — gerçek müşteri doğrulamalı.
 - `MarketStoreScreen.tsx`: `ReviewSection entityType="market"` eklendi
 - `TaxiMatchedScreen.tsx`: yolculuk tamamlanınca sürücü puanlama modal'ı
 - **Commits:** `ab75aef`, `0724b73`, `8cab6cf`, `fdb1f72`, `04c7861`
+
+### ✅ #19 — DriverHomeScreen Puan Gösterimi
+- Backend `getEarnings`: `rating` → `averageRating` yeniden adlandırıldı, `ratingCount` eklendi
+- `DriverEarnings` type güncellendi (`ratingCount`, `todayRideCount`, `weekEarnings`)
+- `DriverHomeScreen` earnings badge'ine `ratingCount` gösterimi: "Puan (42)"
+- **Commits:** `1bbd526` (backend), `c10be57` (frontend)
+
+### ✅ #11 — Market Sipariş Detay Ekranı
+- `MarketOrderDetailScreen.tsx` eksiksiz: durum adımları, ürün listesi, ödeme özeti mevcut
+- `pending` / `confirmed` siparişler için kırmızı "Siparişi İptal Et" butonu eklendi
+- `cancelOrder` API + Alert onay dialog + optimistik UI güncelleme
+- **Commit:** `c10be57`
+
+### ✅ #7 — Taksi Yolculuk Tamamlama Akışı
+- Backend `PATCH /api/taxi/rides/:id/start` (matched → inProgress) ve `PATCH .../complete` zaten mevcuttu
+- `api/taxi.ts`: `startRide()` ve `completeRide()` fonksiyonları eklendi
+- `DriverIncomingRideScreen`: `onAccepted(payload)` callback prop eklendi
+- `DriverHomeScreen`: aktif yolculuk kartı overlay — eşleşme sonrası kart görünür
+  - "Yolculuğu Başlat" butonu (`matched` durumu)
+  - "Yolculuğu Tamamla" butonu (`inProgress` durumu)
+  - socket `ride:status_change` ile otomatik durum güncellemesi
+- **Commit:** `5c32125`
+
+### ✅ #8 — Sürücü Geçmiş Yolculuklar
+- Backend: `GET /api/taxi/driver/rides` endpoint — cursor tabanlı sayfalama (commit `e2ebe66`)
+- `api/taxi.ts`: `getDriverRides(cursor?, limit?)` fonksiyonu eklendi
+- `DriverHomeScreen`: "Ana Sayfa / Geçmiş" sekme yapısı eklendi
+  - Geçmiş kartları: yolcu adı, ücret, mesafe, tarih, durum badge'i
+  - Cursor tabanlı "Daha Fazla" yükleme
+- **Commits:** `e2ebe66` (backend), `2736385` (frontend)
+
+### ✅ #10 — Market Sipariş Push Bildirimi
+- `notification.i18n.js`: `market_new_order` key'i eklendi (TR/EN/RU/EL)
+- `market.controller.js` `createOrder`: her iki ödeme path'inde (nakit + online) `notifyUser(store.owner)` çağrısı
+- **Commit:** `90de014`
 
 ---
 
@@ -68,33 +103,13 @@ Tüm modüller için tek Review sistemi — gerçek müşteri doğrulamalı.
   - Stok güncelleme, çalışma saatleri
   - Şube yönetimi (org varsa)
 
-### #7 — Taksi — Yolculuk Tamamlama Akışı
-- `inProgress` → `completed` akışı eksik
-- Sürücü tarafında "Teslim Et" butonu yok
-- Yolcu tarafında makbuz/özet sayfası yok (`TaxiMatchedScreen` puanlama eklendi ✅)
-- **Yapılacaklar:** Sürücü ekranına "Yolculuğu Tamamla" butonu + `PATCH /api/taxi/rides/:id/complete` endpoint
-
-### #8 — Taksi — Sürücü Yolculuk Geçmişi
-- `DriverHomeScreen`'de geçmiş yolculuk listesi yok
-- Yapılacaklar:
-  - `GET /api/taxi/driver/rides` endpoint (sayfalı)
-  - Sürücü ekranında "Geçmiş" sekmesi
-
 ### #9 — Market — Ürün Yönetimi (Mobil Panel)
 - `MarketOwnerDashboardScreen` var ama içi eksik
 - Yapılacaklar: ürün listeleme, ekleme, düzenleme, silme, stok güncelleme
 
-### #10 — Market Sipariş Bildirimi (Push)
-- Sipariş gelince market sahibine push notification gitmiyor
-- Backend: `createOrder` controller'a `notifyUser(ownerId, ...)` çağrısı
-
 ---
 
 ## 🟡 İyileştirme / Tamamlama
-
-### #11 — Market Sipariş Detay Ekranı
-- `MarketOrderDetailScreen.tsx` var — içeriği kontrol edilmeli
-- Eksik olabilecekler: ürün listesi, durum takibi, iptal butonu
 
 ### #12 — MyOrdersScreen — Market Siparişleri
 - Şu an restoran siparişleri gösteriyor, market siparişleri yok
@@ -122,37 +137,25 @@ Tüm modüller için tek Review sistemi — gerçek müşteri doğrulamalı.
 | # | Görev | Durum |
 |---|-------|-------|
 | #18 | Market ürün fotoğraf yükleme UI | ⏳ |
-| #19 | DriverHomeScreen'de ortalama puan gösterme | ⏳ |
+| #19 | DriverHomeScreen'de ortalama puan gösterme | ✅ (Oturum 2'de tamamlandı) |
 | #20 | MarketStore.rating otomatik güncelleme | ✅ (review controller'da updateEntityRating ile yapıldı) |
 
 ---
 
 ## Sıradaki Oturum Planı
 
-### Oturum 2 — Taksi Tamamlama + Küçük Görevler
-Token yenilenince şu sırayla:
-
-**Adım 1 — Küçük task'lar (ısınma, 2 ajan):**
-- **#19** — `DriverHomeScreen`: `TaxiDriver.ratingCount` varsa ortalama puan + toplam say göster
-- **#11** — `MarketOrderDetailScreen` içeriği kontrol et, eksik bölümleri tamamla
-
-**Adım 2 — Taksi Tamamlama (3-4 ajan):**
-- **#7** — Backend: `PATCH /api/taxi/rides/:id/complete` endpoint + `DriverHomeScreen`'e "Yolculuğu Tamamla" butonu
-- **#8** — Sürücü geçmiş yolculuklar: `GET /api/taxi/driver/rides` + `DriverHomeScreen` geçmiş sekmesi
-- **#16** — Yolculuk tamamlama sonrası makbuz ekranı (yolcu tarafı)
-
-**Adım 3 — Market Bildirimleri (1-2 ajan):**
-- **#10** — Market siparişi push notification
-
 ### Oturum 3 — Market Desktop Panel + Organizasyon
-- **#3** — MarketStore'a organization alanı
-- **#6** — Market desktop yönetim paneli (web)
-- **#9** — Mobil market ürün yönetimi
+- **#3** — MarketStore'a organization alanı (zincir mağaza)
+- **#6** — Market desktop yönetim paneli (web — `rezzy-webpanel`)
+- **#9** — Mobil market ürün yönetimi (`MarketOwnerDashboardScreen`)
 
 ### Oturum 4 — Diğerleri
-- **#12** MyOrders market siparişleri
-- **#13** Sürücü kayıt akışı
-- **#17** Admin panel market/taksi
+- **#12** — MyOrdersScreen'e market siparişleri ekle
+- **#13** — Sürücü kayıt akışı (başvuru formu + admin onay)
+- **#14** — Aktif yolculukta Polyline rota çizgisi
+- **#16** — Yolcu makbuz ekranı (yolculuk sonrası özet)
+- **#17** — Admin panel market & taksi modülleri
+- **#15** — Market stok tükenince "Tükendi" badge
 
 ---
 
