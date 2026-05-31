@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Platform,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import Animated, {
@@ -24,6 +25,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useTaxiStore } from '../../store/useTaxiStore';
 import { taxiSocket } from '../../services/taxiSocket.service';
 import { cancelRide, getRide, type TaxiRide } from '../../api/taxi';
+import { submitReview } from '../../api/reviews';
 import { Avatar } from '../../components/ui/Avatar';
 import { StarRating } from '../../components/ui/StarRating';
 import { Button } from '../../components/ui/Button';
@@ -47,6 +49,10 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
   const [driverLoc, setDriverLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(FREE_CANCEL_SECONDS);
   const [cancelling, setCancelling] = useState(false);
+  const [ratingOpen, setRatingOpen] = useState(false);
+  const [userRating, setUserRating] = useState(5);
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
+  const [ratingDone, setRatingDone] = useState(false);
 
   const mapRef = useRef<MapView>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -91,6 +97,9 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
         ]);
       } else if (payload.status === 'inProgress') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else if (payload.status === 'completed') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setRatingOpen(true);
       }
       setRide((prev) => (prev ? { ...prev, status: payload.status } : prev));
     };
@@ -160,6 +169,25 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
       setCancelling(false);
     }
   }, [rideId, setActiveRide, setIsSearching, navigation]);
+
+  const handleRatingSubmit = useCallback(async () => {
+    const driverId =
+      ride?.driver?._id ?? (ride?.driver as any)?.user?._id ?? ride?.driver;
+    if (!driverId) {
+      navigation.goBack();
+      return;
+    }
+    setRatingSubmitting(true);
+    try {
+      await submitReview('taxi_driver', String(driverId), { rating: userRating });
+      setRatingDone(true);
+    } catch {
+      // NOT_ELIGIBLE veya diğer hatalar sessiz
+    } finally {
+      setRatingSubmitting(false);
+      setTimeout(() => navigation.goBack(), 1200);
+    }
+  }, [ride, userRating, navigation]);
 
   const driver = ride?.driver;
   const driverUser = driver?.user ?? driver;
@@ -295,6 +323,61 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
           {canFreeCancel ? 'Iptal Et (Ucretsiz)' : 'Iptal Et'}
         </Button>
       </View>
+
+      {ratingOpen && (
+        <View
+          style={{
+            position: 'absolute',
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.55)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: theme.space[6],
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: theme.colors.surface,
+              borderRadius: theme.radius['2xl'],
+              padding: theme.space[6],
+              width: '100%',
+              gap: theme.space[4],
+              alignItems: 'center',
+            }}
+          >
+            {ratingDone ? (
+              <Text style={{ ...theme.typography.headingMd, color: theme.colors.success }}>
+                ✓ Teşekkürler!
+              </Text>
+            ) : (
+              <>
+                <Text style={{ ...theme.typography.headingMd, color: theme.colors.textPrimary, textAlign: 'center' }}>
+                  Yolculuğunuz tamamlandı
+                </Text>
+                <Text style={{ ...theme.typography.bodyMd, color: theme.colors.textSecondary, textAlign: 'center' }}>
+                  Sürücünüzü değerlendirin
+                </Text>
+                <StarRating value={userRating} onChange={setUserRating} size="lg" />
+                <Button
+                  variant="primary"
+                  size="lg"
+                  fullWidth
+                  loading={ratingSubmitting}
+                  onPress={handleRatingSubmit}
+                  style={{ backgroundColor: theme.taxi.main }}
+                >
+                  Puanı Gönder
+                </Button>
+                <TouchableOpacity onPress={() => { setRatingOpen(false); navigation.goBack(); }}>
+                  <Text style={{ ...theme.typography.bodyMd, color: theme.colors.textSecondary }}>
+                    Atla
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+      )}
     </View>
   );
 }
