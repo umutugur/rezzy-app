@@ -23,13 +23,14 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
-import { Wifi, WifiOff, TrendingUp, Star, MapPin } from 'lucide-react-native';
+import { Wifi, WifiOff, TrendingUp, Star, MapPin, Navigation, CheckCircle } from 'lucide-react-native';
 
 import { useTheme } from '../../contexts/ThemeContext';
 import { useTaxiStore } from '../../store/useTaxiStore';
 import { taxiSocket } from '../../services/taxiSocket.service';
-import { updateDriverStatus, updateDriverLocation, getDriverEarnings } from '../../api/taxi';
+import { updateDriverStatus, updateDriverLocation, getDriverEarnings, startRide, completeRide } from '../../api/taxi';
 import { useAuth } from '../../store/useAuth';
+import type { NewRideRequestPayload } from '../../services/taxiSocket.service';
 import { Button } from '../../components/ui/Button';
 import DriverIncomingRideScreen from './DriverIncomingRideScreen';
 
@@ -49,6 +50,9 @@ export default function DriverHomeScreen() {
   const setIncomingRide = useTaxiStore((s) => s.setIncomingRide);
 
   const [toggling, setToggling] = useState(false);
+  const [driverActiveRide, setDriverActiveRide] = useState<NewRideRequestPayload | null>(null);
+  const [activeRideStatus, setActiveRideStatus] = useState<'matched' | 'inProgress' | null>(null);
+  const [rideActioning, setRideActioning] = useState(false);
   const [mapRegion, setMapRegion] = useState({
     latitude: 41.015137,
     longitude: 28.97953,
@@ -134,6 +138,59 @@ export default function DriverHomeScreen() {
     locationWatcherRef.current?.remove();
     locationWatcherRef.current = null;
   }, []);
+
+  // ── Active ride socket listener ──────────────────────────────────────────
+
+  useEffect(() => {
+    const handler = (payload: any) => {
+      const { status } = payload ?? {};
+      if (status === 'matched') {
+        setActiveRideStatus('matched');
+      } else if (status === 'inProgress') {
+        setActiveRideStatus('inProgress');
+      } else if (status === 'completed' || status === 'cancelled') {
+        setDriverActiveRide(null);
+        setActiveRideStatus(null);
+      }
+    };
+    taxiSocket.on('ride:status_change', handler);
+    return () => {
+      taxiSocket.off('ride:status_change', handler);
+    };
+  }, []);
+
+  // ── Active ride actions ───────────────────────────────────────────────────
+
+  const handleStartRide = useCallback(async () => {
+    if (!driverActiveRide || rideActioning) return;
+    setRideActioning(true);
+    try {
+      await startRide(driverActiveRide.rideId);
+      setActiveRideStatus('inProgress');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e: any) {
+      Alert.alert('Hata', e?.response?.data?.message ?? 'Yolculuk başlatılamadı.');
+    } finally {
+      setRideActioning(false);
+    }
+  }, [driverActiveRide, rideActioning]);
+
+  const handleCompleteRide = useCallback(async () => {
+    if (!driverActiveRide || rideActioning) return;
+    setRideActioning(true);
+    try {
+      await completeRide(driverActiveRide.rideId);
+      setDriverActiveRide(null);
+      setActiveRideStatus(null);
+      await getDriverEarnings().then(setDriverEarnings).catch(() => {});
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert('Tamamlandı', 'Yolculuk başarıyla tamamlandı! 🎉');
+    } catch (e: any) {
+      Alert.alert('Hata', e?.response?.data?.message ?? 'Yolculuk tamamlanamadı.');
+    } finally {
+      setRideActioning(false);
+    }
+  }, [driverActiveRide, rideActioning, setDriverEarnings]);
 
   // ── Online / offline toggle ───────────────────────────────────────────────
 
@@ -284,12 +341,68 @@ export default function DriverHomeScreen() {
           </View>
         )}
 
-        {/* ── Waiting pulse indicator ── */}
-        {isDriverOnline && (
+        {/* ── Waiting pulse indicator (only when no active ride) ── */}
+        {isDriverOnline && !driverActiveRide && (
           <Animated.View style={[s.waitingBadge, pulseStyle]}>
             <View style={s.waitingDot} />
             <Text style={s.waitingText}>Yolcu bekleniyor…</Text>
           </Animated.View>
+        )}
+
+        {/* ── Active ride card ── */}
+        {driverActiveRide && (
+          <View style={s.activeRideCard}>
+            {/* Status badge */}
+            <View style={s.activeRideStatus}>
+              <View style={[s.activeRideDot, {
+                backgroundColor: activeRideStatus === 'inProgress' ? theme.driver.main : theme.semantic.warning.main,
+              }]} />
+              <Text style={s.activeRideStatusText}>
+                {activeRideStatus === 'inProgress' ? 'Yolculuk Sürüyor' : 'Yolcu Eşleşildi'}
+              </Text>
+            </View>
+
+            {/* Addresses */}
+            <View style={s.activeRideAddresses}>
+              <View style={s.activeRideRow}>
+                <View style={[s.activeRideAddrDot, { backgroundColor: theme.colors.success }]} />
+                <Text style={s.activeRideAddrText} numberOfLines={1}>
+                  {driverActiveRide.pickup.address}
+                </Text>
+              </View>
+              <View style={s.activeRideDivider} />
+              <View style={s.activeRideRow}>
+                <View style={[s.activeRideAddrDot, { backgroundColor: theme.colors.error }]} />
+                <Text style={s.activeRideAddrText} numberOfLines={1}>
+                  {driverActiveRide.dropoff.address}
+                </Text>
+              </View>
+            </View>
+
+            {/* Action button */}
+            {activeRideStatus === 'matched' && (
+              <Button
+                variant="primary"
+                size="md"
+                loading={rideActioning}
+                onPress={handleStartRide}
+                style={{ backgroundColor: theme.driver.main, borderRadius: theme.radius.xl }}
+              >
+                Yolculuğu Başlat
+              </Button>
+            )}
+            {activeRideStatus === 'inProgress' && (
+              <Button
+                variant="primary"
+                size="md"
+                loading={rideActioning}
+                onPress={handleCompleteRide}
+                style={{ backgroundColor: theme.colors.success, borderRadius: theme.radius.xl }}
+              >
+                Yolculuğu Tamamla
+              </Button>
+            )}
+          </View>
         )}
       </View>
 
@@ -303,6 +416,10 @@ export default function DriverHomeScreen() {
         {incomingRide && (
           <DriverIncomingRideScreen
             payload={incomingRide}
+            onAccepted={(payload) => {
+              setDriverActiveRide(payload);
+              setActiveRideStatus('matched');
+            }}
             onClose={() => setIncomingRide(null)}
           />
         )}
@@ -412,6 +529,57 @@ function styles(theme: ReturnType<typeof useTheme>, insets: ReturnType<typeof us
       flexDirection: 'row',
       alignItems: 'center',
       gap: 3,
+    },
+
+    // Active ride card
+    activeRideCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius['2xl'],
+      padding: theme.space[4],
+      gap: theme.space[3],
+      ...theme.getElevation(4),
+      borderWidth: 1.5,
+      borderColor: theme.driver.main,
+    },
+    activeRideStatus: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.space[2],
+    },
+    activeRideDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+    },
+    activeRideStatusText: {
+      ...theme.typography.labelMd,
+      color: theme.colors.textPrimary,
+    },
+    activeRideAddresses: {
+      gap: 0,
+    },
+    activeRideRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.space[2],
+      paddingVertical: 4,
+    },
+    activeRideAddrDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      flexShrink: 0,
+    },
+    activeRideAddrText: {
+      ...theme.typography.bodyMd,
+      color: theme.colors.textPrimary,
+      flex: 1,
+    },
+    activeRideDivider: {
+      width: 2,
+      height: 12,
+      backgroundColor: theme.colors.borderDefault,
+      marginLeft: 4,
     },
 
     // Waiting pulse

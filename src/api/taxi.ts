@@ -152,7 +152,13 @@ export async function respondToRide(
   return data.ride ?? data;
 }
 
-/** PATCH /api/taxi/rides/:id/complete */
+/** PATCH /api/taxi/rides/:id/start — sürücü yolculuğu başlatır (matched → inProgress) */
+export async function startRide(rideId: string): Promise<TaxiRide> {
+  const { data } = await api.patch(`/taxi/rides/${rideId}/start`);
+  return data.ride ?? data;
+}
+
+/** PATCH /api/taxi/rides/:id/complete — sürücü yolculuğu tamamlar (inProgress → completed) */
 export async function completeRide(rideId: string): Promise<TaxiRide> {
   const { data } = await api.patch(`/taxi/rides/${rideId}/complete`);
   return data.ride ?? data;
