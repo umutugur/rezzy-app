@@ -10,6 +10,7 @@ import {
   Alert,
   StyleSheet,
   Text,
+  TextInput,
   NativeSyntheticEvent,
   NativeScrollEvent,
   Dimensions,
@@ -45,11 +46,81 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useI18n } from "../i18n";
 import { type MenuCategory, type MenuItem as ALaCarteItem } from "../api/menu";
 import { rpGetPublicResolvedMenu } from "../api/menuResolved";
+import { useTheme } from "../contexts/ThemeContext";
+import { getRestaurantReviews, submitReview, type Review, type ReviewSummary } from "../api/reviews";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const H_PADDING = 16;
 const PHOTO_W = SCREEN_W;
-const PHOTO_H = Math.round((SCREEN_W * 9) / 16);
+const PHOTO_H = Math.round(SCREEN_W * 0.72);
+
+const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+
+type CoverImageProps = {
+  uri: string;
+  width: number;
+  height: number;
+  focusX?: number; // 0..1
+  focusY?: number; // 0..1
+};
+
+const CoverImage = React.memo(({ uri, width, height, focusX = 0.5, focusY = 0.5 }: CoverImageProps) => {
+  const [size, setSize] = useState<{ w: number; h: number } | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    Image.getSize(
+      uri,
+      (w, h) => {
+        if (!mounted) return;
+        if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) {
+          setSize(null);
+        } else {
+          setSize({ w, h });
+        }
+      },
+      () => {
+        if (mounted) setSize(null);
+      }
+    );
+    return () => {
+      mounted = false;
+    };
+  }, [uri]);
+
+  if (!size) {
+    return <Image source={{ uri }} style={{ width, height }} resizeMode="cover" />;
+  }
+
+  const scale = Math.max(width / size.w, height / size.h);
+  const scaledW = size.w * scale;
+  const scaledH = size.h * scale;
+
+  const fx = clamp01(focusX);
+  const fy = clamp01(focusY);
+
+  const targetX = width / 2 - fx * scaledW;
+  const targetY = height / 2 - fy * scaledH;
+
+  const minX = width - scaledW;
+  const minY = height - scaledH;
+
+  const offsetX = Math.max(minX, Math.min(0, targetX));
+  const offsetY = Math.max(minY, Math.min(0, targetY));
+
+  return (
+    <View style={{ width, height, overflow: "hidden", backgroundColor: "#E6E6E6" }}>
+      <Image
+        source={{ uri }}
+        style={{
+          width: scaledW,
+          height: scaledH,
+          transform: [{ translateX: offsetX }, { translateY: offsetY }],
+        }}
+      />
+    </View>
+  );
+});
 
 type FixMenu = {
   _id?: string;
@@ -69,6 +140,8 @@ type ALaCarteCategory = MenuCategory;
 type ALaCarteItemsByCat = Record<string, ALaCarteItem[]>;
 
 export default function RestaurantDetailScreen() {
+  const theme = useTheme();
+  const styles = makeStyles(theme);
   const insets = useSafeAreaInsets();
   const route = useRoute<any>();
   const nav = useNavigation<any>();
@@ -106,7 +179,7 @@ export default function RestaurantDetailScreen() {
   const [selectedSlot, setSelectedSlot] = useState<AvailabilitySlot | null>(null);
 
   // Tabs artık sadece HAKKINDA / MENÜ
-  const [activeTab, setActiveTab] = useState<"ABOUT" | "MENU">("ABOUT");
+  const [activeTab, setActiveTab] = useState<"ABOUT" | "MENU" | "REVIEWS">("ABOUT");
   // --- A-la-carte menü (kategori + ürün) ---
   const [menuCats, setMenuCats] = useState<ALaCarteCategory[]>([]);
   const [menuItemsByCat, setMenuItemsByCat] = useState<ALaCarteItemsByCat>({});
@@ -114,6 +187,14 @@ export default function RestaurantDetailScreen() {
   const [expandedCatId, setExpandedCatId] = useState<string | null>(null);
   const [expandAllMenuCats, setExpandAllMenuCats] = useState(false);
   const [previewItem, setPreviewItem] = useState<ALaCarteItem | null>(null);
+
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewSummary, setReviewSummary] = useState<ReviewSummary | null>(null);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [newRating, setNewRating] = useState(5);
+  const [newComment, setNewComment] = useState("");
+  const [submitingReview, setSubmitingReview] = useState(false);
+  const [writeReviewOpen, setWriteReviewOpen] = useState(false);
 
   const [activePhoto, setActivePhoto] = useState(0);
   const photosListRef = useRef<FlatList<string>>(null);
@@ -126,6 +207,19 @@ export default function RestaurantDetailScreen() {
 
   // --- Photos, Menus ---
   const photos = useMemo(() => (r?.photos || []).filter(Boolean), [r]);
+  const photoMetaMap = useMemo(() => {
+    const out: Record<string, { focusX: number; focusY: number }> = {};
+    const list = Array.isArray((r as any)?.photoMeta) ? (r as any).photoMeta : [];
+    for (const m of list) {
+      const url = String(m?.url || "");
+      if (!url) continue;
+      out[url] = {
+        focusX: clamp01(Number(m?.focusX ?? 0.5)),
+        focusY: clamp01(Number(m?.focusY ?? 0.5)),
+      };
+    }
+    return out;
+  }, [r]);
   const menus = useMemo(
     () => (r?.menus || []).filter((m) => m && (m.isActive ?? true)),
     [r]
@@ -193,11 +287,36 @@ export default function RestaurantDetailScreen() {
     }
   }, [restaurantId]);
 
-  useEffect(() => {
-    if (activeTab === "MENU") {
-      loadALaCarteMenu();
+  const loadReviews = React.useCallback(async () => {
+    if (!restaurantId) return;
+    setReviewsLoading(true);
+    try {
+      const res = await getRestaurantReviews(restaurantId);
+      setReviews(res.reviews || []);
+      setReviewSummary(res.summary ?? null);
+    } catch {
+      setReviews([]);
+      // fallback: build summary from r's rating field if available
+      const rRating = (r as any)?.rating;
+      const rCount = (r as any)?.ratingCount;
+      if (rRating != null) {
+        setReviewSummary({
+          averageRating: Number(rRating),
+          totalCount: Number(rCount ?? 0),
+          distribution: [],
+        });
+      } else {
+        setReviewSummary(null);
+      }
+    } finally {
+      setReviewsLoading(false);
     }
-  }, [activeTab, loadALaCarteMenu]);
+  }, [restaurantId, r]);
+
+  useEffect(() => {
+    if (activeTab === "MENU") loadALaCarteMenu();
+    if (activeTab === "REVIEWS") loadReviews();
+  }, [activeTab, loadALaCarteMenu, loadReviews]);
 
   // Region -> currency symbol
   const currencySymbol = useMemo(() => {
@@ -251,7 +370,7 @@ export default function RestaurantDetailScreen() {
         try {
           await Linking.openURL(urlFallback);
         } catch {
-          Alert.alert("Hata", "Telefon araması başlatılamadı.");
+          Alert.alert(tt("common.error", "Hata"), tt("restaurantDetail.callError", "Telefon araması başlatılamadı."));
         }
       }
     })();
@@ -349,6 +468,11 @@ export default function RestaurantDetailScreen() {
       autoTimer.current = null;
     };
   }, [photos.length, fullScreenOpen]);
+
+  // Native header'ı gizle — fotoğrafın üzerinde özel butonlar kullanıyoruz
+  React.useLayoutEffect(() => {
+    nav.setOptions({ headerShown: false });
+  }, [nav]);
 
   useEffect(() => {
     if (!loading && r) {
@@ -538,10 +662,11 @@ const onContinue = async () => {
     }
   };
 
+
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#7B2C2C" />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
         <Text style={styles.loadingText}>{t("restaurantDetail.loading")}</Text>
       </View>
     );
@@ -550,11 +675,11 @@ const onContinue = async () => {
   if (!r) {
     return (
       <View style={styles.center}>
-        <Ionicons name="restaurant-outline" size={64} color="#666666" />
+        <Ionicons name="restaurant-outline" size={64} color={theme.colors.textSecondary} />
         <Text style={styles.emptyTitle}>{t("restaurantDetail.notFoundTitle")}</Text>
         <Text style={styles.emptyText}>{t("restaurantDetail.notFoundText")}</Text>
         <TouchableOpacity onPress={() => nav.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={18} color="#fff" />
+          <Ionicons name="arrow-back" size={18} color={theme.colors.textInverse} />
           <Text style={styles.backButtonText}>{t("restaurantDetail.back")}</Text>
         </TouchableOpacity>
       </View>
@@ -587,27 +712,29 @@ const onContinue = async () => {
                       }}
                       style={{ width: PHOTO_W, height: PHOTO_H }}
                     >
-                      <Image source={{ uri: item }} style={styles.photoFull} resizeMode="cover" />
+                      <CoverImage
+                        uri={item}
+                        width={PHOTO_W}
+                        height={PHOTO_H}
+                        focusX={photoMetaMap[item]?.focusX ?? 0.5}
+                        focusY={photoMetaMap[item]?.focusY ?? 0.5}
+                      />
                     </Pressable>
                   )}
                 />
 
-                <Pressable onPress={toggleFavorite} style={styles.favoriteOverlay}>
-                  <LinearGradient
-                    colors={fav ? ["#E53935", "#C62828"] : ["#ffffff", "#ffffff"]}
-                    style={styles.favoriteButton}
-                  >
-                    <Ionicons
-                      name={fav ? "heart" : "heart-outline"}
-                      size={22}
-                      color={fav ? "#fff" : "#7B2C2C"}
-                    />
-                  </LinearGradient>
-                </Pressable>
-
+                {/* Üst karartma — buton okunabilirliği için */}
                 <LinearGradient
-                  colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.4)"]}
+                  colors={["rgba(0,0,0,0.45)", "transparent"]}
+                  style={styles.gradTop}
+                  pointerEvents="none"
+                />
+
+                {/* Alt karartma + nokta göstergesi */}
+                <LinearGradient
+                  colors={["transparent", "rgba(0,0,0,0.55)"]}
                   style={styles.gradBottom}
+                  pointerEvents="none"
                 />
 
                 <View style={styles.dots}>
@@ -622,6 +749,21 @@ const onContinue = async () => {
                 <Text style={styles.photoPlaceholderText}>{t("restaurantDetail.noPhoto")}</Text>
               </View>
             )}
+
+            {/* Overlay: geri + favori butonları */}
+            <View style={[styles.galleryTopBar, { paddingTop: insets.top + 6 }]}>
+              <Pressable onPress={() => nav.goBack()} style={styles.galleryIconBtn}>
+                <Ionicons name="chevron-back" size={22} color="#111827" />
+              </Pressable>
+              <View style={{ flex: 1 }} />
+              <Pressable onPress={toggleFavorite} style={styles.galleryIconBtn} disabled={favLoading}>
+                <Ionicons
+                  name={fav ? "heart" : "heart-outline"}
+                  size={20}
+                  color={fav ? "#DC2626" : "#111827"}
+                />
+              </Pressable>
+            </View>
           </View>
 
           {/* Header Card */}
@@ -629,38 +771,52 @@ const onContinue = async () => {
             <View style={styles.headerTop}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.title}>{r.name}</Text>
+                {/* Rating row */}
+                {(r as any)?.rating != null && (
+                  <View style={styles.ratingRow}>
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Ionicons
+                        key={s}
+                        name={s <= Math.round((r as any).rating) ? "star" : "star-outline"}
+                        size={15}
+                        color="#FBBF24"
+                      />
+                    ))}
+                    <Text style={styles.ratingInline}>
+                      {Number((r as any).rating).toFixed(1)}
+                    </Text>
+                    {(r as any)?.ratingCount != null && (
+                      <Text style={styles.ratingCountInline}>
+                        · {(r as any).ratingCount} yorum
+                      </Text>
+                    )}
+                  </View>
+                )}
                 {!!r.address && (
                   <View style={styles.addressRow}>
-                    <Ionicons name="location" size={16} color="#666666" />
+                    <Ionicons name="location" size={14} color={theme.colors.textSecondary} />
                     <Text style={styles.addressText}>{r.address}</Text>
                   </View>
                 )}
               </View>
-              <Pressable onPress={toggleFavorite} style={styles.favoriteButtonCard}>
-                <Ionicons
-                  name={fav ? "heart" : "heart-outline"}
-                  size={24}
-                  color={fav ? "#E53935" : "#666666"}
-                />
-              </Pressable>
             </View>
 
             <View style={styles.metaRow}>
               {!!r.city && (
                 <View style={styles.metaChip}>
-                  <Ionicons name="location-outline" size={14} color="#666666" />
+                  <Ionicons name="location-outline" size={14} color={theme.colors.textSecondary} />
                   <Text style={styles.metaChipText}>{r.city}</Text>
                 </View>
               )}
               {!!r.priceRange && (
                 <View style={styles.metaChip}>
-                  <Ionicons name="wallet-outline" size={14} color="#666666" />
+                  <Ionicons name="wallet-outline" size={14} color={theme.colors.textSecondary} />
                   <Text style={styles.metaChipText}>{r.priceRange}</Text>
                 </View>
               )}
               {typeof minMenuPrice === "number" && (
                 <View style={styles.metaChipPrimary}>
-                  <Ionicons name="pricetag" size={14} color="#fff" />
+                  <Ionicons name="pricetag" size={14} color={theme.colors.textInverse} />
                   <Text style={styles.metaChipTextPrimary}>
                     {formatPrice(minMenuPrice)}+
                   </Text>
@@ -673,7 +829,7 @@ const onContinue = async () => {
           {menus.length > 0 && (
             <View style={styles.card}>
               <View style={styles.cardHeader}>
-                <Ionicons name="restaurant" size={22} color="#7B2C2C" />
+                <Ionicons name="restaurant" size={22} color={theme.colors.primary} />
                 <Text style={styles.sectionTitle}>
                   {t("restaurantDetail.fixedMenus")}
                 </Text>
@@ -682,7 +838,7 @@ const onContinue = async () => {
                 {menus.map((m, idx) => (
                   <View key={`${m._id || m.title}-${idx}`} style={styles.menuCard}>
                     <View style={styles.menuIconCircle}>
-                      <Ionicons name="restaurant" size={24} color="#7B2C2C" />
+                      <Ionicons name="restaurant" size={24} color={theme.colors.primary} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.menuTitle}>{m.title}</Text>
@@ -706,7 +862,7 @@ const onContinue = async () => {
              {/* Uygun Saat Bul */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <Ionicons name="time" size={22} color="#7B2C2C" />
+              <Ionicons name="time" size={22} color={theme.colors.primary} />
               <Text style={styles.sectionTitle}>{tt("restaurantDetail.findSlot", "Uygun Saat Bul")}</Text>
             </View>
 
@@ -719,7 +875,7 @@ const onContinue = async () => {
                     disabled={dayjs(date).isSame(dayjs(), "day")}
                     style={[styles.controlButton, dayjs(date).isSame(dayjs(), "day") && styles.disabled]}
                   >
-                    <Ionicons name="chevron-back" size={18} color="#1A1A1A" />
+                    <Ionicons name="chevron-back" size={18} color={theme.colors.textPrimary} />
                   </Pressable>
 
                   <View style={styles.dateDisplay}>
@@ -731,7 +887,7 @@ const onContinue = async () => {
                     onPress={() => setDate(dayjs(date).add(1, "day").format("YYYY-MM-DD"))}
                     style={styles.controlButton}
                   >
-                    <Ionicons name="chevron-forward" size={18} color="#1A1A1A" />
+                    <Ionicons name="chevron-forward" size={18} color={theme.colors.textPrimary} />
                   </Pressable>
                 </View>
               </View>
@@ -743,16 +899,16 @@ const onContinue = async () => {
                     onPress={() => setPartySize((p) => Math.max(1, p - 1))}
                     style={[styles.controlButton, partySize <= 1 && styles.disabled]}
                   >
-                    <Ionicons name="remove" size={18} color="#1A1A1A" />
+                    <Ionicons name="remove" size={18} color={theme.colors.textPrimary} />
                   </Pressable>
 
                   <View style={styles.partyDisplay}>
-                    <Ionicons name="people" size={20} color="#7B2C2C" />
+                    <Ionicons name="people" size={20} color={theme.colors.primary} />
                     <Text style={styles.partyText}>{partySize}</Text>
                   </View>
 
                   <Pressable onPress={() => setPartySize((p) => p + 1)} style={styles.controlButton}>
-                    <Ionicons name="add" size={18} color="#1A1A1A" />
+                    <Ionicons name="add" size={18} color={theme.colors.textPrimary} />
                   </Pressable>
                 </View>
               </View>
@@ -760,7 +916,7 @@ const onContinue = async () => {
 
             {fetchingSlots ? (
               <View style={styles.slotsLoading}>
-                <ActivityIndicator color="#7B2C2C" />
+                <ActivityIndicator color={theme.colors.primary} />
                 <Text style={styles.slotsLoadingText}>{tt("restaurantDetail.slotsSearching", "Uygun saatler aranıyor…")}</Text>
               </View>
             ) : (
@@ -782,7 +938,7 @@ const onContinue = async () => {
                       <Ionicons
                         name={isSelected ? "checkmark-circle" : "time-outline"}
                         size={18}
-                        color={isSelected ? "#fff" : disabled ? "#999999" : "#7B2C2C"}
+                        color={isSelected ? theme.colors.textInverse : disabled ? theme.colors.textTertiary : theme.colors.primary}
                       />
                       <Text style={[styles.slotText, isSelected && styles.slotTextSelected]}>{item.label}</Text>
                     </Pressable>
@@ -790,7 +946,7 @@ const onContinue = async () => {
                 }}
                 ListEmptyComponent={
                   <View style={styles.emptyStateSmall}>
-                    <Ionicons name="calendar-outline" size={32} color="#999999" />
+                    <Ionicons name="calendar-outline" size={32} color={theme.colors.textTertiary} />
                     <Text style={styles.muted}>{tt("restaurantDetail.noSlots", "Uygun saat bulunamadı.")}</Text>
                   </View>
                 }
@@ -799,39 +955,33 @@ const onContinue = async () => {
           </View>
           
 
-          {/* ✅ Tabs (Hakkında / Menü) */}
+          {/* ── Tabs ─────────────────────────────────────────────── */}
           <View style={styles.tabsWrap}>
-            <Pressable
-              onPress={() => setActiveTab("ABOUT")}
-              style={[styles.tabBtn, activeTab === "ABOUT" && styles.tabBtnActive]}
-            >
-              <Ionicons
-                name="information-circle"
-                size={16}
-                color={activeTab === "ABOUT" ? "#fff" : "#7B2C2C"}
-              />
-              <Text
-                style={[styles.tabText, activeTab === "ABOUT" && styles.tabTextActive]}
-              >
-                {tt("restaurantDetail.aboutTab", "Hakkında")}
-              </Text>
-            </Pressable>
-
-            <Pressable
-              onPress={() => setActiveTab("MENU")}
-              style={[styles.tabBtn, activeTab === "MENU" && styles.tabBtnActive]}
-            >
-              <Ionicons
-                name="book"
-                size={16}
-                color={activeTab === "MENU" ? "#fff" : "#7B2C2C"}
-              />
-              <Text
-                style={[styles.tabText, activeTab === "MENU" && styles.tabTextActive]}
-              >
-                {tt("restaurantDetail.menuTab", "Menü")}
-              </Text>
-            </Pressable>
+            {(
+              [
+                { key: "ABOUT", label: tt("restaurantDetail.aboutTab", "Hakkında"), icon: "information-circle-outline" },
+                { key: "MENU", label: tt("restaurantDetail.menuTab", "Menü"), icon: "book-outline" },
+                { key: "REVIEWS", label: tt("restaurantDetail.reviewsTab", "Yorumlar"), icon: "star-outline" },
+              ] as const
+            ).map((tab) => {
+              const active = activeTab === tab.key;
+              return (
+                <Pressable
+                  key={tab.key}
+                  onPress={() => setActiveTab(tab.key)}
+                  style={[styles.tabBtn, active && styles.tabBtnActive]}
+                >
+                  <Ionicons
+                    name={tab.icon}
+                    size={14}
+                    color={active ? theme.colors.textInverse : theme.colors.primary}
+                  />
+                  <Text style={[styles.tabText, active && styles.tabTextActive]}>
+                    {tab.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
 
           {/* ABOUT TAB */}
@@ -839,7 +989,7 @@ const onContinue = async () => {
             !!r.description ? (
               <View style={styles.card}>
                 <View style={styles.cardHeader}>
-                  <Ionicons name="information-circle" size={22} color="#7B2C2C" />
+                  <Ionicons name="information-circle" size={22} color={theme.colors.primary} />
                   <Text style={styles.sectionTitle}>
                     {t("restaurantDetail.about")}
                   </Text>
@@ -849,7 +999,7 @@ const onContinue = async () => {
             ) : (
               <View style={styles.card}>
                 <View style={styles.emptyStateSmall}>
-                  <Ionicons name="information-circle-outline" size={32} color="#999999" />
+                  <Ionicons name="information-circle-outline" size={32} color={theme.colors.textTertiary} />
                   <Text style={styles.muted}>
                     {tt("restaurantDetail.noAbout", "Bu mekan için açıklama yok.")}
                   </Text>
@@ -873,7 +1023,7 @@ const onContinue = async () => {
                     <Ionicons
                       name={expandAllMenuCats ? "chevron-up-circle" : "chevron-down-circle"}
                       size={16}
-                      color="#7B2C2C"
+                      color={theme.colors.primary}
                     />
                     <Text style={styles.menuExpandAllText}>
                       {expandAllMenuCats
@@ -886,14 +1036,14 @@ const onContinue = async () => {
 
               {menuLoading ? (
                 <View style={styles.emptyStateSmall}>
-                  <ActivityIndicator color="#7B2C2C" />
+                  <ActivityIndicator color={theme.colors.primary} />
                   <Text style={styles.muted}>
                     {tt("restaurantDetail.menuLoading", "Menü yükleniyor...")}
                   </Text>
                 </View>
               ) : menuCats.length === 0 ? (
                 <View style={styles.emptyStateSmall}>
-                  <Ionicons name="list-outline" size={32} color="#999999" />
+                  <Ionicons name="list-outline" size={32} color={theme.colors.textTertiary} />
                   <Text style={styles.muted}>
                     {tt("restaurantDetail.menuComingSoon", "Bu mekan henüz menüsünü paylaşmadı.")}
                   </Text>
@@ -926,7 +1076,7 @@ const onContinue = async () => {
                             <Ionicons
                               name={isOpen ? "chevron-up" : "chevron-down"}
                               size={16}
-                              color="#7B2C2C"
+                              color={theme.colors.primary}
                             />
                           </View>
                         </Pressable>
@@ -951,7 +1101,7 @@ const onContinue = async () => {
                                 ) : (
                                   <View style={styles.menuItemPhotoPlaceholder}>
                                     <View style={styles.menuItemPhotoPlaceholderInner}>
-                                      <Ionicons name="fast-food-outline" size={20} color="#7B2C2C" />
+                                      <Ionicons name="fast-food-outline" size={20} color={theme.colors.primary} />
                                     </View>
                                     <Text style={styles.menuItemPhotoPlaceholderText}>
                                       {tt("restaurantDetail.noPhotoShort", "Foto yok")}
@@ -1001,10 +1151,206 @@ const onContinue = async () => {
           )}
 
 
+          {/* REVIEWS TAB */}
+          {activeTab === "REVIEWS" && (
+            <View style={styles.card}>
+              {/* Rating Summary */}
+              {reviewSummary && reviewSummary.totalCount > 0 && (
+                <View style={styles.ratingHero}>
+                  {/* Big number */}
+                  <View style={styles.ratingBigBox}>
+                    <Text style={styles.ratingBigNumber}>
+                      {reviewSummary.averageRating.toFixed(1)}
+                    </Text>
+                    <View style={styles.starsRowBig}>
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Ionicons
+                          key={s}
+                          name={
+                            s <= Math.round(reviewSummary.averageRating)
+                              ? "star"
+                              : "star-outline"
+                          }
+                          size={18}
+                          color="#FBBF24"
+                        />
+                      ))}
+                    </View>
+                    <Text style={styles.ratingTotalLabel}>
+                      {reviewSummary.totalCount} değerlendirme
+                    </Text>
+                  </View>
+
+                  {/* Bar chart */}
+                  <View style={styles.ratingBars}>
+                    {([5, 4, 3, 2, 1] as const).map((star) => {
+                      const item = reviewSummary.distribution.find((d) => d.star === star);
+                      const count = item?.count ?? 0;
+                      const pct =
+                        reviewSummary.totalCount > 0
+                          ? count / reviewSummary.totalCount
+                          : 0;
+                      return (
+                        <View key={star} style={styles.ratingBarRow}>
+                          <Text style={styles.ratingBarStarLabel}>{star}</Text>
+                          <Ionicons name="star" size={10} color="#FBBF24" />
+                          <View style={styles.ratingBarTrack}>
+                            <View
+                              style={[
+                                styles.ratingBarFill,
+                                { width: `${Math.round(pct * 100)}%` as any },
+                              ]}
+                            />
+                          </View>
+                          <Text style={styles.ratingBarCount}>{count}</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </View>
+              )}
+
+              {/* Write review button (logged-in users) */}
+              {token && !writeReviewOpen && (
+                <Pressable
+                  style={styles.writeReviewBtn}
+                  onPress={() => setWriteReviewOpen(true)}
+                >
+                  <Ionicons name="pencil-outline" size={16} color={theme.colors.textInverse} />
+                  <Text style={styles.writeReviewBtnText}>{tt("restaurantDetail.writeReview", "Yorum Yaz")}</Text>
+                </Pressable>
+              )}
+
+              {/* Write review form */}
+              {writeReviewOpen && (
+                <View style={styles.writeReviewForm}>
+                  <Text style={styles.writeReviewFormTitle}>{tt("restaurantDetail.yourRating", "Değerlendirmeniz")}</Text>
+                  {/* Star picker */}
+                  <View style={styles.starPicker}>
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Pressable key={s} onPress={() => setNewRating(s)} hitSlop={8}>
+                        <Ionicons
+                          name={s <= newRating ? "star" : "star-outline"}
+                          size={32}
+                          color="#FBBF24"
+                        />
+                      </Pressable>
+                    ))}
+                  </View>
+                  {/* Comment input */}
+                  <View style={styles.commentInputWrap}>
+                    <TextInput
+                      value={newComment}
+                      onChangeText={setNewComment}
+                      placeholder={tt("restaurantDetail.commentPlaceholder", "Yorumunuzu yazın... (opsiyonel)")}
+                      placeholderTextColor="#9CA3AF"
+                      multiline
+                      numberOfLines={3}
+                      style={styles.commentInput}
+                      textAlignVertical="top"
+                    />
+                  </View>
+                  <View style={styles.writeReviewActions}>
+                    <Pressable
+                      style={styles.writeReviewCancel}
+                      onPress={() => {
+                        setWriteReviewOpen(false);
+                        setNewRating(5);
+                        setNewComment("");
+                      }}
+                    >
+                      <Text style={styles.writeReviewCancelText}>{tt("restaurantDetail.cancelReview", "İptal")}</Text>
+                    </Pressable>
+                    <Pressable
+                      disabled={submitingReview}
+                      style={[styles.writeReviewSubmit, submitingReview && { opacity: 0.6 }]}
+                      onPress={async () => {
+                        try {
+                          setSubmitingReview(true);
+                          await submitReview("restaurant", restaurantId, {
+                            rating: newRating,
+                            comment: newComment || undefined,
+                          });
+                          setWriteReviewOpen(false);
+                          setNewRating(5);
+                          setNewComment("");
+                          loadReviews();
+                        } catch (e: any) {
+                          Alert.alert(tt("common.error", "Hata"), e?.response?.data?.message || e?.message || tt("restaurantDetail.submitReviewError", "Yorum gönderilemedi."));
+                        } finally {
+                          setSubmitingReview(false);
+                        }
+                      }}
+                    >
+                      {submitingReview ? (
+                        <ActivityIndicator size="small" color={theme.colors.textInverse} />
+                      ) : (
+                        <Text style={styles.writeReviewSubmitText}>{tt("restaurantDetail.submitReview", "Gönder")}</Text>
+                      )}
+                    </Pressable>
+                  </View>
+                </View>
+              )}
+
+              {/* Loading state */}
+              {reviewsLoading ? (
+                <View style={styles.emptyStateSmall}>
+                  <ActivityIndicator color={theme.colors.primary} />
+                  <Text style={styles.muted}>{tt("restaurantDetail.reviewsLoading", "Yorumlar yükleniyor…")}</Text>
+                </View>
+              ) : reviews.length === 0 ? (
+                /* Empty state */
+                <View style={styles.reviewsEmpty}>
+                  <View style={styles.reviewsEmptyIconBox}>
+                    <Ionicons name="chatbubble-ellipses-outline" size={36} color={theme.colors.primary} />
+                  </View>
+                  <Text style={styles.reviewsEmptyTitle}>{tt("restaurantDetail.noReviews", "Henüz yorum yok")}</Text>
+                  <Text style={styles.reviewsEmptySubtitle}>
+                    {tt("restaurantDetail.noReviewsSub", "Bu mekanı ziyaret ettiyseniz deneyiminizi paylaşın.")}
+                  </Text>
+                </View>
+              ) : (
+                /* Review cards */
+                <View style={{ gap: 12, marginTop: 16 }}>
+                  {reviews.map((rev) => (
+                    <View key={rev._id} style={styles.reviewCard}>
+                      <View style={styles.reviewCardHeader}>
+                        <View style={styles.reviewAvatar}>
+                          <Text style={styles.reviewAvatarText}>
+                            {(typeof rev.userId === "object" ? rev.userId.name : "?")[0].toUpperCase()}
+                          </Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.reviewerName}>{typeof rev.userId === "object" ? rev.userId.name : ""}</Text>
+                          <Text style={styles.reviewDate}>
+                            {dayjs(rev.createdAt).format("DD MMM YYYY")}
+                          </Text>
+                        </View>
+                        <View style={styles.reviewStarsRow}>
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <Ionicons
+                              key={s}
+                              name={s <= rev.rating ? "star" : "star-outline"}
+                              size={12}
+                              color="#FBBF24"
+                            />
+                          ))}
+                        </View>
+                      </View>
+                      {!!rev.comment && (
+                        <Text style={styles.reviewComment}>{rev.comment}</Text>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
+
           {/* İletişim */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <Ionicons name="call" size={22} color="#7B2C2C" />
+              <Ionicons name="call" size={22} color={theme.colors.primary} />
               <Text style={styles.sectionTitle}>{t("restaurantDetail.contact")}</Text>
             </View>
             <Pressable
@@ -1012,7 +1358,7 @@ const onContinue = async () => {
               onPress={() => callPhone((r as any)?.phone)}
               disabled={!((r as any)?.phone)}
             >
-              <Ionicons name="call-outline" size={18} color="#666666" />
+              <Ionicons name="call-outline" size={18} color={theme.colors.textSecondary} />
               <Text style={styles.contactText}>
                 {(r as any)?.phone || t("restaurantDetail.noPhone")}
               </Text>
@@ -1028,7 +1374,7 @@ const onContinue = async () => {
               }
               disabled={!(restaurantCoords || (r as any)?.googleMapsUrl)}
             >
-              <Ionicons name="location-outline" size={18} color="#666666" />
+              <Ionicons name="location-outline" size={18} color={theme.colors.textSecondary} />
               <Text style={styles.contactText}>
                 {r.address || t("restaurantDetail.noAddress")}
               </Text>
@@ -1088,7 +1434,7 @@ const onContinue = async () => {
             style={styles.fullscreenClose}
             onPress={() => setFullScreenOpen(false)}
           >
-            <Ionicons name="close" size={26} color="#fff" />
+            <Ionicons name="close" size={26} color={theme.colors.textInverse} />
           </TouchableOpacity>
         </View>
       </Modal>
@@ -1113,7 +1459,7 @@ const onContinue = async () => {
               />
             ) : (
               <View style={styles.previewImagePlaceholder}>
-                <Ionicons name="fast-food-outline" size={42} color="#7B2C2C" />
+                <Ionicons name="fast-food-outline" size={42} color={theme.colors.primary} />
                 <Text style={styles.previewImagePlaceholderText}>
                   {tt("restaurantDetail.noPhoto", "Fotoğraf yok")}
                 </Text>
@@ -1147,90 +1493,102 @@ const onContinue = async () => {
               style={styles.previewClose}
               hitSlop={8}
             >
-              <Ionicons name="close" size={18} color="#fff" />
+              <Ionicons name="close" size={18} color={theme.colors.textInverse} />
             </Pressable>
           </Pressable>
         </Pressable>
       </Modal>
 
       {/* CTA Bar */}
-      <LinearGradient
-        colors={["rgba(255,255,255,0.95)", "rgba(255,255,255,1)"]}
-        style={[styles.ctaBar, { paddingBottom: 12 + insets.bottom }]}
-      >
-        <View style={{ flex: 1 }}>
+      <View style={[styles.ctaBar, { paddingBottom: 16 + insets.bottom }]}>
+        {/* Sol bilgi */}
+        <View style={{ flex: 1, gap: 3 }}>
           <View style={styles.ctaTitleRow}>
-            <Ionicons name="calendar" size={18} color="#7B2C2C" />
-            <Text style={styles.ctaTitle}>
+            <Ionicons name="calendar" size={16} color={theme.colors.primary} />
+            <Text style={styles.ctaTitle} numberOfLines={1}>
               {selectedSlot
                 ? `${dayLabel}, ${selectedSlot.label}`
                 : t("restaurantDetail.ctaSelectDateTime")}
             </Text>
           </View>
           <View style={styles.ctaSubRow}>
-            <Ionicons name="people" size={14} color="#666666" />
+            <Ionicons name="people" size={13} color={theme.colors.textSecondary} />
             <Text style={styles.ctaSub}>
               {t("restaurantDetail.ctaPeople", { count: partySize })}
             </Text>
           </View>
         </View>
 
+        {/* Devam Et butonu */}
         <TouchableOpacity
           onPress={onContinue}
           disabled={!selectedSlot}
           style={[styles.ctaBtn, !selectedSlot && styles.ctaBtnDisabled]}
         >
-          <Text style={styles.ctaBtnText}>
+          <Text style={[styles.ctaBtnText, !selectedSlot && styles.ctaBtnTextDisabled]}>
             {t("restaurantDetail.ctaContinue")}
           </Text>
-          <Ionicons name="arrow-forward" size={18} color="#fff" />
+          <Ionicons
+            name="arrow-forward"
+            size={17}
+            color={selectedSlot ? theme.colors.textInverse : theme.colors.textTertiary}
+          />
         </TouchableOpacity>
-      </LinearGradient>
+      </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { backgroundColor: "#FAFAFA", flex: 1 },
+function makeStyles(theme: ReturnType<typeof useTheme>) {
+  return StyleSheet.create({
+  screen: { backgroundColor: theme.colors.background, flex: 1 },
 
   center: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FAFAFA",
+    backgroundColor: theme.colors.background,
     padding: 32,
     gap: 12,
   },
-  loadingText: { marginTop: 12, fontSize: 15, color: "#666666" },
-  emptyTitle: { fontSize: 20, fontWeight: "700", color: "#1A1A1A", marginTop: 16 },
-  emptyText: { color: "#666666", textAlign: "center", marginBottom: 24 },
+  loadingText: { marginTop: 12, fontSize: 15, color: theme.colors.textSecondary },
+  emptyTitle: { fontSize: 20, fontWeight: "700", color: theme.colors.textPrimary, marginTop: 16 },
+  emptyText: { color: theme.colors.textSecondary, textAlign: "center", marginBottom: 24 },
   backButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#7B2C2C",
+    backgroundColor: theme.colors.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,
     gap: 8,
   },
-  backButtonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  backButtonText: { color: theme.colors.textInverse, fontWeight: "700", fontSize: 15 },
 
-  galleryWrap: { position: "relative", backgroundColor: "#fff" },
-  photoFull: { width: PHOTO_W, height: PHOTO_H, backgroundColor: "#E6E6E6" },
+  galleryWrap: { position: "relative", backgroundColor: theme.colors.surface },
+  photoFull: { width: PHOTO_W, height: PHOTO_H, backgroundColor: theme.colors.surfaceAlt },
+  // Artık kullanılmıyor — galleryTopBar/galleryIconBtn aldı
   favoriteOverlay: { position: "absolute", right: 16, top: 16 },
   favoriteButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    width: 48, height: 48, borderRadius: 24,
+    alignItems: "center", justifyContent: "center",
+    ...theme.elevation[3],
   },
-  gradBottom: { position: "absolute", bottom: 0, left: 0, right: 0, height: 100 },
+  gradTop: { position: "absolute", top: 0, left: 0, right: 0, height: 120 },
+  gradBottom: { position: "absolute", bottom: 0, left: 0, right: 0, height: 130 },
+  galleryTopBar: {
+    position: "absolute", top: 0, left: 0, right: 0,
+    flexDirection: "row", alignItems: "center",
+    paddingHorizontal: 16, paddingBottom: 12,
+    zIndex: 10,
+  },
+  galleryIconBtn: {
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: "rgba(255,255,255,0.93)",
+    alignItems: "center", justifyContent: "center",
+    shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15, shadowRadius: 8, elevation: 4,
+  },
   dots: {
     position: "absolute",
     bottom: 16,
@@ -1241,32 +1599,34 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   dot: { height: 6, width: 6, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.5)" },
-  dotActive: { backgroundColor: "#fff", width: 24 },
+  dotActive: { backgroundColor: theme.colors.textInverse, width: 24 },
   photoPlaceholder: {
     height: PHOTO_H,
-    backgroundColor: "#E6E6E6",
+    backgroundColor: theme.colors.surfaceAlt,
     alignItems: "center",
     justifyContent: "center",
     gap: 12,
   },
-  photoPlaceholderText: { color: "#999999", fontSize: 14 },
+  photoPlaceholderText: { color: theme.colors.textTertiary, fontSize: 14 },
 
   headerCard: {
-    marginTop: -24,
+    marginTop: -28,
     marginHorizontal: H_PADDING,
-    padding: 18,
-    borderRadius: 20,
-    backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 6,
+    padding: 20,
+    borderRadius: 24,
+    backgroundColor: theme.colors.surface,
+    borderLeftWidth: 4,
+    borderLeftColor: "#8C244A",
+    shadowColor: "#1A0610",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    elevation: 10,
   },
-  headerTop: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 12 },
-  title: { fontSize: 22, fontWeight: "800", color: "#1A1A1A", marginBottom: 6 },
+  headerTop: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 14 },
+  title: { fontSize: 24, fontWeight: "900", color: theme.colors.textPrimary, marginBottom: 4, letterSpacing: -0.6 },
   addressRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  addressText: { flex: 1, color: "#666666", lineHeight: 20, fontSize: 14 },
+  addressText: { flex: 1, color: theme.colors.textSecondary, lineHeight: 20, fontSize: 14 },
   favoriteButtonCard: { padding: 8 },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
   metaChip: {
@@ -1275,65 +1635,63 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 12,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: theme.colors.surfaceAlt,
     borderWidth: 1,
-    borderColor: "#E6E6E6",
+    borderColor: theme.colors.borderDefault,
     gap: 6,
   },
-  metaChipText: { fontSize: 13, fontWeight: "600", color: "#1A1A1A" },
+  metaChipText: { fontSize: 13, fontWeight: "600", color: theme.colors.textPrimary },
   metaChipPrimary: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 12,
-    backgroundColor: "#7B2C2C",
+    backgroundColor: theme.colors.primary,
     gap: 6,
   },
-  metaChipTextPrimary: { fontSize: 13, fontWeight: "700", color: "#fff" },
+  metaChipTextPrimary: { fontSize: 13, fontWeight: "700", color: theme.colors.textInverse },
 
   // Tabs
   tabsWrap: {
-    marginTop: 14,
+    marginTop: 16,
     marginHorizontal: H_PADDING,
     flexDirection: "row",
-    gap: 10,
+    gap: 8,
   },
   tabBtn: {
     flex: 1,
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 999,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: "#E6E6E6",
+    borderColor: theme.colors.borderDefault,
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
     gap: 8,
   },
   tabBtnActive: {
-    backgroundColor: "#7B2C2C",
-    borderColor: "#7B2C2C",
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
-  tabText: { fontWeight: "800", color: "#7B2C2C", fontSize: 14 },
-  tabTextActive: { color: "#fff" },
+  tabText: { fontWeight: "800", color: theme.colors.primary, fontSize: 14 },
+  tabTextActive: { color: theme.colors.textInverse },
 
   card: {
     marginTop: 16,
     marginHorizontal: H_PADDING,
     padding: 18,
-    borderRadius: 20,
-    backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    borderRadius: 22,
+    backgroundColor: theme.colors.surface,
+    shadowOpacity: 0.07,
+    shadowRadius: 16,
+    elevation: 4,
   },
   cardHeader: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 16 },
-  sectionTitle: { fontSize: 17, fontWeight: "800", color: "#1A1A1A" },
-  description: { color: "#666666", lineHeight: 24, fontSize: 15 },
+  sectionTitle: { fontSize: 17, fontWeight: "800", color: theme.colors.textPrimary },
+  description: { color: theme.colors.textSecondary, lineHeight: 24, fontSize: 15 },
 
   menuCard: {
     flexDirection: "row",
@@ -1341,80 +1699,80 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 16,
     borderRadius: 16,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: theme.colors.surfaceAlt,
     borderWidth: 1,
-    borderColor: "#E6E6E6",
+    borderColor: theme.colors.borderDefault,
   },
   menuIconCircle: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "#FFF5F5",
+    backgroundColor: theme.colors.primarySoft,
     alignItems: "center",
     justifyContent: "center",
   },
-  menuTitle: { fontSize: 16, fontWeight: "700", color: "#1A1A1A", marginBottom: 4 },
-  menuDesc: { color: "#666666", lineHeight: 20, fontSize: 13 },
+  menuTitle: { fontSize: 16, fontWeight: "700", color: theme.colors.textPrimary, marginBottom: 4 },
+  menuDesc: { color: theme.colors.textSecondary, lineHeight: 20, fontSize: 13 },
   menuPricePill: {
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#7B2C2C",
+    backgroundColor: theme.colors.primary,
     minWidth: 80,
   },
-  menuPriceText: { color: "#fff", fontWeight: "800", fontSize: 15 },
-  menuPriceSub: { color: "#fff", opacity: 0.9, fontSize: 12 },
+  menuPriceText: { color: theme.colors.textInverse, fontWeight: "800", fontSize: 15 },
+  menuPriceSub: { color: theme.colors.textInverse, opacity: 0.9, fontSize: 12 },
 
   // A-la-carte kategori + ürün listesi
   menuCatCard: {
-    backgroundColor: "#FAFAFA",
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 16,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#E6E6E6",
+    borderColor: theme.colors.borderDefault,
   },
   menuCatHeader: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
   },
-  menuCatTitle: { fontSize: 15, fontWeight: "800", color: "#1A1A1A" },
-  menuCatDesc: { marginTop: 4, color: "#666666", fontSize: 12, lineHeight: 18 },
+  menuCatTitle: { fontSize: 15, fontWeight: "800", color: theme.colors.textPrimary },
+  menuCatDesc: { marginTop: 4, color: theme.colors.textSecondary, fontSize: 12, lineHeight: 18 },
   menuCatBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: "#E6E6E6",
+    borderColor: theme.colors.borderDefault,
     paddingHorizontal: 8,
     paddingVertical: 6,
     borderRadius: 999,
   },
-  menuCatBadgeText: { fontWeight: "800", color: "#7B2C2C", fontSize: 12 },
+  menuCatBadgeText: { fontWeight: "800", color: theme.colors.primary, fontSize: 12 },
 
   menuItemRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.surface,
     padding: 10,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#F0F0F0",
+    borderColor: theme.colors.borderDefault,
   },
-  menuItemPhoto: { width: 64, height: 64, borderRadius: 10, backgroundColor: "#E6E6E6" },
+  menuItemPhoto: { width: 64, height: 64, borderRadius: 10, backgroundColor: theme.colors.surfaceAlt },
   menuItemPhotoPlaceholder: {
     width: 64,
     height: 64,
     borderRadius: 12,
-    backgroundColor: "#FFF5F5",
+    backgroundColor: theme.colors.primarySoft,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#F3DADA",
+    borderColor: theme.colors.borderDefault,
     gap: 2,
     paddingHorizontal: 4,
   },
@@ -1422,132 +1780,159 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.surface,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#E6E6E6",
+    borderColor: theme.colors.borderDefault,
   },
   menuItemPhotoPlaceholderText: {
     marginTop: 2,
     fontSize: 9,
     fontWeight: "700",
-    color: "#7B2C2C",
+    color: theme.colors.primary,
     opacity: 0.9,
   },
   menuItemRowPressed: {
     transform: [{ scale: 1.02 }],
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    ...theme.elevation[2],
   },
   menuItemInfo: { flex: 1 },
-  menuItemTitle: { fontSize: 14, fontWeight: "700", color: "#1A1A1A" },
-  menuItemDesc: { marginTop: 4, color: "#666666", fontSize: 12, lineHeight: 18 },
+  menuItemTitle: { fontSize: 14, fontWeight: "700", color: theme.colors.textPrimary },
+  menuItemDesc: { marginTop: 4, color: theme.colors.textSecondary, fontSize: 12, lineHeight: 18 },
   menuItemTagsRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 6 },
   menuItemTagPill: {
-    backgroundColor: "#FAFAFA",
+    backgroundColor: theme.colors.surfaceAlt,
     borderWidth: 1,
-    borderColor: "#E6E6E6",
+    borderColor: theme.colors.borderDefault,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 999,
   },
-  menuItemTagText: { fontSize: 11, fontWeight: "700", color: "#7B2C2C" },
+  menuItemTagText: { fontSize: 11, fontWeight: "700", color: theme.colors.primary },
   menuItemPriceCol: { alignItems: "flex-end" },
-  menuItemPrice: { fontSize: 16, fontWeight: "900", color: "#7B2C2C" },
-  menuItemUnavailable: { marginTop: 4, fontSize: 11, color: "#999999", fontWeight: "700" },
+  menuItemPrice: { fontSize: 16, fontWeight: "900", color: theme.colors.primary },
+  menuItemUnavailable: { marginTop: 4, fontSize: 11, color: theme.colors.textTertiary, fontWeight: "700" },
 
   controlsContainer: { flexDirection: "row", gap: 12, marginBottom: 16 },
   controlCard: {
     flex: 1,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#E6E6E6",
+    borderColor: theme.colors.borderDefault,
   },
-  controlLabel: { fontSize: 12, fontWeight: "600", color: "#666666", marginBottom: 8 },
+  controlLabel: { fontSize: 12, fontWeight: "600", color: theme.colors.textSecondary, marginBottom: 8 },
   dateControls: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   partyControls: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   controlButton: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.surface,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#E6E6E6",
+    borderColor: theme.colors.borderDefault,
   },
   disabled: { opacity: 0.4 },
   dateDisplay: { alignItems: "center" },
-  dateText: { fontSize: 15, fontWeight: "700", color: "#1A1A1A" },
-  dayText: { fontSize: 11, color: "#666666", marginTop: 2 },
+  dateText: { fontSize: 15, fontWeight: "700", color: theme.colors.textPrimary },
+  dayText: { fontSize: 11, color: theme.colors.textSecondary, marginTop: 2 },
   partyDisplay: { flexDirection: "row", alignItems: "center", gap: 6 },
-  partyText: { fontSize: 16, fontWeight: "700", color: "#1A1A1A" },
+  partyText: { fontSize: 16, fontWeight: "700", color: theme.colors.textPrimary },
 
   slotsLoading: { alignItems: "center", paddingVertical: 20, gap: 8 },
-  slotsLoadingText: { color: "#666666", fontSize: 13 },
+  slotsLoadingText: { color: theme.colors.textSecondary, fontSize: 13 },
   slotsList: { paddingVertical: 8 },
   slot: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: "#FAFAFA",
+    paddingHorizontal: 18,
+    paddingVertical: 13,
+    borderRadius: 999,
+    backgroundColor: theme.colors.surface,
     marginRight: 10,
-    borderWidth: 2,
-    borderColor: "#E6E6E6",
-    gap: 6,
+    borderWidth: 1.5,
+    borderColor: theme.colors.borderDefault,
+    gap: 7,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 1,
   },
-  slotDisabled: { opacity: 0.4 },
-  slotSelected: { backgroundColor: "#7B2C2C", borderColor: "#7B2C2C" },
-  slotText: { fontWeight: "700", color: "#1A1A1A", fontSize: 14 },
-  slotTextSelected: { color: "#fff" },
+  slotDisabled: { opacity: 0.35 },
+  slotSelected: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+    shadowColor: theme.colors.primary,
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  slotText: { fontWeight: "700", color: theme.colors.textPrimary, fontSize: 14 },
+  slotTextSelected: { color: theme.colors.textInverse },
 
   emptyStateSmall: { alignItems: "center", gap: 8, paddingVertical: 16 },
-  muted: { color: "#888888", fontSize: 13 },
+  muted: { color: theme.colors.textTertiary, fontSize: 13 },
 
   contactItem: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 },
-  contactText: { color: "#1A1A1A", fontSize: 14 },
+  contactText: { color: theme.colors.textPrimary, fontSize: 14 },
 
   ctaBar: {
     position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
+    left: 0, right: 0, bottom: 0,
     paddingHorizontal: H_PADDING,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(0,0,0,0.06)",
+    paddingTop: 14,
+    backgroundColor: theme.colors.background,
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 14,
+    // Üst tarafa doğru yumuşak gölge
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 16,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.colors.borderDefault,
   },
-  ctaTitleRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 },
-  ctaTitle: { fontSize: 15, fontWeight: "800", color: "#1A1A1A" },
-  ctaSubRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  ctaSub: { fontSize: 13, color: "#666666" },
+  ctaTitleRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  ctaTitle: { fontSize: 14, fontWeight: "800", color: theme.colors.textPrimary, flexShrink: 1 },
+  ctaSubRow: { flexDirection: "row", alignItems: "center", gap: 5 },
+  ctaSub: { fontSize: 12, color: theme.colors.textSecondary },
 
   ctaBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    backgroundColor: "#7B2C2C",
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderRadius: 12,
+    justifyContent: "center",
+    gap: 7,
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: 22,
+    paddingVertical: 14,
+    borderRadius: 16,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 6,
+    minWidth: 130,
   },
-  ctaBtnDisabled: { opacity: 0.5 },
-  ctaBtnText: { color: "#fff", fontWeight: "800", fontSize: 15 },
+  ctaBtnDisabled: {
+    backgroundColor: theme.colors.surfaceAlt,
+    shadowOpacity: 0,
+    elevation: 0,
+    borderWidth: 1.5,
+    borderColor: theme.colors.borderDefault,
+  },
+  ctaBtnText: { color: theme.colors.textInverse, fontWeight: "900", fontSize: 15 },
+  ctaBtnTextDisabled: { color: theme.colors.textTertiary },
 
   fullscreenContainer: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: theme.colors.background,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -1584,12 +1969,12 @@ const styles = StyleSheet.create({
   },
   fullscreenDotActive: {
     width: 24,
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.textInverse,
   },
   menuItemPricePill: {
-    backgroundColor: "#FFF5F5",
+    backgroundColor: theme.colors.primarySoft,
     borderWidth: 1,
-    borderColor: "#F3DADA",
+    borderColor: theme.colors.borderDefault,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 10,
@@ -1600,9 +1985,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#FFF5F5",
+    backgroundColor: theme.colors.primarySoft,
     borderWidth: 1,
-    borderColor: "#F3DADA",
+    borderColor: theme.colors.borderDefault,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
@@ -1610,12 +1995,12 @@ const styles = StyleSheet.create({
   menuExpandAllText: {
     fontSize: 12,
     fontWeight: "800",
-    color: "#7B2C2C",
+    color: theme.colors.primary,
   },
 
   previewBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: theme.colors.overlay,
     alignItems: "center",
     justifyContent: "center",
     padding: 24,
@@ -1623,19 +2008,19 @@ const styles = StyleSheet.create({
   previewCard: {
     width: "100%",
     maxWidth: 420,
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.surface,
     borderRadius: 18,
     overflow: "hidden",
   },
   previewImage: {
     width: "100%",
     height: 240,
-    backgroundColor: "#E6E6E6",
+    backgroundColor: theme.colors.surfaceAlt,
   },
   previewImagePlaceholder: {
     width: "100%",
     height: 240,
-    backgroundColor: "#FFF5F5",
+    backgroundColor: theme.colors.primarySoft,
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
@@ -1643,7 +2028,7 @@ const styles = StyleSheet.create({
   previewImagePlaceholderText: {
     fontSize: 12,
     fontWeight: "800",
-    color: "#7B2C2C",
+    color: theme.colors.primary,
     opacity: 0.9,
   },
   previewBody: {
@@ -1653,11 +2038,11 @@ const styles = StyleSheet.create({
   previewTitle: {
     fontSize: 17,
     fontWeight: "900",
-    color: "#1A1A1A",
+    color: theme.colors.textPrimary,
   },
   previewDesc: {
     fontSize: 13,
-    color: "#666666",
+    color: theme.colors.textSecondary,
     lineHeight: 19,
   },
   previewPriceRow: {
@@ -1669,18 +2054,18 @@ const styles = StyleSheet.create({
   previewPrice: {
     fontSize: 18,
     fontWeight: "900",
-    color: "#7B2C2C",
+    color: theme.colors.primary,
   },
   previewUnavailable: {
     fontSize: 12,
     fontWeight: "800",
-    color: "#999999",
+    color: theme.colors.textTertiary,
   },
   previewTags: {
     marginTop: 2,
     fontSize: 12,
     fontWeight: "700",
-    color: "#7B2C2C",
+    color: theme.colors.primary,
     opacity: 0.9,
   },
   previewClose: {
@@ -1693,6 +2078,250 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.55)",
     alignItems: "center",
     justifyContent: "center"
-    }
+  },
+
+  // Rating row in header card
+  ratingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  ratingInline: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: theme.colors.textPrimary,
+    marginLeft: 4,
+  },
+  ratingCountInline: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    fontWeight: "500",
+  },
+
+  // Rating hero (summary)
+  ratingHero: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 20,
+    paddingBottom: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.colors.borderDefault,
+    marginBottom: 16,
+  },
+  ratingBigBox: {
+    alignItems: "center",
+    minWidth: 80,
+  },
+  ratingBigNumber: {
+    fontSize: 44,
+    fontWeight: "900",
+    color: theme.colors.textPrimary,
+    letterSpacing: -2,
+  },
+  starsRowBig: {
+    flexDirection: "row",
+    gap: 2,
+    marginTop: 2,
+  },
+  ratingTotalLabel: {
+    marginTop: 4,
+    fontSize: 11,
+    color: theme.colors.textSecondary,
+    fontWeight: "600",
+  },
+  ratingBars: {
+    flex: 1,
+    gap: 5,
+  },
+  ratingBarRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  ratingBarStarLabel: {
+    width: 10,
+    fontSize: 12,
+    fontWeight: "700",
+    color: theme.colors.textSecondary,
+    textAlign: "right",
+  },
+  ratingBarTrack: {
+    flex: 1,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: theme.colors.borderDefault,
+    overflow: "hidden",
+  },
+  ratingBarFill: {
+    height: "100%",
+    borderRadius: 3,
+    backgroundColor: "#FBBF24",
+  },
+  ratingBarCount: {
+    width: 22,
+    fontSize: 11,
+    color: theme.colors.textSecondary,
+    fontWeight: "600",
+    textAlign: "right",
+  },
+
+  // Write review
+  writeReviewBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: theme.colors.primary,
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    alignSelf: "center",
+    marginBottom: 16,
+  },
+  writeReviewBtnText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: theme.colors.textInverse,
+  },
+  writeReviewForm: {
+    backgroundColor: theme.colors.surfaceAlt,
+    borderRadius: 16,
+    padding: 16,
+    gap: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.borderDefault,
+  },
+  writeReviewFormTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: theme.colors.textPrimary,
+  },
+  starPicker: {
+    flexDirection: "row",
+    gap: 8,
+    justifyContent: "center",
+    paddingVertical: 8,
+  },
+  commentInputWrap: {
+    minHeight: 80,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.borderDefault,
+    backgroundColor: theme.colors.surface,
+    padding: 12,
+  },
+  commentInput: {
+    fontSize: 14,
+    color: theme.colors.textPrimary,
+    minHeight: 72,
+    flex: 1,
+  },
+  writeReviewActions: {
+    flexDirection: "row",
+    gap: 10,
+    justifyContent: "flex-end",
+  },
+  writeReviewCancel: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: theme.colors.borderDefault,
+    backgroundColor: theme.colors.surface,
+  },
+  writeReviewCancelText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: theme.colors.textSecondary,
+  },
+  writeReviewSubmit: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: theme.colors.primary,
+  },
+  writeReviewSubmitText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: theme.colors.textInverse,
+  },
+
+  // Reviews empty state
+  reviewsEmpty: {
+    alignItems: "center",
+    paddingVertical: 32,
+    gap: 10,
+  },
+  reviewsEmptyIconBox: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: theme.colors.primarySoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  reviewsEmptyTitle: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: theme.colors.textPrimary,
+  },
+  reviewsEmptySubtitle: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    textAlign: "center",
+    lineHeight: 20,
+    paddingHorizontal: 16,
+  },
+
+  // Individual review cards
+  reviewCard: {
+    backgroundColor: theme.colors.surfaceAlt,
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: theme.colors.borderDefault,
+    gap: 10,
+  },
+  reviewCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  reviewAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: theme.colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  reviewAvatarText: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: theme.colors.textInverse,
+  },
+  reviewerName: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: theme.colors.textPrimary,
+  },
+  reviewDate: {
+    fontSize: 11,
+    color: theme.colors.textSecondary,
+    marginTop: 1,
+  },
+  reviewStarsRow: {
+    flexDirection: "row",
+    gap: 2,
+  },
+  reviewComment: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    lineHeight: 20,
+  },
   })
+}
   
