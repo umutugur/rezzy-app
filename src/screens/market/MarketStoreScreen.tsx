@@ -15,7 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useTheme } from "../../contexts/ThemeContext";
-import { Badge, EmptyState, PriceTag, Skeleton, StarRating } from "../../components/ui";
+import { Badge, EmptyState, PriceTag, ReviewSection, Skeleton, StarRating } from "../../components/ui";
 import { getProducts, getStoreDetail, type MarketProduct, type MarketStore } from "../../api/market.api";
 import {
   computeSubtotal,
@@ -423,6 +423,15 @@ export default function MarketStoreScreen() {
               illustration="market"
               title="Ürün bulunamadı"
               subtitle="Bu kategoride henüz ürün yok."
+            />
+          ) : null
+        }
+        ListFooterComponent={
+          storeId ? (
+            <ReviewSection
+              entityType="market"
+              entityId={storeId}
+              style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32 }}
             />
           ) : null
         }
