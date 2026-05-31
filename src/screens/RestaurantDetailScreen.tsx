@@ -10,7 +10,6 @@ import {
   Alert,
   StyleSheet,
   Text,
-  TextInput,
   NativeSyntheticEvent,
   NativeScrollEvent,
   Dimensions,
@@ -47,7 +46,7 @@ import { useI18n } from "../i18n";
 import { type MenuCategory, type MenuItem as ALaCarteItem } from "../api/menu";
 import { rpGetPublicResolvedMenu } from "../api/menuResolved";
 import { useTheme } from "../contexts/ThemeContext";
-import { getRestaurantReviews, submitReview, type Review, type ReviewSummary } from "../api/reviews";
+import { ReviewSection } from "../components/ui";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const H_PADDING = 16;
@@ -188,15 +187,7 @@ export default function RestaurantDetailScreen() {
   const [expandAllMenuCats, setExpandAllMenuCats] = useState(false);
   const [previewItem, setPreviewItem] = useState<ALaCarteItem | null>(null);
 
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [reviewSummary, setReviewSummary] = useState<ReviewSummary | null>(null);
-  const [reviewsLoading, setReviewsLoading] = useState(false);
-  const [newRating, setNewRating] = useState(5);
-  const [newComment, setNewComment] = useState("");
-  const [submitingReview, setSubmitingReview] = useState(false);
-  const [writeReviewOpen, setWriteReviewOpen] = useState(false);
-
-  const [activePhoto, setActivePhoto] = useState(0);
+const [activePhoto, setActivePhoto] = useState(0);
   const photosListRef = useRef<FlatList<string>>(null);
   const [fullScreenOpen, setFullScreenOpen] = useState(false);
   const [fullScreenIndex, setFullScreenIndex] = useState(0);
@@ -287,36 +278,9 @@ export default function RestaurantDetailScreen() {
     }
   }, [restaurantId]);
 
-  const loadReviews = React.useCallback(async () => {
-    if (!restaurantId) return;
-    setReviewsLoading(true);
-    try {
-      const res = await getRestaurantReviews(restaurantId);
-      setReviews(res.reviews || []);
-      setReviewSummary(res.summary ?? null);
-    } catch {
-      setReviews([]);
-      // fallback: build summary from r's rating field if available
-      const rRating = (r as any)?.rating;
-      const rCount = (r as any)?.ratingCount;
-      if (rRating != null) {
-        setReviewSummary({
-          averageRating: Number(rRating),
-          totalCount: Number(rCount ?? 0),
-          distribution: [],
-        });
-      } else {
-        setReviewSummary(null);
-      }
-    } finally {
-      setReviewsLoading(false);
-    }
-  }, [restaurantId, r]);
-
   useEffect(() => {
     if (activeTab === "MENU") loadALaCarteMenu();
-    if (activeTab === "REVIEWS") loadReviews();
-  }, [activeTab, loadALaCarteMenu, loadReviews]);
+  }, [activeTab, loadALaCarteMenu]);
 
   // Region -> currency symbol
   const currencySymbol = useMemo(() => {
@@ -1153,198 +1117,13 @@ const onContinue = async () => {
 
           {/* REVIEWS TAB */}
           {activeTab === "REVIEWS" && (
-            <View style={styles.card}>
-              {/* Rating Summary */}
-              {reviewSummary && reviewSummary.totalCount > 0 && (
-                <View style={styles.ratingHero}>
-                  {/* Big number */}
-                  <View style={styles.ratingBigBox}>
-                    <Text style={styles.ratingBigNumber}>
-                      {reviewSummary.averageRating.toFixed(1)}
-                    </Text>
-                    <View style={styles.starsRowBig}>
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <Ionicons
-                          key={s}
-                          name={
-                            s <= Math.round(reviewSummary.averageRating)
-                              ? "star"
-                              : "star-outline"
-                          }
-                          size={18}
-                          color="#FBBF24"
-                        />
-                      ))}
-                    </View>
-                    <Text style={styles.ratingTotalLabel}>
-                      {reviewSummary.totalCount} değerlendirme
-                    </Text>
-                  </View>
-
-                  {/* Bar chart */}
-                  <View style={styles.ratingBars}>
-                    {([5, 4, 3, 2, 1] as const).map((star) => {
-                      const item = reviewSummary.distribution.find((d) => d.star === star);
-                      const count = item?.count ?? 0;
-                      const pct =
-                        reviewSummary.totalCount > 0
-                          ? count / reviewSummary.totalCount
-                          : 0;
-                      return (
-                        <View key={star} style={styles.ratingBarRow}>
-                          <Text style={styles.ratingBarStarLabel}>{star}</Text>
-                          <Ionicons name="star" size={10} color="#FBBF24" />
-                          <View style={styles.ratingBarTrack}>
-                            <View
-                              style={[
-                                styles.ratingBarFill,
-                                { width: `${Math.round(pct * 100)}%` as any },
-                              ]}
-                            />
-                          </View>
-                          <Text style={styles.ratingBarCount}>{count}</Text>
-                        </View>
-                      );
-                    })}
-                  </View>
-                </View>
-              )}
-
-              {/* Write review button (logged-in users) */}
-              {token && !writeReviewOpen && (
-                <Pressable
-                  style={styles.writeReviewBtn}
-                  onPress={() => setWriteReviewOpen(true)}
-                >
-                  <Ionicons name="pencil-outline" size={16} color={theme.colors.textInverse} />
-                  <Text style={styles.writeReviewBtnText}>{tt("restaurantDetail.writeReview", "Yorum Yaz")}</Text>
-                </Pressable>
-              )}
-
-              {/* Write review form */}
-              {writeReviewOpen && (
-                <View style={styles.writeReviewForm}>
-                  <Text style={styles.writeReviewFormTitle}>{tt("restaurantDetail.yourRating", "Değerlendirmeniz")}</Text>
-                  {/* Star picker */}
-                  <View style={styles.starPicker}>
-                    {[1, 2, 3, 4, 5].map((s) => (
-                      <Pressable key={s} onPress={() => setNewRating(s)} hitSlop={8}>
-                        <Ionicons
-                          name={s <= newRating ? "star" : "star-outline"}
-                          size={32}
-                          color="#FBBF24"
-                        />
-                      </Pressable>
-                    ))}
-                  </View>
-                  {/* Comment input */}
-                  <View style={styles.commentInputWrap}>
-                    <TextInput
-                      value={newComment}
-                      onChangeText={setNewComment}
-                      placeholder={tt("restaurantDetail.commentPlaceholder", "Yorumunuzu yazın... (opsiyonel)")}
-                      placeholderTextColor="#9CA3AF"
-                      multiline
-                      numberOfLines={3}
-                      style={styles.commentInput}
-                      textAlignVertical="top"
-                    />
-                  </View>
-                  <View style={styles.writeReviewActions}>
-                    <Pressable
-                      style={styles.writeReviewCancel}
-                      onPress={() => {
-                        setWriteReviewOpen(false);
-                        setNewRating(5);
-                        setNewComment("");
-                      }}
-                    >
-                      <Text style={styles.writeReviewCancelText}>{tt("restaurantDetail.cancelReview", "İptal")}</Text>
-                    </Pressable>
-                    <Pressable
-                      disabled={submitingReview}
-                      style={[styles.writeReviewSubmit, submitingReview && { opacity: 0.6 }]}
-                      onPress={async () => {
-                        try {
-                          setSubmitingReview(true);
-                          await submitReview("restaurant", restaurantId, {
-                            rating: newRating,
-                            comment: newComment || undefined,
-                          });
-                          setWriteReviewOpen(false);
-                          setNewRating(5);
-                          setNewComment("");
-                          loadReviews();
-                        } catch (e: any) {
-                          Alert.alert(tt("common.error", "Hata"), e?.response?.data?.message || e?.message || tt("restaurantDetail.submitReviewError", "Yorum gönderilemedi."));
-                        } finally {
-                          setSubmitingReview(false);
-                        }
-                      }}
-                    >
-                      {submitingReview ? (
-                        <ActivityIndicator size="small" color={theme.colors.textInverse} />
-                      ) : (
-                        <Text style={styles.writeReviewSubmitText}>{tt("restaurantDetail.submitReview", "Gönder")}</Text>
-                      )}
-                    </Pressable>
-                  </View>
-                </View>
-              )}
-
-              {/* Loading state */}
-              {reviewsLoading ? (
-                <View style={styles.emptyStateSmall}>
-                  <ActivityIndicator color={theme.colors.primary} />
-                  <Text style={styles.muted}>{tt("restaurantDetail.reviewsLoading", "Yorumlar yükleniyor…")}</Text>
-                </View>
-              ) : reviews.length === 0 ? (
-                /* Empty state */
-                <View style={styles.reviewsEmpty}>
-                  <View style={styles.reviewsEmptyIconBox}>
-                    <Ionicons name="chatbubble-ellipses-outline" size={36} color={theme.colors.primary} />
-                  </View>
-                  <Text style={styles.reviewsEmptyTitle}>{tt("restaurantDetail.noReviews", "Henüz yorum yok")}</Text>
-                  <Text style={styles.reviewsEmptySubtitle}>
-                    {tt("restaurantDetail.noReviewsSub", "Bu mekanı ziyaret ettiyseniz deneyiminizi paylaşın.")}
-                  </Text>
-                </View>
-              ) : (
-                /* Review cards */
-                <View style={{ gap: 12, marginTop: 16 }}>
-                  {reviews.map((rev) => (
-                    <View key={rev._id} style={styles.reviewCard}>
-                      <View style={styles.reviewCardHeader}>
-                        <View style={styles.reviewAvatar}>
-                          <Text style={styles.reviewAvatarText}>
-                            {(typeof rev.userId === "object" ? rev.userId.name : "?")[0].toUpperCase()}
-                          </Text>
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.reviewerName}>{typeof rev.userId === "object" ? rev.userId.name : ""}</Text>
-                          <Text style={styles.reviewDate}>
-                            {dayjs(rev.createdAt).format("DD MMM YYYY")}
-                          </Text>
-                        </View>
-                        <View style={styles.reviewStarsRow}>
-                          {[1, 2, 3, 4, 5].map((s) => (
-                            <Ionicons
-                              key={s}
-                              name={s <= rev.rating ? "star" : "star-outline"}
-                              size={12}
-                              color="#FBBF24"
-                            />
-                          ))}
-                        </View>
-                      </View>
-                      {!!rev.comment && (
-                        <Text style={styles.reviewComment}>{rev.comment}</Text>
-                      )}
-                    </View>
-                  ))}
-                </View>
-              )}
-            </View>
+            restaurantId ? (
+              <ReviewSection
+                entityType="restaurant"
+                entityId={restaurantId}
+                style={{ paddingHorizontal: 16, paddingVertical: 12 }}
+              />
+            ) : null
           )}
 
           {/* İletişim */}
