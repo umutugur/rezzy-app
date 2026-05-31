@@ -164,6 +164,17 @@ export async function completeRide(rideId: string): Promise<TaxiRide> {
   return data.ride ?? data;
 }
 
+/** GET /api/taxi/driver/rides — sürücünün geçmiş yolculukları (cursor tabanlı) */
+export async function getDriverRides(
+  cursor?: string,
+  limit = 20,
+): Promise<{ rides: TaxiRide[]; nextCursor: string | null }> {
+  const params: Record<string, any> = { limit };
+  if (cursor) params.cursor = cursor;
+  const { data } = await api.get('/taxi/driver/rides', { params });
+  return data;
+}
+
 /** GET /api/taxi/driver/earnings */
 export async function getDriverEarnings(): Promise<DriverEarnings> {
   const { data } = await api.get('/taxi/driver/earnings');

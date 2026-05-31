@@ -9,6 +9,7 @@ import {
   Platform,
   Modal,
   Alert,
+  ScrollView,
 } from 'react-native';
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import Animated, {
@@ -23,15 +24,17 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
-import { Wifi, WifiOff, TrendingUp, Star, MapPin, Navigation, CheckCircle } from 'lucide-react-native';
+import { Wifi, WifiOff, TrendingUp, Star, MapPin, Navigation, CheckCircle, Clock, CircleDollarSign, Ruler } from 'lucide-react-native';
 
 import { useTheme } from '../../contexts/ThemeContext';
 import { useTaxiStore } from '../../store/useTaxiStore';
 import { taxiSocket } from '../../services/taxiSocket.service';
-import { updateDriverStatus, updateDriverLocation, getDriverEarnings, startRide, completeRide } from '../../api/taxi';
+import { updateDriverStatus, updateDriverLocation, getDriverEarnings, startRide, completeRide, getDriverRides } from '../../api/taxi';
+import type { TaxiRide } from '../../api/taxi';
 import { useAuth } from '../../store/useAuth';
 import type { NewRideRequestPayload } from '../../services/taxiSocket.service';
 import { Button } from '../../components/ui/Button';
+import { Badge } from '../../components/ui';
 import DriverIncomingRideScreen from './DriverIncomingRideScreen';
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -53,6 +56,11 @@ export default function DriverHomeScreen() {
   const [driverActiveRide, setDriverActiveRide] = useState<NewRideRequestPayload | null>(null);
   const [activeRideStatus, setActiveRideStatus] = useState<'matched' | 'inProgress' | null>(null);
   const [rideActioning, setRideActioning] = useState(false);
+  const [activeTab, setActiveTab] = useState<'home' | 'history'>('home');
+  const [historyRides, setHistoryRides] = useState<TaxiRide[]>([]);
+  const [historyCursor, setHistoryCursor] = useState<string | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyLoadingMore, setHistoryLoadingMore] = useState(false);
   const [mapRegion, setMapRegion] = useState({
     latitude: 41.015137,
     longitude: 28.97953,
@@ -192,6 +200,35 @@ export default function DriverHomeScreen() {
     }
   }, [driverActiveRide, rideActioning, setDriverEarnings]);
 
+  // ── Ride history ─────────────────────────────────────────────────────────
+
+  const loadHistory = useCallback(async (reset = false) => {
+    if (reset) {
+      setHistoryLoading(true);
+      setHistoryRides([]);
+      setHistoryCursor(null);
+    } else {
+      setHistoryLoadingMore(true);
+    }
+    try {
+      const cursor = reset ? undefined : (historyCursor ?? undefined);
+      const { rides, nextCursor } = await getDriverRides(cursor);
+      setHistoryRides((prev) => reset ? rides : [...prev, ...rides]);
+      setHistoryCursor(nextCursor);
+    } catch {
+      // sessiz geç
+    } finally {
+      setHistoryLoading(false);
+      setHistoryLoadingMore(false);
+    }
+  }, [historyCursor]);
+
+  useEffect(() => {
+    if (activeTab === 'history' && historyRides.length === 0) {
+      loadHistory(true);
+    }
+  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Online / offline toggle ───────────────────────────────────────────────
 
   const handleToggle = useCallback(async () => {
@@ -274,8 +311,95 @@ export default function DriverHomeScreen() {
         </View>
       )}
 
-      {/* ── Overlay content ── */}
-      <View style={[s.overlay, { paddingTop: insets.top + 12 }]}>
+      {/* ── Tab switcher ── */}
+      <View style={[s.tabBar, { paddingTop: insets.top + 8 }]}>
+        <View style={s.tabBarInner}>
+          <View
+            style={[s.tabIndicator, {
+              left: activeTab === 'home' ? 4 : '50%' as any,
+              right: activeTab === 'home' ? '50%' as any : 4,
+            }]}
+          />
+          {(['home', 'history'] as const).map((tab) => (
+            <View
+              key={tab}
+              style={s.tabItem}
+            >
+              <Text
+                style={[s.tabText, activeTab === tab && s.tabTextActive]}
+                onPress={() => setActiveTab(tab)}
+              >
+                {tab === 'home' ? 'Ana Sayfa' : 'Geçmiş'}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      {/* ── Overlay content (home tab) ── */}
+      {activeTab === 'history' ? (
+        <View style={[s.historyContainer, { paddingTop: insets.top + 60 }]}>
+          {historyLoading ? (
+            <View style={s.historyCenter}>
+              <Text style={s.historyEmpty}>Yükleniyor…</Text>
+            </View>
+          ) : historyRides.length === 0 ? (
+            <View style={s.historyCenter}>
+              <Clock size={40} color={theme.colors.textTertiary} strokeWidth={1.2} />
+              <Text style={s.historyEmpty}>Henüz tamamlanan yolculuk yok</Text>
+            </View>
+          ) : (
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}>
+              {historyRides.map((ride) => {
+                const passengerName = typeof ride.passenger === 'object' ? (ride.passenger as any).name : 'Yolcu';
+                const date = ride.completedAt
+                  ? new Date(ride.completedAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+                  : '—';
+                return (
+                  <View key={ride._id} style={s.historyCard}>
+                    <View style={s.historyCardHeader}>
+                      <Text style={s.historyPassenger}>{passengerName}</Text>
+                      <Badge
+                        variant={ride.status === 'completed' ? 'success' : 'error'}
+                        size="sm"
+                        label={ride.status === 'completed' ? 'Tamamlandı' : 'İptal'}
+                      />
+                    </View>
+                    <View style={s.historyMeta}>
+                      <View style={s.historyMetaItem}>
+                        <CircleDollarSign size={13} color={theme.driver.main} strokeWidth={2} />
+                        <Text style={s.historyMetaText}>₺{ride.fare?.toFixed(0) ?? '—'}</Text>
+                      </View>
+                      <View style={s.historyMetaItem}>
+                        <Ruler size={13} color={theme.colors.textTertiary} strokeWidth={2} />
+                        <Text style={s.historyMetaText}>{ride.distanceKm?.toFixed(1) ?? '—'} km</Text>
+                      </View>
+                      <View style={s.historyMetaItem}>
+                        <Clock size={13} color={theme.colors.textTertiary} strokeWidth={2} />
+                        <Text style={s.historyMetaText}>{date}</Text>
+                      </View>
+                    </View>
+                    <Text style={s.historyDropoff} numberOfLines={1}>
+                      → {ride.dropoff?.address ?? '—'}
+                    </Text>
+                  </View>
+                );
+              })}
+              {historyCursor && (
+                <View style={{ alignItems: 'center', marginTop: 8 }}>
+                  <Text
+                    style={{ ...theme.typography.labelMd, color: theme.driver.main }}
+                    onPress={() => loadHistory(false)}
+                  >
+                    {historyLoadingMore ? 'Yükleniyor…' : 'Daha Fazla'}
+                  </Text>
+                </View>
+              )}
+            </ScrollView>
+          )}
+        </View>
+      ) : (
+      <View style={[s.overlay, { paddingTop: insets.top + 60 }]}>
 
         {/* ── Online/Offline toggle card ── */}
         <Animated.View style={[s.toggleCard, cardAnimStyle]}>
@@ -405,6 +529,7 @@ export default function DriverHomeScreen() {
           </View>
         )}
       </View>
+      )}
 
       {/* ── Incoming ride modal ── */}
       <Modal
@@ -433,6 +558,96 @@ export default function DriverHomeScreen() {
 function styles(theme: ReturnType<typeof useTheme>, insets: ReturnType<typeof useSafeAreaInsets>) {
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: theme.colors.background },
+
+    // ── Tab bar ──
+    tabBar: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 10,
+      paddingHorizontal: theme.space[4],
+    },
+    tabBarInner: {
+      flexDirection: 'row',
+      backgroundColor: 'rgba(255,255,255,0.92)',
+      borderRadius: theme.radius.full,
+      padding: 4,
+      position: 'relative',
+      ...theme.getElevation(2),
+    },
+    tabIndicator: {
+      position: 'absolute',
+      top: 4,
+      bottom: 4,
+      backgroundColor: theme.driver.main,
+      borderRadius: theme.radius.full,
+    },
+    tabItem: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 8,
+    },
+    tabText: {
+      ...theme.typography.labelMd,
+      color: theme.colors.textSecondary,
+    },
+    tabTextActive: {
+      color: theme.colors.textInverse,
+    },
+
+    // ── History ──
+    historyContainer: {
+      flex: 1,
+      paddingHorizontal: theme.space[4],
+    },
+    historyCenter: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: theme.space[3],
+      paddingTop: 80,
+    },
+    historyEmpty: {
+      ...theme.typography.bodyMd,
+      color: theme.colors.textTertiary,
+    },
+    historyCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.xl,
+      padding: theme.space[4],
+      marginBottom: theme.space[3],
+      gap: theme.space[2],
+      ...theme.getElevation(1),
+    },
+    historyCardHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    historyPassenger: {
+      ...theme.typography.labelMd,
+      color: theme.colors.textPrimary,
+    },
+    historyMeta: {
+      flexDirection: 'row',
+      gap: theme.space[4],
+      flexWrap: 'wrap',
+    },
+    historyMetaItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    historyMetaText: {
+      ...theme.typography.caption,
+      color: theme.colors.textSecondary,
+    },
+    historyDropoff: {
+      ...theme.typography.caption,
+      color: theme.colors.textTertiary,
+    },
 
     offlineBg: {
       flex: 1,
