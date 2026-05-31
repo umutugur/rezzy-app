@@ -1,6 +1,6 @@
 # Rezvix — Yapılacaklar Listesi (Backlog)
 **Son güncelleme:** 2026-06-01  
-**Durum:** Aktif — Oturum 2 tamamlandı
+**Durum:** Aktif — Oturum 3 kısmen tamamlandı
 
 ---
 
@@ -62,6 +62,21 @@ Tüm modüller için tek Review sistemi — gerçek müşteri doğrulamalı.
   - Cursor tabanlı "Daha Fazla" yükleme
 - **Commits:** `e2ebe66` (backend), `2736385` (frontend)
 
+### ✅ #3 — Market Organizasyon (Zincir Mağaza Yönetimi)
+- `MarketStore.js`: `organization: ObjectId → Organization` alanı eklendi (optional, indexed)
+- Compound index: `{ organization: 1, isActive: 1 }` → `market_store_org_active`
+- `marketPanel.controller.js`: `listOrgStores` export eklendi — aynı org'a ait aktif şubeler
+- `marketPanel.routes.js`: `GET /api/market/panel/org/stores` route kayıtlı
+- **Commit:** `7beedee`
+
+### ✅ #9 — Market Ürün Yönetimi (Mobil Panel)
+- `market.api.ts`: `PanelProduct` tipi + `getPanelProducts`, `createPanelProduct`, `updatePanelProduct`, `deletePanelProduct`
+- `MarketOwnerDashboardScreen`: "Siparişler / Ürünler" üst sekme yapısı eklendi
+  - Ürünler sekmesi: liste (ad, birim, stok, fiyat), düzenle + sil butonları
+  - "Ürün Ekle" butonu → pageSheet modal (ad, fiyat, stok, birim)
+  - Lazy-load: sekmeye ilk geçişte yükleme
+- **Commit:** `863cc36`
+
 ### ✅ #10 — Market Sipariş Push Bildirimi
 - `notification.i18n.js`: `market_new_order` key'i eklendi (TR/EN/RU/EL)
 - `market.controller.js` `createOrder`: her iki ödeme path'inde (nakit + online) `notifyUser(store.owner)` çağrısı
@@ -70,16 +85,6 @@ Tüm modüller için tek Review sistemi — gerçek müşteri doğrulamalı.
 ---
 
 ## 🔴 Kritik / Eksik Altyapı
-
-### #3 — Market Organizasyon (Zincir Mağaza Yönetimi)
-- `Organization.js` modeli restoran için mevcut
-- `MarketStore.js`'de `organization` alanı yok
-- Zincir marketlerin tüm şubelerini tek panelden yönetmesi mümkün değil
-- Yapılacaklar:
-  - `MarketStore`'a `organization: ObjectId` alanı ekle
-  - `market_org_owner` role veya mevcut `market_owner` role'e org izni
-  - Org bazlı market listeleme endpoint'i
-  - Org dashboard (toplu sipariş/stok görünümü)
 
 ### #4 — Taksi WebSocket — Uçtan Uca Test
 - Socket servisi yazıldı (`taxiSocket.service.ts`)
@@ -103,9 +108,6 @@ Tüm modüller için tek Review sistemi — gerçek müşteri doğrulamalı.
   - Stok güncelleme, çalışma saatleri
   - Şube yönetimi (org varsa)
 
-### #9 — Market — Ürün Yönetimi (Mobil Panel)
-- `MarketOwnerDashboardScreen` var ama içi eksik
-- Yapılacaklar: ürün listeleme, ekleme, düzenleme, silme, stok güncelleme
 
 ---
 
@@ -144,18 +146,19 @@ Tüm modüller için tek Review sistemi — gerçek müşteri doğrulamalı.
 
 ## Sıradaki Oturum Planı
 
-### Oturum 3 — Market Desktop Panel + Organizasyon
-- **#3** — MarketStore'a organization alanı (zincir mağaza)
-- **#6** — Market desktop yönetim paneli (web — `rezzy-webpanel`)
-- **#9** — Mobil market ürün yönetimi (`MarketOwnerDashboardScreen`)
+### Oturum 3 — ✅ Kısmen Tamamlandı
+- ~~**#3**~~ ✅ MarketStore organization alanı
+- ~~**#9**~~ ✅ Mobil market ürün yönetimi
+- **#6** — Market desktop yönetim paneli (web — `rezzy-webpanel`) → **Oturum 4'e taşındı** (büyük task)
 
-### Oturum 4 — Diğerleri
+### Oturum 4 — Market Web Panel + Diğerleri
+- **#6** — Market desktop yönetim paneli (`rezzy-webpanel` — sipariş + ürün + stok)
 - **#12** — MyOrdersScreen'e market siparişleri ekle
+- **#15** — Market stok tükenince "Tükendi" badge
+- **#16** — Yolcu makbuz ekranı (yolculuk sonrası özet)
 - **#13** — Sürücü kayıt akışı (başvuru formu + admin onay)
 - **#14** — Aktif yolculukta Polyline rota çizgisi
-- **#16** — Yolcu makbuz ekranı (yolculuk sonrası özet)
 - **#17** — Admin panel market & taksi modülleri
-- **#15** — Market stok tükenince "Tükendi" badge
 
 ---
 
