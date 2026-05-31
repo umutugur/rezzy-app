@@ -1,6 +1,6 @@
 # Rezvix — Yapılacaklar Listesi (Backlog)
 **Son güncelleme:** 2026-06-01  
-**Durum:** Aktif — Oturum 3 kısmen tamamlandı
+**Durum:** Aktif — Oturum 3 + 4 tamamlandı
 
 ---
 
@@ -61,6 +61,17 @@ Tüm modüller için tek Review sistemi — gerçek müşteri doğrulamalı.
   - Geçmiş kartları: yolcu adı, ücret, mesafe, tarih, durum badge'i
   - Cursor tabanlı "Daha Fazla" yükleme
 - **Commits:** `e2ebe66` (backend), `2736385` (frontend)
+
+### ✅ #6 — Market Desktop Yönetim Paneli (Electron)
+- `src/api/marketDesktop.ts`: 6 API fonksiyonu (`marketGetOrders`, `marketUpdateOrderStatus`, `marketGetProducts`, `marketCreateProduct`, `marketUpdateProduct`, `marketDeleteProduct`)
+- `src/desktop/components/MarketSideNav.tsx`: Siparişler / Ürünler / Ayarlar navigasyonu
+- `src/desktop/layouts/MarketDesktopLayout.tsx`: Hafif layout (polling yok)
+- `src/desktop/pages/MarketOrdersPage.tsx`: 4 sekme, 30s polling, yeni sipariş ses + alert, durum akışı butonları
+- `src/desktop/pages/MarketProductsPage.tsx`: Tablo görünümü, arama, ±stok düğmeleri, ekleme/düzenleme modal'ı
+- `src/desktop/pages/MarketSettingsPage.tsx`: Placeholder
+- `App.tsx`: `market_owner` role redirect + 3 route kayıtlı (`/market-desktop/*`)
+- `store/auth.ts`: `market_owner` Role tipine eklendi
+- **Commit:** `ff363cb` (rezzy-backend)
 
 ### ✅ #3 — Market Organizasyon (Zincir Mağaza Yönetimi)
 - `MarketStore.js`: `organization: ObjectId → Organization` alanı eklendi (optional, indexed)
@@ -146,13 +157,12 @@ Tüm modüller için tek Review sistemi — gerçek müşteri doğrulamalı.
 
 ## Sıradaki Oturum Planı
 
-### Oturum 3 — ✅ Kısmen Tamamlandı
+### Oturum 3 — ✅ Tamamlandı
 - ~~**#3**~~ ✅ MarketStore organization alanı
 - ~~**#9**~~ ✅ Mobil market ürün yönetimi
-- **#6** — Market desktop yönetim paneli (web — `rezzy-webpanel`) → **Oturum 4'e taşındı** (büyük task)
+- ~~**#6**~~ ✅ Market Electron desktop paneli (sipariş + ürün)
 
-### Oturum 4 — Market Web Panel + Diğerleri
-- **#6** — Market desktop yönetim paneli (`rezzy-webpanel` — sipariş + ürün + stok)
+### Oturum 5 — Kalan Görevler
 - **#12** — MyOrdersScreen'e market siparişleri ekle
 - **#15** — Market stok tükenince "Tükendi" badge
 - **#16** — Yolcu makbuz ekranı (yolculuk sonrası özet)
