@@ -288,3 +288,47 @@ export async function getMarketCategories(): Promise<{ items: CoreCategory[]; to
   const res = await api.get("/market/categories");
   return res.data as { items: CoreCategory[]; total: number };
 }
+
+// ─── Market Panel — Ürün Yönetimi ────────────────────────────────────────────
+
+export interface PanelProduct {
+  _id: string;
+  title: string;
+  description?: string;
+  price: number;
+  unit: string;
+  stock: number;
+  photos: string[];
+  isActive: boolean;
+  barcode?: string | null;
+  store: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getPanelProducts(
+  page = 1,
+  limit = 40,
+): Promise<{ items: PanelProduct[]; total: number; page: number; limit: number }> {
+  const { data } = await api.get('/market/panel/products', { params: { page, limit } });
+  return data;
+}
+
+export async function createPanelProduct(
+  payload: Pick<PanelProduct, 'title' | 'price' | 'unit' | 'stock'> & Partial<Pick<PanelProduct, 'description' | 'barcode'>>,
+): Promise<PanelProduct> {
+  const { data } = await api.post('/market/panel/products', payload);
+  return data;
+}
+
+export async function updatePanelProduct(
+  id: string,
+  payload: Partial<Pick<PanelProduct, 'title' | 'price' | 'unit' | 'stock' | 'description' | 'isActive' | 'barcode'>>,
+): Promise<PanelProduct> {
+  const { data } = await api.patch(`/market/panel/products/${id}`, payload);
+  return data;
+}
+
+export async function deletePanelProduct(id: string): Promise<void> {
+  await api.delete(`/market/panel/products/${id}`);
+}
