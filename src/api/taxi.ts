@@ -55,8 +55,12 @@ export interface DriverEarnings {
   totalEarnings: number;
   totalRides: number;
   averageRating?: number;
+  ratingCount?: number;
   todayEarnings?: number;
   todayRides?: number;
+  todayRideCount?: number;
+  weekRideCount?: number;
+  weekEarnings?: number;
   weeklyEarnings?: number;
 }
 
