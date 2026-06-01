@@ -48,6 +48,7 @@ function normalize(data: any) {
     (dl as any)?.type ||
     (data?.action && lower(data.action).includes("reservation") ? "reservation" : "") ||
     (data?.action && lower(data.action).includes("restaurant") ? "restaurant" : "") ||
+    (data?.action && lower(data.action).includes("market") ? "market_order" : "") ||
     "";
 
   // id toplamaya çalış
@@ -64,24 +65,31 @@ function normalize(data: any) {
     (type === "restaurant" ? toStr(data?.id) : "") ||
     toStr((dl as any)?.id);
 
+  const orderId =
+    toStr(data?.orderId) ||
+    toStr(data?.order_id) ||
+    toStr(data?.marketOrderId) ||
+    "";
+
   // eğer id’lerden biri geldiyse type’ı ona göre zorla
   if (!type) {
     if (reservationId) type = "reservation";
     else if (restaurantId) type = "restaurant";
+    else if (orderId) type = "market_order";
   }
 
   // explicit hedef anahtarları
   const screen = toStr(data?.screen || data?.route);
   const tab = toStr(data?.tab);
 
-  return { type, reservationId, restaurantId, screen, tab };
+  return { type, reservationId, restaurantId, orderId, screen, tab };
 }
 
 export function navigateFromNotification(navRef: AnyNav, rawData: any) {
   // isReady varsa kontrol et
   if (typeof navRef?.isReady === "function" && !navRef.isReady()) return;
 
-  const { type, reservationId, restaurantId, screen, tab } = normalize(rawData);
+  const { type, reservationId, restaurantId, orderId, screen, tab } = normalize(rawData);
 
   const go = navRef as unknown as {
     navigate: (name: string, params?: any) => void;
@@ -100,12 +108,36 @@ export function navigateFromNotification(navRef: AnyNav, rawData: any) {
       go.navigate("Restoran", { id: restaurantId });
       return;
     }
+    // MarketOrderDetail
+    if (screen === "MarketOrderDetail" && orderId) {
+      go.navigate("MarketOrderDetail", { orderId });
+      return;
+    }
     // Genel bir screen adı verilmişse doğrudan dene
     go.navigate(screen);
     return;
   }
 
   // 2) Tip + id ile yönlendir
+
+  // Market siparişi
+  if (
+    type === "market_order" ||
+    type === "market_new_order" ||
+    type.startsWith("market_order_") ||
+    screen === "MarketOrderDetail"
+  ) {
+    const oid = orderId || toStr(rawData?.orderId);
+    if (oid) {
+      (go as any).navigate("MarketOrderDetail", { orderId: oid });
+    } else {
+      // orderId yoksa MyOrders tabına git
+      if (has(navRef, "Tabs")) go.navigate("Tabs", { screen: "Siparişlerim" });
+      else go.navigate("Siparişlerim");
+    }
+    return;
+  }
+
   if (type === "reservation" && reservationId) {
     go.navigate("Rezervasyon Detayı", { id: reservationId });
     return;
