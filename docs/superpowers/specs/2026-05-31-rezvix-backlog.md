@@ -1,6 +1,6 @@
 # Rezvix — Yapılacaklar Listesi (Backlog)
 **Son güncelleme:** 2026-06-01  
-**Durum:** Aktif — Oturum 3 + 4 tamamlandı
+**Durum:** Aktif — Oturum 5 tamamlandı (backlog büyük ölçüde kapatıldı)
 
 ---
 
@@ -61,6 +61,44 @@ Tüm modüller için tek Review sistemi — gerçek müşteri doğrulamalı.
   - Geçmiş kartları: yolcu adı, ücret, mesafe, tarih, durum badge'i
   - Cursor tabanlı "Daha Fazla" yükleme
 - **Commits:** `e2ebe66` (backend), `2736385` (frontend)
+
+### ✅ #15 — Market Stok Tükenince Badge
+- `MarketStoreScreen.tsx` `ProductRow`: `stock === 0` → %50 opacity + "Tükendi" overlay + sepet butonu devre dışı
+- **Commit:** `8fd27d5`
+
+### ✅ #16 — Taksi Yolcu Makbuz Ekranı
+- `TaxiReceiptScreen.tsx` oluşturuldu: ücret hero, mesafe/süre/ödeme kartı, kalkış→varış, yıldız puanlama
+- `taxiRoutes.ts` + `TaxiNavigator.tsx`: `TaxiReceipt` route eklendi
+- `TaxiMatchedScreen.tsx`: `completed` → `navigation.navigate('TaxiReceipt', {...})` (modal yerine)
+- **Commit:** `83aa573`
+
+### ✅ #14 — Aktif Yolculukta Polyline Rota
+- `TaxiMatchedScreen.tsx`: `Polyline` import + `dropoffCoords` hesaplama
+  - `matched`: sürücü → kalkış arası kesik çizgi (driver rengi)
+  - `inProgress`: kalkış → varış arası düz çizgi (taksi rengi)
+  - Varış noktasına kırmızı `MapPin` marker eklendi
+- **Commit:** `372b20b`
+
+### ✅ #13 — Sürücü Kayıt Akışı
+**Backend:**
+- `adminListDrivers`, `adminApproveDriver`, `adminRejectDriver`, `adminListTaxiRides`, `adminListMarketOrders` fonksiyonları
+- 5 yeni admin route: `GET/PATCH /api/admin/taxi/drivers`, `GET /api/admin/taxi/rides`, `GET /api/admin/market/orders`
+- **Commit:** `8a0fa3c`
+
+**Frontend:**
+- `api/taxi.ts`: `DriverRegistrationPayload`, `DriverRegistrationResult`, `registerDriver()` eklendi
+- `DriverRegistrationScreen.tsx`: araç tipi seçici, plaka/marka/model/renk/ehliyet formu, admin onay bilgisi
+- `RootNavigator.tsx`: `DriverRegistration` route kayıtlı
+- `ProfileScreen.tsx`: sürücü olmayan kullanıcılar için "Sürücü Ol" butonu
+- **Commit:** `3ea7894`
+
+### ✅ #17 — Admin Panel Market & Taksi Modülleri
+- `adminTaxiMarket.ts`: 5 API fonksiyonu
+- `AdminMarketOrders.tsx`: market siparişleri tablosu + durum filtresi + sayfalama
+- `AdminTaxiRides.tsx`: taksi yolculukları tablosu + durum filtresi + sayfalama
+- `AdminTaxiDrivers.tsx`: sürücü başvuruları + Onayla/Reddet butonları
+- `App.tsx`: 3 import + 3 route + 3 sidebar nav linki
+- **Commit:** `53cb1b8`
 
 ### ✅ #6 — Market Desktop Yönetim Paneli (Electron)
 - `src/api/marketDesktop.ts`: 6 API fonksiyonu (`marketGetOrders`, `marketUpdateOrderStatus`, `marketGetProducts`, `marketCreateProduct`, `marketUpdateProduct`, `marketDeleteProduct`)
@@ -162,13 +200,18 @@ Tüm modüller için tek Review sistemi — gerçek müşteri doğrulamalı.
 - ~~**#9**~~ ✅ Mobil market ürün yönetimi
 - ~~**#6**~~ ✅ Market Electron desktop paneli (sipariş + ürün)
 
-### Oturum 5 — Kalan Görevler
-- **#12** — MyOrdersScreen'e market siparişleri ekle
-- **#15** — Market stok tükenince "Tükendi" badge
-- **#16** — Yolcu makbuz ekranı (yolculuk sonrası özet)
-- **#13** — Sürücü kayıt akışı (başvuru formu + admin onay)
-- **#14** — Aktif yolculukta Polyline rota çizgisi
-- **#17** — Admin panel market & taksi modülleri
+### Oturum 5 — ✅ Tamamlandı
+- ~~**#12**~~ ✅ MyOrdersScreen zaten market siparişlerini gösteriyordu
+- ~~**#15**~~ ✅ Market stok badge
+- ~~**#16**~~ ✅ Yolcu makbuz ekranı
+- ~~**#14**~~ ✅ Polyline rota çizgisi
+- ~~**#13**~~ ✅ Sürücü kayıt akışı (mobil form + admin endpoint)
+- ~~**#17**~~ ✅ Admin panel market & taksi modülleri
+
+### Kalan Teknik Borçlar (Düşük Öncelik)
+- **#4** — Taksi WebSocket uçtan uca test (entegrasyon testi)
+- `rejectionReason` alanı `TaxiDriver` modeline eklenmeli (şu an `adminRejectDriver` kaydediyor ama model'de yok)
+- Market desktop panel "Ayarlar" sayfası (placeholder → gerçek içerik)
 
 ---
 
