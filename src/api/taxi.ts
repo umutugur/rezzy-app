@@ -186,3 +186,35 @@ export async function getDriverProfile(): Promise<any> {
   const { data } = await api.get('/taxi/driver/me');
   return data;
 }
+
+// ─── Driver registration ──────────────────────────────────────────────────────
+
+export interface DriverRegistrationPayload {
+  vehiclePlate: string;
+  vehicleBrand: string;
+  vehicleModel: string;
+  vehicleColor: string;
+  type: 'sedan' | 'van' | 'luxury' | 'pet';
+  licenseNumber?: string;
+}
+
+export interface DriverRegistrationResult {
+  message: string;
+  driver: {
+    _id: string;
+    isApproved: boolean;
+    vehiclePlate: string;
+    vehicleBrand: string;
+    vehicleModel: string;
+    vehicleColor: string;
+    type: string;
+  };
+}
+
+/** POST /api/taxi/driver/register */
+export async function registerDriver(
+  payload: DriverRegistrationPayload,
+): Promise<DriverRegistrationResult> {
+  const { data } = await api.post('/taxi/driver/register', payload);
+  return data;
+}

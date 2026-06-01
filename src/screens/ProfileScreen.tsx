@@ -1168,6 +1168,31 @@ export default function ProfileScreen() {
         </PremiumSection>
       )}
 
+      {!isDriver && (
+        <PremiumSection title="Sürücü">
+          <TouchableOpacity
+            onPress={() => (navigation as any).navigate('DriverRegistration')}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingHorizontal: 16,
+              paddingVertical: 14,
+              gap: 12,
+            }}
+          >
+            <Text style={{ fontSize: 20 }}>🚕</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={{ ...theme.typography.labelMd, color: theme.colors.textPrimary }}>
+                Sürücü Ol
+              </Text>
+              <Text style={{ ...theme.typography.caption, color: theme.colors.textSecondary }}>
+                Taksi sürücüsü olarak başvur
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </PremiumSection>
+      )}
+
       {/* Yasal & Destek */}
       <PremiumSection title={t("profile.section.legalSupport")}>
         <ListRow icon="file-document-outline"  label={t("profile.legal.terms")}         onPress={goTerms} />

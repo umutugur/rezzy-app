@@ -1,15 +1,24 @@
 // src/navigation/RootNavigator.tsx
 import React from "react";
-import { View, Text, Pressable, StyleSheet, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  Pressable,
+  ActivityIndicator,
+} from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator, type StackNavigationOptions } from "@react-navigation/stack";
 import {
   createBottomTabNavigator,
-  type BottomTabNavigationOptions,
+  type BottomTabBarProps,
 } from "@react-navigation/bottom-tabs";
-import { Ionicons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Constants from "expo-constants";
+
+// Lucide icons
+import { Bell } from "lucide-react-native";
+
+// Custom animated tab bar — Reanimated pill indicator + lucide icons
+import { AnimatedTabBar } from "../components/navigation/AnimatedTabBar";
 
 import RestaurantPanelNavigator from "../navigation/RestaurantPanelNavigator";
 import LoginScreen from "../screens/LoginScreen";
@@ -38,13 +47,19 @@ import QrMenuScreen from "../screens/QrMenuScreen";
 import QrScanScreen from "../screens/QrScanScreen";
 
 import DeliveryNavigator from "../navigation/DeliveryNavigator";
+// AJAN-7 tamamlandığında: MarketNavigator buraya
+import MarketNavigator from "../navigation/MarketNavigator";
+// AJAN-8 tamamlandığında: TaxiNavigator buraya
+import TaxiNavigator from "../navigation/TaxiNavigator";
+import DriverNavigator from "../navigation/DriverNavigator";
+import DriverRegistrationScreen from "../screens/driver/DriverRegistrationScreen";
 
 import { useAuth } from "../store/useAuth";
 import { useRegion } from "../store/useRegion";
 import { useNotifications } from "../store/useNotifications";
 import AppHeaderTitle from "../components/AppHeaderTitle";
 import AdminPanelNavigator from "./AdminPanelNavigator";
-import { useI18n } from "../i18n";
+import { useTheme } from "../theme";
 
 const DEV_QR = {
   restaurantId: "695d73f6e98967aaba07c694",
@@ -55,102 +70,12 @@ const RootStack = createStackNavigator();
 const Tabs = createBottomTabNavigator();
 const ExploreStack = createStackNavigator();
 
-/** Ortadaki floating QR buton */
-function QrTabButton({
-  onPress,
-  accessibilityState,
-}: {
-  onPress: () => void;
-  accessibilityState?: any;
-}) {
-  const focused = accessibilityState?.selected;
-  return (
-    <Pressable onPress={onPress} style={styles.qrBtnWrap} hitSlop={10}>
-      <View style={[styles.qrBtn, focused && styles.qrBtnFocused]}>
-        <Ionicons name="qr-code-outline" size={24} color="#fff" />
-      </View>
-      <Text style={styles.qrBtnLabel}>QR Menü</Text>
-    </Pressable>
-  );
-}
-
+// ─── EmptyScreen for QR tab slot ──────────────────────────────────────────────
 function EmptyScreen() {
   return null;
 }
 
-/** Tabs config */
-function useTabScreenOptions(headerBellPress: () => void) {
-  const insets = useSafeAreaInsets();
-  const bottomPad = Math.max(insets.bottom, 8);
-  const barHeight = 58 + bottomPad;
-
-  const { language } = useI18n();
-  const lang: "tr" | "en" | "ru" | "el" =
-    (["tr", "en", "ru", "el"].includes(language) ? language : "en") as any;
-
-  const labels = {
-    explore: { tr: "Keşfet", en: "Explore", ru: "Исследовать", el: "Εξερεύνηση" },
-    reservations: { tr: "Rezervasyonlarım", en: "My Reservations", ru: "Бронирования", el: "Κρατήσεις" },
-    orders: { tr: "Siparişlerim", en: "My Orders", ru: "Мои заказы", el: "Οι παραγγελίες μου" },
-    profile: { tr: "Profil", en: "Profile", ru: "Профиль", el: "Προφίλ" },
-    qr: { tr: "QR Menü", en: "QR Menu", ru: "QR Меню", el: "QR Μενού" },
-  };
-
-  return ({ route }: any): BottomTabNavigationOptions => {
-    let iconName: any = "ellipse-outline";
-    let label: string = route.name;
-
-    if (route.name === "Keşfet") {
-      iconName = "compass-outline";
-      label = labels.explore[lang];
-    } else if (route.name === "Rezervasyonlar") {
-      iconName = "calendar-outline";
-      label = labels.reservations[lang];
-    } else if (route.name === "Siparişlerim") {
-      iconName = "receipt-outline";
-      label = labels.orders[lang];
-    } else if (route.name === "Profil") {
-      iconName = "person-circle-outline";
-      label = labels.profile[lang];
-    } else if (route.name === "QR") {
-      label = labels.qr[lang];
-    }
-
-    return {
-      headerTitle: () => <AppHeaderTitle />,
-      headerTitleAlign: "center",
-      headerStyle: { backgroundColor: "#fff" },
-      headerLeftContainerStyle: { width: 44 },
-      headerRightContainerStyle: { width: 44 },
-
-      tabBarActiveTintColor: "#7B2C2C",
-      tabBarInactiveTintColor: "#888",
-      tabBarHideOnKeyboard: true,
-      tabBarStyle: {
-        height: barHeight,
-        paddingBottom: bottomPad,
-        paddingTop: 8,
-        borderTopWidth: 0.5,
-        backgroundColor: "#fff",
-      },
-
-      tabBarLabel: label,
-      tabBarIcon: ({ color, size }) =>
-        route.name === "QR" ? null : <Ionicons name={iconName} size={size} color={color} />,
-
-      headerRight: () => (
-        <Pressable onPress={headerBellPress} style={{ paddingRight: 6 }}>
-          <Ionicons name="notifications-outline" size={24} color="#111827" />
-        </Pressable>
-      ),
-    };
-  };
-}
-
-/**
- * ✅ Keşfet sekmesi için nested stack.
- * Tab bar kaybolmadan HomeLanding -> HomeScreen geçişi burada yapılacak.
- */
+// ─── Explore nested stack ─────────────────────────────────────────────────────
 function ExploreNavigator() {
   return (
     <ExploreStack.Navigator screenOptions={{ headerShown: false }}>
@@ -160,90 +85,121 @@ function ExploreNavigator() {
   );
 }
 
+// ─── Shared header right bell ─────────────────────────────────────────────────
+function HeaderBell({ onPress }: { onPress: () => void }) {
+  const { colors } = useTheme();
+  return (
+    <Pressable onPress={onPress} style={{ paddingRight: 6 }} hitSlop={6}>
+      <Bell color={colors.textPrimary} size={22} strokeWidth={1.8} />
+    </Pressable>
+  );
+}
+
+// ─── Tab bar factory — binds the QR press handler ─────────────────────────────
+function buildTabBar(onQrPress: () => void) {
+  return (props: BottomTabBarProps) => (
+    <AnimatedTabBar {...props} onQrPress={onQrPress} />
+  );
+}
+
+// ─── Authenticated tabs ───────────────────────────────────────────────────────
 function AppTabs({ navigation }: any) {
-  const opts = useTabScreenOptions(() => navigation.navigate("Bildirimler"));
+  const { colors } = useTheme();
+
+  const headerOptions = {
+    headerTitle: () => <AppHeaderTitle />,
+    headerTitleAlign: "center" as const,
+    headerStyle: { backgroundColor: colors.background },
+    headerLeftContainerStyle: { width: 44 },
+    headerRightContainerStyle: { width: 44 },
+    headerRight: () => (
+      <HeaderBell onPress={() => navigation.navigate("Bildirimler")} />
+    ),
+  };
+
+  const onQrPress = () => {
+    if (__DEV__ && !Constants.isDevice) {
+      navigation.navigate("QR Menü", {
+        restaurantId: DEV_QR.restaurantId,
+        tableId: DEV_QR.tableId,
+        sessionId: null,
+        reservationId: null,
+        _devBypass: true,
+      });
+      return;
+    }
+    navigation.navigate("QR Tara");
+  };
 
   return (
-    <Tabs.Navigator screenOptions={opts}>
-      <Tabs.Screen name="Keşfet" component={ExploreNavigator} />
-
-     <Tabs.Screen
-  name="QR"
-  component={EmptyScreen}
-  options={{
-    tabBarButton: (props) => (
-      <QrTabButton
-        {...props}
-        onPress={() => {
-          // DEV bypass sadece emulator/simulator'da çalışsın; fiziksel cihazda QR tarama açık kalsın
-          if (__DEV__ && !Constants.isDevice) {
-            navigation.navigate("QR Menü", {
-              restaurantId: DEV_QR.restaurantId,
-              tableId: DEV_QR.tableId,
-              sessionId: null,
-              reservationId: null,
-              _devBypass: true,
-            });
-            return;
-          }
-
-          navigation.navigate("QR Tara");
-        }}
-      />
-    ),
-  }}
-/>
+    <Tabs.Navigator
+      tabBar={buildTabBar(onQrPress)}
+      screenOptions={headerOptions}
+    >
+      <Tabs.Screen name="Keşfet" component={ExploreNavigator} options={{ headerShown: false }} />
       <Tabs.Screen name="Rezervasyonlar" component={BookingsScreen} />
+      <Tabs.Screen name="QR" component={EmptyScreen} />
       <Tabs.Screen name="Siparişlerim" component={MyOrdersScreen} />
       <Tabs.Screen name="Profil" component={ProfileScreen} />
     </Tabs.Navigator>
   );
 }
 
+// ─── Guest tabs ───────────────────────────────────────────────────────────────
 function GuestTabs({ navigation }: any) {
-  const opts = useTabScreenOptions(() => navigation.navigate("Giriş"));
+  const { colors } = useTheme();
+
+  const headerOptions = {
+    headerTitle: () => <AppHeaderTitle />,
+    headerTitleAlign: "center" as const,
+    headerStyle: { backgroundColor: colors.background },
+    headerLeftContainerStyle: { width: 44 },
+    headerRightContainerStyle: { width: 44 },
+    headerRight: () => (
+      <HeaderBell onPress={() => navigation.navigate("Giriş")} />
+    ),
+  };
+
+  const onQrPress = () => {
+    if (__DEV__ && !Constants.isDevice) {
+      navigation.navigate("QR Menü", {
+        restaurantId: DEV_QR.restaurantId,
+        tableId: DEV_QR.tableId,
+        sessionId: null,
+        reservationId: null,
+        _devBypass: true,
+      });
+      return;
+    }
+    navigation.navigate("QR Tara");
+  };
 
   return (
-    <Tabs.Navigator screenOptions={opts}>
-      <Tabs.Screen name="Keşfet" component={ExploreNavigator} />
-
-     <Tabs.Screen
-  name="QR"
-  component={EmptyScreen}
-  options={{
-    tabBarButton: (props) => (
-      <QrTabButton
-        {...props}
-        onPress={() => {
-          // DEV bypass sadece emulator/simulator'da çalışsın; fiziksel cihazda QR tarama açık kalsın
-          if (__DEV__ && !Constants.isDevice) {
-            navigation.navigate("QR Menü", {
-              restaurantId: DEV_QR.restaurantId,
-              tableId: DEV_QR.tableId,
-              sessionId: null,
-              reservationId: null,
-              _devBypass: true,
-            });
-            return;
-          }
-
-          navigation.navigate("QR Tara");
-        }}
-      />
-    ),
-  }}
-/>
+    <Tabs.Navigator
+      tabBar={buildTabBar(onQrPress)}
+      screenOptions={headerOptions}
+    >
+      <Tabs.Screen name="Keşfet" component={ExploreNavigator} options={{ headerShown: false }} />
       <Tabs.Screen name="Rezervasyonlar" component={BookingsScreen} />
-      <Tabs.Screen name="Siparişlerim" component={LoginScreen} options={{ headerShown: false }} />
-      <Tabs.Screen name="Profil" component={LoginScreen} options={{ headerShown: false }} />
+      <Tabs.Screen name="QR" component={EmptyScreen} />
+      <Tabs.Screen
+        name="Siparişlerim"
+        component={LoginScreen}
+        options={{ headerShown: false }}
+      />
+      <Tabs.Screen
+        name="Profil"
+        component={LoginScreen}
+        options={{ headerShown: false }}
+      />
     </Tabs.Navigator>
   );
 }
 
+// ─── Root navigator ───────────────────────────────────────────────────────────
 export default function RootNavigator() {
   const token = useAuth((s) => s.token);
   const authHydrated = useAuth((s) => s.hydrated);
-
   const regionHydrated = useRegion((s) => s.hydrated);
   const regionResolved = useRegion((s) => s.resolved);
 
@@ -256,20 +212,35 @@ export default function RootNavigator() {
     fetchUnreadCount().catch(() => {});
   }, [token, fetchUnreadCount]);
 
+  const { colors } = useTheme();
+
   const stackOptions: StackNavigationOptions = {
     headerShown: true,
     headerTitle: () => <AppHeaderTitle />,
     headerTitleAlign: "center",
-    headerStyle: { backgroundColor: "#fff" },
+    headerStyle: { backgroundColor: colors.background },
     headerLeftContainerStyle: { width: 44 },
     headerRightContainerStyle: { width: 44 },
   };
 
   if (!authHydrated || !regionHydrated || !regionResolved) {
     return (
-      <View style={{ flex: 1, backgroundColor: "#fff", alignItems: "center", justifyContent: "center" }}>
-        <ActivityIndicator />
-        <Text style={{ marginTop: 10, color: "#6B7280", fontWeight: "600" }}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: colors.background,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <ActivityIndicator color={colors.primary} />
+        <Text
+          style={{
+            marginTop: 10,
+            color: colors.textSecondary,
+            fontWeight: "600",
+          }}
+        >
           Yükleniyor…
         </Text>
       </View>
@@ -281,8 +252,11 @@ export default function RootNavigator() {
       <RootStack.Navigator screenOptions={stackOptions}>
         {token ? (
           <>
-            <RootStack.Screen name="Tabs" component={AppTabs} options={{ headerShown: false }} />
-            {/* KeşfetListe artık ExploreNavigator içinde, burada tekrar tanımlama YOK */}
+            <RootStack.Screen
+              name="Tabs"
+              component={AppTabs}
+              options={{ headerShown: false }}
+            />
             <RootStack.Screen name="Bildirimler" component={NotificationsScreen} />
             <RootStack.Screen name="Restoran" component={RestaurantDetailScreen} />
             <RootStack.Screen name="Harita" component={RestaurantMapScreen} />
@@ -290,12 +264,18 @@ export default function RootNavigator() {
             <RootStack.Screen name="Rezervasyon - Menü" component={ReservationStep2Screen} />
             <RootStack.Screen name="Rezervasyon - Özet" component={ReservationStep3Screen} />
             <RootStack.Screen name="Rezervasyon Detayı" component={ReservationDetailScreen} />
-
             <RootStack.Screen name="QR Menü" component={QrMenuScreen} />
             <RootStack.Screen name="QR Tara" component={QrScanScreen} />
-
-            <RootStack.Screen name="RestaurantPanel" component={RestaurantPanelNavigator} options={{ headerShown: false }} />
-            <RootStack.Screen name="AdminPanel" component={AdminPanelNavigator} options={{ headerShown: false }} />
+            <RootStack.Screen
+              name="RestaurantPanel"
+              component={RestaurantPanelNavigator}
+              options={{ headerShown: false }}
+            />
+            <RootStack.Screen
+              name="AdminPanel"
+              component={AdminPanelNavigator}
+              options={{ headerShown: false }}
+            />
             <RootStack.Screen name="Terms" component={TermsScreen} />
             <RootStack.Screen name="Privacy" component={PrivacyPolicyScreen} />
             <RootStack.Screen name="Help" component={HelpSupportScreen} />
@@ -305,25 +285,50 @@ export default function RootNavigator() {
             <RootStack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
             <RootStack.Screen name="Asistan" component={AssistantScreen} />
             <RootStack.Screen
-  name="Delivery"
-  component={DeliveryNavigator}
-  options={{ headerShown: false }}
-/>
+              name="Delivery"
+              component={DeliveryNavigator}
+              options={{ headerShown: false }}
+            />
+            <RootStack.Screen
+              name="Market"
+              component={MarketNavigator}
+              options={{ headerShown: false }}
+            />
+            <RootStack.Screen
+              name="Taxi"
+              component={TaxiNavigator}
+              options={{ headerShown: false }}
+            />
+            <RootStack.Screen
+              name="Driver"
+              component={DriverNavigator}
+              options={{ headerShown: false }}
+            />
+            <RootStack.Screen
+              name="DriverRegistration"
+              component={DriverRegistrationScreen}
+              options={{ title: 'Sürücü Başvurusu', headerShown: true }}
+            />
           </>
         ) : (
           <>
-            <RootStack.Screen name="TabsGuest" component={GuestTabs} options={{ headerShown: false }} />
-            {/* KeşfetListe artık ExploreNavigator içinde, burada tekrar tanımlama YOK */}
-            <RootStack.Screen name="Giriş" component={LoginScreen} options={{ headerShown: false }} />
+            <RootStack.Screen
+              name="TabsGuest"
+              component={GuestTabs}
+              options={{ headerShown: false }}
+            />
+            <RootStack.Screen
+              name="Giriş"
+              component={LoginScreen}
+              options={{ headerShown: false }}
+            />
             <RootStack.Screen name="Restoran" component={RestaurantDetailScreen} />
             <RootStack.Screen name="Harita" component={RestaurantMapScreen} />
             <RootStack.Screen name="Rezervasyon - Tarih" component={ReservationStep1Screen} />
             <RootStack.Screen name="Rezervasyon - Menü" component={ReservationStep2Screen} />
             <RootStack.Screen name="Rezervasyon - Özet" component={ReservationStep3Screen} />
-
             <RootStack.Screen name="QR Menü" component={QrMenuScreen} />
             <RootStack.Screen name="QR Tara" component={QrScanScreen} />
-
             <RootStack.Screen name="Terms" component={TermsScreen} />
             <RootStack.Screen name="Privacy" component={PrivacyPolicyScreen} />
             <RootStack.Screen name="Help" component={HelpSupportScreen} />
@@ -332,46 +337,18 @@ export default function RootNavigator() {
             <RootStack.Screen name="Licenses" component={LicensesScreen} />
             <RootStack.Screen name="Asistan" component={AssistantScreen} />
             <RootStack.Screen
-  name="Delivery"
-  component={DeliveryNavigator}
-  options={{ headerShown: false }}
-/>
+              name="Delivery"
+              component={DeliveryNavigator}
+              options={{ headerShown: false }}
+            />
+            <RootStack.Screen
+              name="Market"
+              component={MarketNavigator}
+              options={{ headerShown: false }}
+            />
           </>
         )}
       </RootStack.Navigator>
     </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  qrBtnWrap: {
-    alignItems: "center",
-    justifyContent: "center",
-    width: 84,
-    top: -18,
-  },
-  qrBtn: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: "#7B2C2C",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    elevation: 8,
-    borderWidth: 3,
-    borderColor: "#fff",
-  },
-  qrBtnFocused: {
-    backgroundColor: "#6B2525",
-  },
-  qrBtnLabel: {
-    marginTop: 4,
-    fontSize: 11,
-    fontWeight: "800",
-    color: "#7B2C2C",
-  },
-});
