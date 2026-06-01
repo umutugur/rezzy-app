@@ -10,7 +10,7 @@ import {
   Alert,
   TouchableOpacity,
 } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -222,6 +222,13 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
       }
     : null;
 
+  const dropoffCoords = ride
+    ? {
+        latitude: ride.dropoff.coordinates[1],
+        longitude: ride.dropoff.coordinates[0],
+      }
+    : null;
+
   const mapRegion =
     driverLoc
       ? { latitude: driverLoc.lat, longitude: driverLoc.lng, latitudeDelta: 0.03, longitudeDelta: 0.03 }
@@ -258,6 +265,37 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
               <MapPin size={16} color="#fff" strokeWidth={2.5} />
             </View>
           </Marker>
+        )}
+
+        {/* Varış noktası marker */}
+        {dropoffCoords && (
+          <Marker coordinate={dropoffCoords} anchor={{ x: 0.5, y: 1 }}>
+            <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: theme.colors.error, alignItems: 'center', justifyContent: 'center' }}>
+              <MapPin size={14} color="#fff" strokeWidth={2.5} />
+            </View>
+          </Marker>
+        )}
+
+        {/* Sürücü → Kalkış çizgisi (matched durumunda) */}
+        {driverLoc && pickupCoords && ride?.status === 'matched' && (
+          <Polyline
+            coordinates={[
+              { latitude: driverLoc.lat, longitude: driverLoc.lng },
+              pickupCoords,
+            ]}
+            strokeColor={theme.driver.main}
+            strokeWidth={3}
+            lineDashPattern={[8, 4]}
+          />
+        )}
+
+        {/* Kalkış → Varış çizgisi (inProgress durumunda) */}
+        {pickupCoords && dropoffCoords && ride?.status === 'inProgress' && (
+          <Polyline
+            coordinates={[pickupCoords, dropoffCoords]}
+            strokeColor={theme.taxi.main}
+            strokeWidth={3}
+          />
         )}
       </MapView>
 
