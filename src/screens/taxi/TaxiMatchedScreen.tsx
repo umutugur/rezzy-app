@@ -99,7 +99,26 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } else if (payload.status === 'completed') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setRatingOpen(true);
+        // Navigate to receipt screen — pass ride data via params
+        setRide((prev) => {
+          const r = prev ?? ride;
+          if (r) {
+            const driverId = typeof r.driver === 'object' && r.driver !== null
+              ? (r.driver as any).user?._id ?? (r.driver as any)._id ?? ''
+              : String(r.driver ?? '');
+            navigation.navigate('TaxiReceipt' as any, {
+              rideId: r._id,
+              fare: r.fare,
+              distanceKm: r.distanceKm,
+              durationMin: r.durationMin,
+              pickupAddress: r.pickup?.address ?? '',
+              dropoffAddress: r.dropoff?.address ?? '',
+              paymentMethod: r.paymentMethod ?? 'cash',
+              driverId,
+            });
+          }
+          return prev;
+        });
       }
       setRide((prev) => (prev ? { ...prev, status: payload.status } : prev));
     };
@@ -324,7 +343,7 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
         </Button>
       </View>
 
-      {ratingOpen && (
+      {false && ratingOpen && (
         <View
           style={{
             position: 'absolute',
