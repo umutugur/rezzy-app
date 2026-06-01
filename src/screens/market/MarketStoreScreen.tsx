@@ -41,6 +41,7 @@ function ProductRow({
 }) {
   const theme = useTheme();
   const photoUri = product.photos[0] ?? null;
+  const outOfStock = product.stock === 0;
 
   return (
     <View
@@ -52,6 +53,7 @@ function ProductRow({
           paddingVertical: theme.space[3],
           paddingHorizontal: theme.space[4],
           gap: theme.space[3],
+          opacity: outOfStock ? 0.5 : 1,
         },
       ]}
     >
@@ -69,6 +71,21 @@ function ProductRow({
           <Image source={{ uri: photoUri }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
         ) : (
           <Ionicons name="cube-outline" size={24} color={theme.market.main} />
+        )}
+        {outOfStock && (
+          <View
+            style={{
+              ...StyleSheet.absoluteFillObject,
+              backgroundColor: 'rgba(0,0,0,0.55)',
+              borderRadius: theme.radius.md,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text style={{ color: '#fff', fontSize: 9, fontWeight: '700', textAlign: 'center' }}>
+              Tükendi
+            </Text>
+          </View>
         )}
       </View>
 
@@ -122,16 +139,17 @@ function ProductRow({
         ) : null}
         <Pressable
           onPress={onAdd}
+          disabled={outOfStock}
           style={[
             styles.qtyBtn,
             {
-              backgroundColor: theme.market.main,
+              backgroundColor: outOfStock ? theme.colors.surfaceAlt : theme.market.main,
               borderRadius: theme.radius.sm,
-              borderColor: theme.market.main,
+              borderColor: outOfStock ? theme.colors.borderDefault : theme.market.main,
             },
           ]}
         >
-          <Ionicons name="add" size={16} color={theme.colors.textInverse} />
+          <Ionicons name="add" size={16} color={outOfStock ? theme.colors.textTertiary : theme.colors.textInverse} />
         </Pressable>
       </View>
     </View>
