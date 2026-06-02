@@ -2,8 +2,13 @@
 import api from "./client";
 import type { DeliveryRestaurant, DeliveryResolvedMenu } from "../delivery/deliveryTypes";
 
-export async function listDeliveryRestaurants(args: { addressId: string }) {
-  const res = await api.get("/delivery/restaurants", { params: { addressId: args.addressId } });
+export async function listDeliveryRestaurants(
+  args: { addressId: string } | { lat: number; lng: number }
+) {
+  const params = "addressId" in args
+    ? { addressId: args.addressId }
+    : { lat: args.lat, lng: args.lng };
+  const res = await api.get("/delivery/restaurants", { params });
 
   console.log("[delivery/restaurants] raw:", JSON.stringify(res.data, null, 2)); // ✅ ekle
 
