@@ -372,18 +372,20 @@ export default function MarketCartScreen() {
         }
 
         // Ödeme başarılı
-        clearCart();
         Alert.alert(
           "Ödeme alındı",
           "Siparişiniz onaylandı. Market hazırlığa başlıyor.",
-          [{ text: "Tamam", onPress: () => navigation.navigate(MarketRoutes.OrderDetail, { orderId: order._id }) }],
+          [{ text: "Tamam", onPress: () => {
+            navigation.replace(MarketRoutes.OrderDetail, { orderId: order._id });
+            clearCart();
+          }}],
         );
         return;
       }
 
       // ─── Nakit / Kart (kapıda) ───────────────────────────────────────────
+      navigation.replace(MarketRoutes.OrderDetail, { orderId: order._id });
       clearCart();
-      navigation.navigate(MarketRoutes.OrderDetail, { orderId: order._id });
     } catch (err: any) {
       const msg =
         err?.response?.data?.message ?? "Sipariş oluşturulamadı. Tekrar dene.";
