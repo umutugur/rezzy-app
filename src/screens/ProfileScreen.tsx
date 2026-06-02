@@ -864,7 +864,7 @@ export default function ProfileScreen() {
           ] as const).map(({ Icon, labelKey, onPress }) => (
             <TouchableOpacity key={labelKey} style={ps.quickTile} onPress={onPress} activeOpacity={0.7}>
               <Icon size={22} color={BRAND} strokeWidth={2} />
-              <Text style={ps.quickLabel}>{t(labelKey)}</Text>
+              <Text style={[ps.quickLabel, { color: theme.colors.textPrimary }]}>{t(labelKey)}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -890,9 +890,9 @@ export default function ProfileScreen() {
 
       {/* ── SON REZERVASYONLAR (preview) ─────────────────────────────── */}
       {user?.role === "customer" && resv.length > 0 && (
-        <View style={ps.recentSection}>
+        <View style={[ps.recentSection, { backgroundColor: theme.colors.surface }]}>
           <View style={ps.recentHeader}>
-            <Text style={ps.recentTitle}>{t("profile.section.recentReservations")}</Text>
+            <Text style={[ps.recentTitle, { color: theme.colors.textPrimary }]}>{t("profile.section.recentReservations")}</Text>
             <TouchableOpacity onPress={() => navigation.navigate("Rezervasyonlar")} activeOpacity={0.7}>
               <Text style={ps.recentSeeAll}>{t("profile.reservations.seeAll")}</Text>
             </TouchableOpacity>
@@ -902,7 +902,7 @@ export default function ProfileScreen() {
             return (
               <View key={String(it._id)} style={ps.recentRow}>
                 <View style={{ flex: 1 }}>
-                  <Text style={ps.recentRowName} numberOfLines={1}>
+                  <Text style={[ps.recentRowName, { color: theme.colors.textPrimary }]} numberOfLines={1}>
                     {String(it?.restaurantId?.name || t("profile.reservations.fallbackRestaurant"))}
                   </Text>
                   <Text style={ps.recentRowSub}>
@@ -928,7 +928,7 @@ export default function ProfileScreen() {
           onLayout={(e) => { favsSectionY.current = e.nativeEvent.layout.y; }}
         >
           <View style={[ps.recentHeader, { paddingHorizontal: 16 }]}>
-            <Text style={ps.recentTitle}>{t("profile.section.favorites")}</Text>
+            <Text style={[ps.recentTitle, { color: theme.colors.textPrimary }]}>{t("profile.section.favorites")}</Text>
             {favs.length > 0 && (
               <Text style={ps.recentSub}>{favs.length}</Text>
             )}
@@ -942,7 +942,7 @@ export default function ProfileScreen() {
               {favs.map((it) => <FavCard key={it._id} it={it} />)}
             </ScrollView>
           ) : (
-            <Text style={ps.emptyText}>{t("profile.favorites.empty")}</Text>
+            <Text style={[ps.emptyText, { color: theme.colors.textSecondary }]}>{t("profile.favorites.empty")}</Text>
           )}
         </View>
       )}
@@ -1196,7 +1196,7 @@ export default function ProfileScreen() {
               gap: 12,
               paddingHorizontal: 16,
               paddingVertical: 14,
-              backgroundColor: "#FFFFFF",
+              backgroundColor: theme.colors.surface,
             }}
           >
             <View style={{
@@ -1827,6 +1827,7 @@ const ps = StyleSheet.create({
 
 // ─── Section wrapper ──────────────────────────────────────────────────────────
 function PremiumSection({ title, children }: { title: string; children: React.ReactNode }) {
+  const theme = useTheme();
   return (
     <View style={{ marginTop: 22, marginHorizontal: 16 }}>
       {/* Label */}
@@ -1841,7 +1842,7 @@ function PremiumSection({ title, children }: { title: string; children: React.Re
       </View>
       {/* Card */}
       <View style={{
-        backgroundColor: "#FFFFFF", borderRadius: 16, overflow: "hidden",
+        backgroundColor: theme.colors.surface, borderRadius: 16, overflow: "hidden",
         shadowColor: "#8B1A1A", shadowOpacity: 0.08, shadowRadius: 12,
         shadowOffset: { width: 0, height: 3 }, elevation: 3,
       }}>
@@ -1863,31 +1864,32 @@ function FieldRow({
   secureTextEntry?: boolean; showToggle?: boolean; onToggleShow?: () => void;
   isLast?: boolean;
 }) {
+  const theme = useTheme();
   const [focused, setFocused] = useState(false);
   return (
     <View style={[
       { paddingHorizontal: 16, paddingTop: 11, paddingBottom: 10 },
-      !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#F0F0F0" },
-      focused && { backgroundColor: "#FFFBF9" },
+      !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.borderDefault },
+      focused && { backgroundColor: theme.colors.surfaceAlt },
     ]}>
-      <Text style={{ fontSize: 10, fontWeight: "700", color: focused ? "#8B1A1A" : "#9CA3AF", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 4 }}>
+      <Text style={{ fontSize: 10, fontWeight: "700", color: focused ? "#8B1A1A" : theme.colors.textSecondary, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 4 }}>
         {label}
       </Text>
       <View style={{ flexDirection: "row", alignItems: "center" }}>
         <TextInput
           value={value}
           onChangeText={onChangeText}
-          style={{ flex: 1, fontSize: 15, fontWeight: "600", color: "#111827", padding: 0, margin: 0 }}
+          style={{ flex: 1, fontSize: 15, fontWeight: "600", color: theme.colors.textPrimary, padding: 0, margin: 0 }}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize || "none"}
           secureTextEntry={secureTextEntry}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          placeholderTextColor="#C4C4C4"
+          placeholderTextColor={theme.colors.textTertiary}
         />
         {showToggle && (
           <TouchableOpacity onPress={onToggleShow} style={{ padding: 4 }}>
-            <Ionicons name={secureTextEntry ? "eye-off-outline" : "eye-outline"} size={19} color="#9CA3AF" />
+            <Ionicons name={secureTextEntry ? "eye-off-outline" : "eye-outline"} size={19} color={theme.colors.textSecondary} />
           </TouchableOpacity>
         )}
       </View>
@@ -1907,26 +1909,27 @@ function PremiumToggleRow({
   label: string; value: boolean; onChange: () => void;
   disabled?: boolean; isLast?: boolean;
 }) {
+  const theme = useTheme();
   return (
     <TouchableOpacity
       onPress={disabled ? undefined : onChange}
       activeOpacity={disabled ? 1 : 0.7}
       style={[
         { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 13, gap: 12 },
-        !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#F0F0F0" },
+        !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.borderDefault },
         disabled && { opacity: 0.4 },
       ]}
     >
       <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: iconBg, alignItems: "center", justifyContent: "center" }}>
         <MaterialCommunityIcons name={iconName} size={17} color={iconColor} />
       </View>
-      <Text style={{ flex: 1, fontSize: 14, fontWeight: "600", color: "#111827" }}>{label}</Text>
+      <Text style={{ flex: 1, fontSize: 14, fontWeight: "600", color: theme.colors.textPrimary }}>{label}</Text>
       <View style={{
         width: 46, height: 27, borderRadius: 14,
-        backgroundColor: value ? "#8B1A1A" : "#E5E7EB",
+        backgroundColor: value ? "#8B1A1A" : theme.colors.borderStrong,
         padding: 3, alignItems: value ? "flex-end" : "flex-start", justifyContent: "center",
       }}>
-        <View style={{ width: 21, height: 21, borderRadius: 11, backgroundColor: "#FFFFFF",
+        <View style={{ width: 21, height: 21, borderRadius: 11, backgroundColor: theme.colors.surface,
           shadowColor: "#000", shadowOpacity: 0.15, shadowRadius: 2, shadowOffset: { width: 0, height: 1 } }} />
       </View>
     </TouchableOpacity>
@@ -2092,23 +2095,24 @@ function ListRow({
   icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"];
   label: string; destructive?: boolean; onPress: () => void; isLast?: boolean;
 }) {
-  const accent = ROW_ACCENT[icon as string] ?? { bg: "#F3F4F6", color: "#6B7280" };
+  const theme = useTheme();
+  const accent = ROW_ACCENT[icon as string] ?? { bg: theme.colors.surfaceAlt, color: theme.colors.textTertiary };
   return (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.7}
       style={[
-        { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 13, gap: 13, backgroundColor: "#FFFFFF" },
-        !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#F0F0F0" },
+        { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 13, gap: 13, backgroundColor: theme.colors.surface },
+        !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.borderDefault },
       ]}
     >
       <View style={{ width: 34, height: 34, borderRadius: 9, backgroundColor: destructive ? "#FEF2F2" : accent.bg, alignItems: "center", justifyContent: "center" }}>
         <MaterialCommunityIcons name={icon} size={18} color={destructive ? "#DC2626" : accent.color} />
       </View>
-      <Text style={{ flex: 1, fontSize: 14, fontWeight: "600", color: destructive ? "#DC2626" : "#111827" }}>
+      <Text style={{ flex: 1, fontSize: 14, fontWeight: "600", color: destructive ? "#DC2626" : theme.colors.textPrimary }}>
         {label}
       </Text>
-      <Ionicons name="chevron-forward" size={16} color={destructive ? "#FCA5A5" : "#D1D5DB"} />
+      <Ionicons name="chevron-forward" size={16} color={destructive ? "#FCA5A5" : theme.colors.borderStrong} />
     </TouchableOpacity>
   );
 }
