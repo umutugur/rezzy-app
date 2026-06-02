@@ -385,11 +385,11 @@ const scrollToBanner = React.useCallback((index: number, animated = true) => {
       <View
         style={{
           paddingHorizontal: 16,
-          paddingTop: 12,
+          paddingTop: insets.top + 8,
           paddingBottom: 8,
           flexDirection: "row",
           alignItems: "center",
-          justifyContent: "space-between",
+          justifyContent: "center",
           borderBottomWidth: 1,
           borderBottomColor: theme.colors.borderDefault,
           backgroundColor: theme.colors.background,
@@ -481,7 +481,7 @@ const scrollToBanner = React.useCallback((index: number, animated = true) => {
         )}
 
         {/* ── Servisler Grid ──────────────────────────────────────── */}
-        <View style={{ marginHorizontal: theme.space[4], marginTop: 16 }}>
+        <View style={{ marginHorizontal: theme.space[4], marginTop: 10 }}>
 
           {/* Satır 1 */}
           <View style={styles.serviceRow}>
@@ -562,7 +562,7 @@ const scrollToBanner = React.useCallback((index: number, animated = true) => {
           {/* Satır 3 — tam genişlik Taksi */}
           <Animated.View style={[cardStyle(4), { marginTop: 10 }]}>
             {/* Wrapper: üste 28px boşluk bırak — araba oraya taşsın */}
-            <View style={{ position: "relative", marginTop: 28, marginBottom: 0 }}>
+            <View style={{ position: "relative", marginTop: 22, marginBottom: 0 }}>
               <AnimCard
                 style={[styles.serviceCardWide, styles.cardShadow, { backgroundColor: "#FFFCF0", borderColor: theme.colors.borderDefault }]}
                 onPress={() => nav.navigate("Taxi")}
@@ -656,7 +656,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: "hidden",
   },
-  bannerImg: { width: "100%", height: 210 },
+  bannerImg: { width: "100%", height: 160 },
   bannerDotsRow: {
     marginTop: 10,
     paddingHorizontal: 16,
@@ -684,14 +684,14 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 18,
     borderWidth: 1,
-    height: 172,
+    height: 148,
     overflow: "hidden",
     flexDirection: "column",
   },
   serviceCardWide: {
     borderRadius: 18,
     borderWidth: 1,
-    height: 112,
+    height: 90,
     overflow: "hidden",
     flexDirection: "row",
     alignItems: "stretch",
@@ -769,9 +769,9 @@ const styles = StyleSheet.create({
   taxiOverflowImg: {
     position: "absolute",
     right: -8,
-    top: -28,
-    height: 140,   // kart yüksekliği (112) + 28 üst taşma
-    width: 270,
+    top: -22,
+    height: 112,   // kart yüksekliği (90) + 22 üst taşma
+    width: 240,
   },
 
   // ── Bölüm başlığı ────────────────────────────────────────
