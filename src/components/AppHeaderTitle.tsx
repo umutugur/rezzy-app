@@ -1,7 +1,9 @@
 import React from "react";
 import { View, Image, Text, Platform } from "react-native";
+import { useTheme } from "../contexts/ThemeContext";
 
 export default function AppHeaderTitle() {
+  const theme = useTheme();
   const logoSize = Platform.select({ ios: 40, android: 38, default: 38 });
 
   return (
@@ -15,7 +17,7 @@ export default function AppHeaderTitle() {
         style={{
           fontSize: 28,
           fontWeight: "800",
-          color: "#7B2C2C",
+          color: theme.colors.primary,
           letterSpacing: 0.5,
         }}
       >
