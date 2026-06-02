@@ -12,7 +12,7 @@ import {
 import MapView, { Marker, UrlTile } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
-import { MapPin, Car, Users, Crown, PawPrint, ChevronLeft } from 'lucide-react-native';
+import { MapPin, Car, Users, Crown, PawPrint, ChevronLeft, History } from 'lucide-react-native';
 
 import { useTheme } from '../../contexts/ThemeContext';
 import { useTaxiStore } from '../../store/useTaxiStore';
@@ -170,6 +170,13 @@ export default function TaxiHomeScreen({ navigation, route }: any) {
           <ChevronLeft size={20} color="#111" strokeWidth={2.5} />
         </TouchableOpacity>
         <Text style={s.topTitle}>Rezvix Taksi</Text>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('TaxiHistory')}
+          hitSlop={12}
+          style={s.historyBubble}
+        >
+          <History size={18} color={theme.taxi.main} strokeWidth={2} />
+        </TouchableOpacity>
       </View>
 
       {/* Bottom sheet — fixed 40% */}
@@ -228,9 +235,17 @@ function styles(theme: ReturnType<typeof useTheme>, insets: ReturnType<typeof us
       backgroundColor: 'transparent',
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 10,
+      justifyContent: 'space-between',
     },
     backBubble: {
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      backgroundColor: 'rgba(255,255,255,0.92)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    historyBubble: {
       width: 34,
       height: 34,
       borderRadius: 17,
