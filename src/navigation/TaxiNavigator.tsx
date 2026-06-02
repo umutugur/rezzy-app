@@ -8,6 +8,8 @@ import TaxiHomeScreen from '../screens/taxi/TaxiHomeScreen';
 import TaxiDestinationScreen from '../screens/taxi/TaxiDestinationScreen';
 import TaxiMatchedScreen from '../screens/taxi/TaxiMatchedScreen';
 import TaxiReceiptScreen from '../screens/taxi/TaxiReceiptScreen';
+import TaxiHistoryScreen from '../screens/taxi/TaxiHistoryScreen';
+import TaxiRideDetailScreen from '../screens/taxi/TaxiRideDetailScreen';
 import { useTheme } from '../theme';
 
 export type TaxiStackParams = {
@@ -24,6 +26,8 @@ export type TaxiStackParams = {
     paymentMethod: string;
     driverId: string;
   };
+  TaxiHistory: undefined;
+  TaxiRideDetail: { rideId: string };
 };
 
 const Stack = createStackNavigator<TaxiStackParams>();
@@ -66,6 +70,16 @@ export default function TaxiNavigator() {
         name="TaxiReceipt"
         component={TaxiReceiptScreen}
         options={{ headerShown: false, gestureEnabled: false }}
+      />
+      <Stack.Screen
+        name="TaxiHistory"
+        component={TaxiHistoryScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="TaxiRideDetail"
+        component={TaxiRideDetailScreen}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );
