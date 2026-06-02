@@ -398,7 +398,7 @@ const scrollToBanner = React.useCallback((index: number, animated = true) => {
         <AppHeaderTitle />
       </View>
       <ScrollView
-        contentContainerStyle={[{ paddingBottom: 120, flexGrow: 1 }, { paddingBottom: 24 + insets.bottom + 90 }]}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 + insets.bottom + 90 }}
         showsVerticalScrollIndicator={false}
       >
         {bannerLoading ? (
@@ -626,7 +626,7 @@ const scrollToBanner = React.useCallback((index: number, animated = true) => {
             }}>
               <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>{t("homeLanding.featuredTitle")}</Text>
               <Pressable onPress={() => openExplore({})}>
-                <Text style={{ fontSize: 13, fontWeight: "700", color: "#8C244A" }}>{t("homeLanding.seeAll")}</Text>
+                <Text style={{ fontSize: 13, fontWeight: "700", color: theme.colors.primary }}>{t("homeLanding.seeAll")}</Text>
               </Pressable>
             </View>
             <FlatList
