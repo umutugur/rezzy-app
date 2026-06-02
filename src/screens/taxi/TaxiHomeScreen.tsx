@@ -7,10 +7,9 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Platform,
   Pressable,
 } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, UrlTile } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import { MapPin, Car, Users, Crown, PawPrint, ChevronLeft } from 'lucide-react-native';
@@ -131,11 +130,16 @@ export default function TaxiHomeScreen({ navigation, route }: any) {
       <MapView
         ref={mapRef}
         style={StyleSheet.absoluteFill}
-        provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
         initialRegion={userRegion}
         showsUserLocation
         showsMyLocationButton={false}
       >
+        <UrlTile
+          urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+          maximumZ={19}
+          flipY={false}
+          tileSize={256}
+        />
         {/* Nearby drivers — statik view kullanılıyor (Reanimated hooks StaticContainer içinde çalışmaz) */}
         {nearbyDrivers.map((d) => (
           <Marker

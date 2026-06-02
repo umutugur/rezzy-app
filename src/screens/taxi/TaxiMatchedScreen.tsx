@@ -6,11 +6,10 @@ import {
   View,
   Text,
   StyleSheet,
-  Platform,
   Alert,
   TouchableOpacity,
 } from 'react-native';
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, Polyline, UrlTile } from 'react-native-maps';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -246,9 +245,14 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
       <MapView
         ref={mapRef}
         style={s.map}
-        provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
         region={mapRegion}
       >
+        <UrlTile
+          urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+          maximumZ={19}
+          flipY={false}
+          tileSize={256}
+        />
         {driverLoc && (
           <Marker
             coordinate={{ latitude: driverLoc.lat, longitude: driverLoc.lng }}

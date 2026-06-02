@@ -27,7 +27,7 @@
         "NSPhotoLibraryAddUsageDescription": "See localized strings",
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "23"
+      "buildNumber": "24"
     },
     "android": {
       "package": "com.rezzy.app",
@@ -58,12 +58,7 @@
           ]
         }
       ],
-      "versionCode": 25,
-      "config": {
-        "googleMaps": {
-          "apiKey": "AIzaSyBTZ7evrDuZfm81QnzFYbyYTgyCmyL6XLQ"
-        }
-      }
+      "versionCode": 28
     },
     "web": {
       "favicon": "./src/assets/favicon.png"
@@ -74,7 +69,8 @@
       "expo-secure-store",
       "expo-font",
       "expo-web-browser",
-      "./plugins/localized-infoplist.js"
+      "./plugins/localized-infoplist.js",
+      "expo-localization"
     ],
     "extra": {
       "EXPO_PUBLIC_STRIPE_PK": "pk_live_51SVWgyGwmM7e2NWE4qENGfGpXCQCfFTng1csChRVGe9toXDsrEONRi66Xg98XJrzlZWkfkl3n5TeaBMkICF0SI7f00yEFrQcRE",
