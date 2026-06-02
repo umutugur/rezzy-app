@@ -16,11 +16,9 @@ Thumbs.db
 .idea/
 
 # RN / Android / iOS
-android/.gradle/
-android/app/build/
-android/build/
-ios/Pods/
-ios/build/
+# EAS cloud build kendi prebuild'ini çalıştırır — bu klasörler repo'da olmamalı
+android/
+ios/
 *.keystore
 *.jks
 *.p12

@@ -1,5 +1,0 @@
-"NSCameraUsageDescription" = "We need camera access to scan QR codes.";
-"NSLocationWhenInUseUsageDescription" = "We use your location to show nearby restaurants.";
-"NSUserNotificationsUsageDescription" = "Notifications are required for reservation updates.";
-"NSPhotoLibraryUsageDescription" = "We need access to choose your profile photo.";
-"NSPhotoLibraryAddUsageDescription" = "We need permission to save your profile photo.";

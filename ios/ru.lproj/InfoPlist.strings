@@ -1,5 +1,0 @@
-"NSCameraUsageDescription" = "Нам нужен доступ к камере для сканирования QR-кодов.";
-"NSLocationWhenInUseUsageDescription" = "Мы используем вашу геолокацию для показа ближайших ресторанов.";
-"NSUserNotificationsUsageDescription" = "Уведомления необходимы для обновлений бронирования.";
-"NSPhotoLibraryUsageDescription" = "Нам нужен доступ к фотоархиву для выбора аватара.";
-"NSPhotoLibraryAddUsageDescription" = "Нам нужно разрешение для сохранения фотографии.";
