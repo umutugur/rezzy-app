@@ -657,28 +657,28 @@ export default function ProfileScreen() {
         <Animated.View style={{
           backgroundColor: highlightAnim.interpolate({
             inputRange: [0, 1],
-            outputRange: ["#FFFFFF", "#FFFBF9"],
+            outputRange: [theme.colors.surface, theme.colors.surfaceAlt],
           }) as any,
           borderBottomWidth: StyleSheet.hairlineWidth,
-          borderBottomColor: "#F0F0F0",
+          borderBottomColor: theme.colors.borderDefault,
         }}>
           <TouchableOpacity
             onPress={() => openSelector("region")}
             activeOpacity={0.7}
             style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 13, gap: 13 }}
           >
-            <View style={{ width: 34, height: 34, borderRadius: 9, backgroundColor: "#FFF0F0", alignItems: "center", justifyContent: "center" }}>
+            <View style={{ width: 34, height: 34, borderRadius: 9, backgroundColor: theme.colors.errorSoft, alignItems: "center", justifyContent: "center" }}>
               <Ionicons name="earth-outline" size={18} color="#8B1A1A" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 10, fontWeight: "700", color: "#9CA3AF", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 3 }}>
+              <Text style={{ fontSize: 10, fontWeight: "700", color: theme.colors.textSecondary, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 3 }}>
                 {t("profile.appPrefs.region")}
               </Text>
-              <Text style={{ fontSize: 14, fontWeight: "700", color: "#111827" }}>
+              <Text style={{ fontSize: 14, fontWeight: "700", color: theme.colors.textPrimary }}>
                 {currentRegionMeta.flag ? currentRegionMeta.flag + " " : ""}{currentRegionMeta.label}
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={16} color="#D1D5DB" />
+            <Ionicons name="chevron-forward" size={16} color={theme.colors.borderDefault} />
           </TouchableOpacity>
         </Animated.View>
 
@@ -686,7 +686,7 @@ export default function ProfileScreen() {
         <Animated.View style={{
           backgroundColor: highlightAnim.interpolate({
             inputRange: [0, 1],
-            outputRange: ["#FFFFFF", "#FFFBF9"],
+            outputRange: [theme.colors.surface, theme.colors.surfaceAlt],
           }) as any,
         }}>
           <TouchableOpacity
@@ -694,18 +694,18 @@ export default function ProfileScreen() {
             activeOpacity={0.7}
             style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 13, gap: 13 }}
           >
-            <View style={{ width: 34, height: 34, borderRadius: 9, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center" }}>
+            <View style={{ width: 34, height: 34, borderRadius: 9, backgroundColor: theme.colors.infoSoft, alignItems: "center", justifyContent: "center" }}>
               <Ionicons name="language-outline" size={18} color="#1D4ED8" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 10, fontWeight: "700", color: "#9CA3AF", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 3 }}>
+              <Text style={{ fontSize: 10, fontWeight: "700", color: theme.colors.textSecondary, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 3 }}>
                 {t("profile.appPrefs.language")}
               </Text>
-              <Text style={{ fontSize: 14, fontWeight: "700", color: "#111827" }}>
+              <Text style={{ fontSize: 14, fontWeight: "700", color: theme.colors.textPrimary }}>
                 {currentLangMeta.label}
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={16} color="#D1D5DB" />
+            <Ionicons name="chevron-forward" size={16} color={theme.colors.borderDefault} />
           </TouchableOpacity>
         </Animated.View>
       </>
@@ -780,7 +780,7 @@ export default function ProfileScreen() {
     <ScrollView
       ref={scrollRef}
       contentContainerStyle={{ paddingBottom: 40 }}
-      style={{ flex: 1, backgroundColor: "#F7F7F8" }}
+      style={{ flex: 1, backgroundColor: theme.colors.background }}
     >
       {/* ── HEADER ─────────────────────────────────────────────────────── */}
       <LinearGradient
@@ -1019,7 +1019,7 @@ export default function ProfileScreen() {
                 paddingBottom: (insets?.bottom || 0) + 16,
                 borderTopLeftRadius: 24,
                 borderTopRightRadius: 24,
-                backgroundColor: "#FFFFFF",
+                backgroundColor: theme.colors.surface,
                 shadowColor: "#000",
                 shadowOpacity: 0.18,
                 shadowRadius: 24,
@@ -1032,14 +1032,14 @@ export default function ProfileScreen() {
             >
               {/* Handle */}
               <View style={{ alignItems: "center", paddingTop: 12, paddingBottom: 4 }}>
-                <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: "#E5E7EB" }} />
+                <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.colors.borderDefault }} />
               </View>
 
               {/* Header */}
               <View style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16 }}>
                 <View style={{
                   width: 36, height: 36, borderRadius: 10,
-                  backgroundColor: selectorOpen === "region" ? "#FFF0F0" : "#EFF6FF",
+                  backgroundColor: selectorOpen === "region" ? theme.colors.errorSoft : theme.colors.infoSoft,
                   alignItems: "center", justifyContent: "center",
                 }}>
                   <Ionicons
@@ -1048,7 +1048,7 @@ export default function ProfileScreen() {
                     color={selectorOpen === "region" ? "#8B1A1A" : "#1D4ED8"}
                   />
                 </View>
-                <Text style={{ fontSize: 17, fontWeight: "800", color: "#111827" }}>
+                <Text style={{ fontSize: 17, fontWeight: "800", color: theme.colors.textPrimary }}>
                   {selectorOpen === "region"
                     ? t("profile.appPrefs.selectRegion")
                     : t("profile.appPrefs.selectLanguage")}
@@ -1056,7 +1056,7 @@ export default function ProfileScreen() {
               </View>
 
               {/* Options */}
-              <View style={{ marginHorizontal: 16, borderRadius: 16, overflow: "hidden", backgroundColor: "#F7F7F8" }}>
+              <View style={{ marginHorizontal: 16, borderRadius: 16, overflow: "hidden", backgroundColor: theme.colors.surfaceAlt }}>
                 {(selectorOpen === "region" ? REGION_OPTIONS : LANGUAGE_OPTIONS).map((opt: any, idx: number, arr: any[]) => {
                   const code = opt.code as string;
                   const isActive = selectorOpen === "region" ? prefRegion === code : prefLang === code;
@@ -1074,11 +1074,11 @@ export default function ProfileScreen() {
                       }}
                       activeOpacity={0.7}
                       style={[
-                        { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14, backgroundColor: isActive ? "#FFF0F0" : "#FFFFFF" },
-                        !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#F0F0F0" },
+                        { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14, backgroundColor: isActive ? theme.colors.errorSoft : theme.colors.surface },
+                        !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.borderDefault },
                       ]}
                     >
-                      <Text style={{ flex: 1, fontSize: 15, fontWeight: isActive ? "700" : "500", color: isActive ? "#8B1A1A" : "#111827" }}>
+                      <Text style={{ flex: 1, fontSize: 15, fontWeight: isActive ? "700" : "500", color: isActive ? "#8B1A1A" : theme.colors.textPrimary }}>
                         {label}
                       </Text>
                       {isActive && (
