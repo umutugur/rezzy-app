@@ -14,6 +14,7 @@ import {
   Platform,
   Keyboard,
   KeyboardAvoidingView,
+  ScrollView,
 } from 'react-native';
 import MapView, { Marker, Polyline, UrlTile } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -77,6 +78,14 @@ export default function TaxiDestinationScreen({ navigation }: any) {
 
   const pickupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dropoffTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Reset dropoff every time this screen is opened
+  useEffect(() => {
+    setDropoffQuery('');
+    setDropoff('', null);
+    setFareEstimate(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Address search (debounced 400ms) ─────────────────────────────────────
 
@@ -284,7 +293,7 @@ export default function TaxiDestinationScreen({ navigation }: any) {
   return (
     <KeyboardAvoidingView
       style={s.root}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       {/* Map — top half */}
       <MapView
@@ -339,6 +348,11 @@ export default function TaxiDestinationScreen({ navigation }: any) {
 
       {/* Bottom form panel */}
       <View style={[s.panel, { paddingBottom: insets.bottom + 8 }]}>
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 8 }}
+        >
         {/* Address inputs */}
         <View style={s.inputRow}>
           <Navigation size={16} color={theme.colors.success} strokeWidth={2.5} />
@@ -482,6 +496,7 @@ export default function TaxiDestinationScreen({ navigation }: any) {
         >
           {selectedPaymentMethod === 'online' ? 'Öde ve Taksi Çağır' : 'Taksi Çağır'}
         </Button>
+        </ScrollView>
       </View>
     </KeyboardAvoidingView>
   );
