@@ -188,26 +188,7 @@ export default function MarketOrderDetailScreen() {
     return () => { cancelled = true; };
   }, [orderId]);
 
-  if (loading) {
-    return (
-      <View style={[styles.centered, { backgroundColor: theme.colors.background }]}>
-        <ActivityIndicator color={theme.market.main} size="large" />
-      </View>
-    );
-  }
-
-  if (error || !order) {
-    return (
-      <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
-        <EmptyState
-          illustration="market"
-          title="Sipariş bulunamadı"
-          subtitle="Bu sipariş artık mevcut değil veya bir hata oluştu."
-        />
-      </View>
-    );
-  }
-
+  // useCallback MUST be before conditional returns — hooks rules
   const handleCancel = useCallback(() => {
     Alert.alert(
       'Siparişi İptal Et',
@@ -232,6 +213,26 @@ export default function MarketOrderDetailScreen() {
       ],
     );
   }, [orderId]);
+
+  if (loading) {
+    return (
+      <View style={[styles.centered, { backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator color={theme.market.main} size="large" />
+      </View>
+    );
+  }
+
+  if (error || !order) {
+    return (
+      <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
+        <EmptyState
+          illustration="market"
+          title="Sipariş bulunamadı"
+          subtitle="Bu sipariş artık mevcut değil veya bir hata oluştu."
+        />
+      </View>
+    );
+  }
 
   const cfg = STATUS_CONFIG[order.status];
   const storeName =
