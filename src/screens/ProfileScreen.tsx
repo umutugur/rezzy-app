@@ -623,7 +623,7 @@ export default function ProfileScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 10, fontWeight: "700", color: theme.colors.textSecondary, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 3 }}>
-                GÖRÜNÜM
+                {t("profile.appPrefs.theme") || "GÖRÜNÜM"}
               </Text>
               <View style={{ flexDirection: "row", gap: 8, marginTop: 4 }}>
                 {(["light", "dark", "system"] as ThemePref[]).map((opt) => {
@@ -634,15 +634,15 @@ export default function ProfileScreen() {
                       key={opt}
                       onPress={() => setThemePreference(opt)}
                       style={{
-                        paddingHorizontal: 12,
-                        paddingVertical: 6,
+                        paddingHorizontal: 14,
+                        paddingVertical: 10,
                         borderRadius: 20,
                         borderWidth: 1.5,
                         borderColor: active ? theme.colors.primary : theme.colors.borderDefault,
                         backgroundColor: active ? theme.colors.primary : theme.colors.surface,
                       }}
                     >
-                      <Text style={{ fontSize: 12, fontWeight: "700", color: active ? theme.colors.textInverse : theme.colors.textSecondary }}>
+                      <Text style={{ fontSize: 12, fontWeight: "700", color: active ? theme.colors.textInverse : theme.colors.textPrimary }}>
                         {labels[opt]}
                       </Text>
                     </Pressable>

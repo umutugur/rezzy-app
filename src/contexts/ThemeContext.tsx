@@ -44,8 +44,11 @@ const ThemeContext = createContext<Theme | null>(null);
 
 // ─── Provider ──────────────────────────────────────────────────────────────────
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const { resolvedScheme } = useThemePreference();
+  const { resolvedScheme, isHydrated } = useThemePreference();
   const isDark = resolvedScheme === 'dark';
+
+  // Hold render until AsyncStorage is read — prevents flash of wrong theme
+  if (!isHydrated) return null;
 
   const theme = useMemo<Theme>(() => ({
     isDark,

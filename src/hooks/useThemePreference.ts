@@ -25,12 +25,18 @@ export function useThemePreference() {
   // First load: read from AsyncStorage
   useEffect(() => {
     if (_cached !== null) return;
-    AsyncStorage.getItem(STORAGE_KEY).then((val) => {
-      const pref = (val as ThemePref | null) ?? DEFAULT_PREF;
-      _cached = pref;
-      setPreference(pref);
-      setIsHydrated(true);
-    });
+    AsyncStorage.getItem(STORAGE_KEY)
+      .then((val) => {
+        const pref = (val as ThemePref | null) ?? DEFAULT_PREF;
+        _cached = pref;
+        setPreference(pref);
+      })
+      .catch(() => {
+        _cached = DEFAULT_PREF; // storage error → fallback to default
+      })
+      .finally(() => {
+        setIsHydrated(true);
+      });
   }, []);
 
   // Global listener — when setThemePreference() is called elsewhere
