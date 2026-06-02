@@ -14,6 +14,7 @@
 
 | Action | Path |
 |--------|------|
+| Modify | `rezzy-app/src/screens/market/MarketCartScreen.tsx` |
 | Modify | `rezzy-backend/src/controllers/taxi.controller.js` |
 | Modify | `rezzy-backend/src/routes/taxi.routes.js` |
 | Modify | `rezzy-app/src/api/taxi.ts` |
@@ -22,6 +23,61 @@
 | Modify | `rezzy-app/src/screens/taxi/TaxiDestinationScreen.tsx` |
 | Create | `rezzy-app/src/screens/taxi/TaxiHistoryScreen.tsx` |
 | Create | `rezzy-app/src/screens/taxi/TaxiRideDetailScreen.tsx` |
+
+---
+
+## Task 0: Market — Fix crash after order creation
+
+**Files:**
+- Modify: `rezzy-app/src/screens/market/MarketCartScreen.tsx`
+
+**Root cause:** `clearCart()` is called BEFORE `navigation.navigate()`. With `newArchEnabled: true` (new React Native architecture), Zustand's synchronous store update immediately notifies subscribers, triggering a re-render of `MarketCartScreen` with `items=[]`. This renders the EmptyState while the navigation command hasn't executed yet. The concurrent renderer and navigation transition interact badly, causing a crash.
+
+**Fix:** Replace `navigation.navigate` with `navigation.replace` (removes cart from stack, user can't go back to empty cart) and move `clearCart()` AFTER the navigate call.
+
+- [ ] **Step 1: Find both places where clearCart + navigate are called**
+
+In `src/screens/market/MarketCartScreen.tsx`, find the two places in `handleOrder`:
+
+**Online payment success (around line 375-381):**
+```tsx
+// BEFORE:
+clearCart();
+Alert.alert(
+  "Ödeme alındı",
+  "Siparişiniz onaylandı. Market hazırlığa başlıyor.",
+  [{ text: "Tamam", onPress: () => navigation.navigate(MarketRoutes.OrderDetail, { orderId: order._id }) }],
+);
+
+// AFTER:
+Alert.alert(
+  "Ödeme alındı",
+  "Siparişiniz onaylandı. Market hazırlığa başlıyor.",
+  [{ text: "Tamam", onPress: () => {
+    navigation.replace(MarketRoutes.OrderDetail, { orderId: order._id });
+    clearCart();
+  }}],
+);
+```
+
+**Cash/card (around line 384-386):**
+```tsx
+// BEFORE:
+clearCart();
+navigation.navigate(MarketRoutes.OrderDetail, { orderId: order._id });
+
+// AFTER:
+navigation.replace(MarketRoutes.OrderDetail, { orderId: order._id });
+clearCart();
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+cd rezzy-app
+git add src/screens/market/MarketCartScreen.tsx
+git commit -m "fix(market): navigate before clearCart to prevent new-arch crash"
+```
 
 ---
 
@@ -922,7 +978,6 @@ function styles(theme: ReturnType<typeof useTheme>, insets: ReturnType<typeof us
     vehicleText: { ...theme.typography.bodyMd, color: theme.colors.textPrimary },
     vehiclePlate: {
       ...theme.typography.caption, color: theme.colors.textSecondary,
-      fontFamily: theme.fontFamily.mono ?? undefined,
       letterSpacing: 1,
     },
     ratedText: { ...theme.typography.bodyMd, color: theme.colors.textSecondary },
