@@ -47,9 +47,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const { resolvedScheme, isHydrated } = useThemePreference();
   const isDark = resolvedScheme === 'dark';
 
-  // Hold render until AsyncStorage is read — prevents flash of wrong theme
-  if (!isHydrated) return null;
-
+  // useMemo MUST be called before any conditional return — hooks rules
   const theme = useMemo<Theme>(() => ({
     isDark,
     colors:      isDark ? darkColors  : lightColors,
@@ -68,6 +66,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     easing,
     spring,
   }), [isDark]);
+
+  // Hold render until AsyncStorage is read — prevents flash of wrong theme
+  if (!isHydrated) return null;
 
   return (
     <ThemeContext.Provider value={theme}>
