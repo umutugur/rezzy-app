@@ -3,6 +3,7 @@
     "save": "Сохранить",
     "saving": "Сохранение...",
     "ok": "Ок",
+    "confirm": "Подтвердить",
     "cancel": "Отмена",
     "close": "Закрыть",
     "retry": "Повторить",
@@ -33,7 +34,12 @@
       "favorites": "Избранные",
       "reservations": "Мои бронирования",
       "adminShortcuts": "Админ-панель",
-      "legalSupport": "Правовая информация"
+      "legalSupport": "Правовая информация",
+      "driverAccount": "Аккаунт водителя"
+    },
+    "driver": {
+      "switchAccount": "Перейти в аккаунт водителя",
+      "switchAccountSub": "Открыть экраны таксиста"
     },
     "field": {
       "name": "Имя и фамилия",
@@ -51,6 +57,7 @@
       "region": "Регион",
       "seeAllRegions": "Все регионы",
       "language": "Язык",
+      "theme": "Внешний вид",
       "seeAllLanguages": "Все языки",
       "selectRegionTitle": "Выбрать регион",
       "selectLanguageTitle": "Выбрать язык",
@@ -182,10 +189,11 @@
     "error": "Ошибка подключения",
     "noResults": "Ничего не найдено. Очистите фильтры и попробуйте снова.",
     "explore": "Исследовать",
+    "delivery": "Доставка",
     "actionsMore": "Ещё",
-  "actionsMap": "Карта",
-  "actionsAssistant": "Ассистент",
-  "actionsFilters": "Фильтры"
+    "actionsMap": "Карта",
+    "actionsAssistant": "Ассистент",
+    "actionsFilters": "Фильтры"
   },
   "map": {
   "title": "Заведения рядом",

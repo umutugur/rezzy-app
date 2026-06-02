@@ -3,6 +3,7 @@
     "save": "Kaydet",
     "saving": "Kaydediliyor...",
     "ok": "Tamam",
+    "confirm": "Onayla",
     "cancel": "İptal",
     "close": "Kapat",
     "retry": "Tekrar Dene",
@@ -20,10 +21,22 @@
       "restaurant": "Restoran",
       "admin": "Admin"
     },
+    "unnamed": "(İsimsiz)",
     "stats": {
       "upcoming": "Gelecek",
       "confirmed": "Onaylı",
-      "cancelled": "İptal"
+      "cancelled": "İptal",
+      "spending": "Harcama"
+    },
+    "quickAction": {
+      "reservations": "Rezervasyon",
+      "favorites": "Favoriler",
+      "orders": "Siparişler",
+      "settings": "Ayarlar"
+    },
+    "spending": {
+      "title": "Toplam Harcama",
+      "sub": "{{count}} rezervasyon • Son 12 ay"
     },
     "section": {
       "profileInfo": "Profil Bilgileri",
@@ -32,8 +45,14 @@
       "password": "Şifre Değiştirme",
       "favorites": "Favorilerim",
       "reservations": "Rezervasyonlarım",
+      "recentReservations": "Son Rezervasyonlar",
       "adminShortcuts": "Yönetim Kısayolları",
-      "legalSupport": "Yasal ve Destek"
+      "legalSupport": "Yasal ve Destek",
+      "driverAccount": "Sürücü Hesabı"
+    },
+    "driver": {
+      "switchAccount": "Sürücü Hesabına Geç",
+      "switchAccountSub": "Taksi sürücüsü ekranlarına geç"
     },
     "field": {
       "name": "Ad Soyad",
@@ -51,6 +70,7 @@
       "region": "Bölge",
       "seeAllRegions": "Tüm bölgeleri gör",
       "language": "Dil",
+      "theme": "Görünüm",
       "seeAllLanguages": "Tüm dilleri gör",
       "selectRegionTitle": "Bölge Seç",
       "selectLanguageTitle": "Dil Seç",
@@ -92,6 +112,7 @@
       "empty": "Henüz rezervasyon yok.",
       "restaurantFallback": "Restoran",
       "totalLabel": "Toplam",
+      "seeAll": "Tümünü gör",
       "itemTitle": "{{date}} • {{count}} kişi",
       "fallbackRestaurant": "Restoran",
       "status": {
@@ -177,15 +198,46 @@
     "rejected": "Reddedildi",
     "unknown": "Durum Yok"
   },
+  "homeLanding": {
+    "serviceReservation": "Rezervasyon",
+    "serviceReservationSub": "Masa ayırt",
+    "serviceDelivery": "Paket Servis",
+    "serviceDeliverySub": "Kapına gelsin",
+    "serviceMarket": "Market",
+    "serviceMarketSub": "Taze ürünler",
+    "serviceQR": "QR Menü",
+    "serviceQRSub": "Masanda tara",
+    "serviceTaxi": "Taksi",
+    "serviceTaxiSub": "Hızlı ve güvenli ulaşım",
+    "exploreTitle": "Mekan Keşfet",
+    "exploreSub": "Bar • Kafe • Meyhane • Restoran",
+    "featuredTitle": "Öne Çıkan Mekanlar",
+    "seeAll": "Tümünü gör"
+  },
   "home": {
     "loading": "Yükleniyor...",
     "error": "Bağlantı hatası",
     "noResults": "Sonuç bulunamadı. Filtreleri temizleyip tekrar deneyin.",
-    "explore":"Keşfet",
+    "explore": "Keşfet",
+    "delivery": "Paket Servis",
     "actionsMore": "Daha fazla",
-  "actionsMap": "Harita",
-  "actionsAssistant": "Asistan",
-  "actionsFilters": "Filtreler"
+    "actionsMap": "Harita",
+    "actionsAssistant": "Asistan",
+    "actionsFilters": "Filtreler",
+    "subtitle": "Rezervasyon yap · Keşfet",
+    "searchPlaceholder": "Mekan ara...",
+    "venueCount": "{{count}} mekan bulundu",
+    "loadingVenues": "Mekanlar yükleniyor…",
+    "noVenueTitle": "Mekan bulunamadı",
+    "noResultsTitle": "Sonuç bulunamadı",
+    "noVenueQuery": "\"{{query}}\" için eşleşen mekan yok.",
+    "noVenueArea": "Bu bölgede mekan yok.",
+    "typeAll": "Tümü",
+    "typeRestaurant": "Restoran",
+    "typeCafe": "Kafe",
+    "typeBar": "Bar",
+    "typeMeyhane": "Meyhane",
+    "typeCoffeeShop": "Coffee Shop"
   },
   "map": {
   "title": "Yakındaki Mekanlar",
@@ -230,6 +282,19 @@
     
     "aboutTab": "Hakkında",
     "menuTab": "Menü",
+    "reviewsTab": "Yorumlar",
+    "writeReview": "Yorum Yaz",
+    "noReviews": "Henüz yorum yok",
+    "yourRating": "Değerlendirmeniz",
+    "commentPlaceholder": "Yorumunuzu yazın... (opsiyonel)",
+    "submitReview": "Gönder",
+    "cancelReview": "İptal",
+    "submittingReview": "Gönderiliyor...",
+    "reviewsEmpty": "Henüz değerlendirme yok. İlk yorumu sen yaz!",
+    "reviewsLoading": "Yorumlar yükleniyor…",
+    "noReviewsSub": "Bu mekanı ziyaret ettiyseniz deneyiminizi paylaşın.",
+    "submitReviewError": "Yorum gönderilemedi.",
+    "callError": "Telefon araması başlatılamadı.",
     "menuTitle": "Menü",
     "menuComingSoon": "Bu mekan henüz menüsünü paylaşmadı.",
     "noAbout": "Bu mekan için açıklama yok.",
@@ -270,7 +335,21 @@
     "loadError": "Restoran yüklenemedi",
     "favoriteError": "Favori işlemi başarısız"
   },
-    "reservationStep2": {
+  "reservationStep1": {
+    "stepLabel": "Adım 1 / 3",
+    "title": "Tarih & Saat",
+    "dateLabel": "Tarih",
+    "timeLabel": "Saat",
+    "partyLabel": "Kişi Sayısı",
+    "partySuffix": "kişi",
+    "errorMinParty": "Kişi sayısı en az 1 olmalı.",
+    "ctaContinue": "Devam",
+    "datePickerTitle": "Tarih Seç",
+    "timePickerTitle": "Saat Seç",
+    "confirm": "Tamam"
+  },
+  "reservationStep2": {
+    "stepLabel": "Adım 2 / 3",
     "title": "Kişi & Menü Seçimi",
     "subtitle": "Her kişi için bir menü seçin.",
     "loading": "Menüler yükleniyor…",
@@ -285,6 +364,7 @@
     "skipInfo": "Fix menü seçmeden devam ediyorsunuz. Özet ekranında fix menü ücreti eklenmeyecek."
   },
   "reservationStep3": {
+  "stepLabel": "Adım 3 / 3",
   "title": "Rezervasyon Özeti",
   "dateTimeLabel": "Tarih & Saat",
   "partySizeLabel": "Kişi",
@@ -603,6 +683,53 @@
     "invalidQrMessage": "Bu QR kodundan restoran bilgisi alınamadı."
   },
   "delivery": {
+    "title": "Paket Servis",
+    "subtitle": "Kapına gelsin",
+    "addressSheetTitle": "Teslimat Adresi Seç",
+    "currentLocation": "Mevcut Konum",
+    "gettingLocation": "Konum alınıyor…",
+    "savedAddresses": "Kayıtlı Adresler",
+    "addressLabel": "Adres",
+    "addNewAddress": "Yeni Adres Ekle",
+    "selectAddress": "Adres seç",
+    "deliveryAddress": "Teslimat Adresi",
+    "searchPlaceholder": "Restoran ara",
+    "loadingRestaurants": "Restoranlar yükleniyor…",
+    "restaurants": "Restoranlar",
+    "updating": "Güncelleniyor…",
+    "freeDelivery": "Ücretsiz Teslimat",
+    "deliveryChip": "Teslimat",
+    "noResults": "Sonuç bulunamadı",
+    "noRestaurant": "Restoran bulunamadı",
+    "noResultsQuery": "\"{{query}}\" için eşleşen restoran yok.",
+    "noRestaurantSub": "Seçili adrese teslimat yapan restoran yok.",
+    "cartItems": "{{count}} ürün",
+    "goToCart": "Sepete Git",
+    "errorGeneric": "Bir hata oluştu",
+    "cat": {
+      "all": "Tümü",
+      "burger": "Hamburger",
+      "doner": "Döner",
+      "pizza": "Pizza",
+      "cigkofte": "Çiğ Köfte",
+      "tavuk": "Tavuk",
+      "kofte": "Köfte",
+      "kebap": "Kebap",
+      "pide": "Pide & Lahmacun",
+      "sandvic": "Tost & Sandviç",
+      "tantuni": "Tantuni",
+      "manti": "Mantı & Makarna",
+      "ev": "Ev Yemekleri",
+      "pastane": "Pastane & Fırın",
+      "corba": "Çorba",
+      "salata": "Salata & Sağlık",
+      "tatli": "Tatlı",
+      "kahve": "Kahve & İçecek",
+      "sushi": "Uzak Doğu",
+      "dunya": "Dünya Mutfağı",
+      "balik": "Balık & Deniz",
+      "sokak": "Sokak Lezzetleri"
+    },
     "address": {
       "title": "Adres Ekle",
       "subtitle": "Paket servis için konum (pin) zorunludur.",
@@ -637,6 +764,71 @@
       "pinRequiredBody": "Bu sistemde adres için konum (pin) zorunlu.",
        "home": "Ev",
       "work": "İş"
+    }
+  },
+  "myOrders": {
+    "title": "Siparişlerim",
+    "subtitle": "Teslimat & Market",
+    "orderCount": "sipariş",
+    "loading": "Yükleniyor…",
+    "loadError": "Siparişler yüklenemedi",
+    "retry": "Tekrar Dene",
+    "unknownStore": "Restoran",
+    "filter": {
+      "all": "Tümü",
+      "delivery": "Teslimat",
+      "market": "Market"
+    },
+    "status": {
+      "preparing": "Hazırlanıyor",
+      "onTheWay": "Yolda",
+      "delivered": "Teslim edildi",
+      "cancelled": "İptal edildi",
+      "ready": "Hazır"
+    },
+    "action": {
+      "detail": "Detay",
+      "repeat": "Tekrarla"
+    },
+    "empty": {
+      "title": "Henüz sipariş yok",
+      "all": "Teslimat veya market siparişi verdiğinde burada görünecek.",
+      "delivery": "Henüz paket servis siparişin yok.",
+      "market": "Henüz market siparişin yok."
+    }
+  },
+  "market": {
+    "title": "Market",
+    "subtitle": "Taze ürünler kapına gelsin",
+    "deliveryAddress": "Teslimat Adresi",
+    "currentLocation": "Mevcut Konum",
+    "selectAddress": "Adres Seç",
+    "gettingLocation": "Konum alınıyor…",
+    "selectDeliveryAddress": "Teslimat adresi seç",
+    "searchPlaceholder": "Market veya ürün ara",
+    "stores": "Marketler",
+    "loadError": "Marketler yüklenemedi.",
+    "noResultsTitle": "Sonuç bulunamadı",
+    "noStoreTitle": "Henüz market yok",
+    "connectionError": "Bağlantı hatası",
+    "connectionErrorSub": "İnternet bağlantını kontrol et.",
+    "noResultsQuery": "\"{{query}}\" için sonuç yok.",
+    "noStoreSub": "Yakında market eklenecek.",
+    "retry": "Tekrar Dene",
+    "cartItems": "{{count}} ürün",
+    "goToCart": "Sepete Git",
+    "freeDelivery": "Ücretsiz Teslimat",
+    "freeThreshold": "₺{{amount}} üzeri ücretsiz",
+    "pickupAvailable": "Gel-al",
+    "cat": {
+      "all": "Tümü",
+      "supermarket": "Süpermarket",
+      "greengrocer": "Manav",
+      "bakery": "Fırın",
+      "organic": "Organik",
+      "water": "Su & Damacana",
+      "tup": "Tüp",
+      "pharmacy": "Eczane"
     }
   }
 }

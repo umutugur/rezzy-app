@@ -1184,9 +1184,9 @@ export default function ProfileScreen() {
         </PremiumSection>
       )}
 
-      {/* ── SÜRÜCÜ PANELİ ────────────────────────────────────────────── */}
+      {/* ── SÜRÜCÜ HESABI — sadece sürücü rolüne sahip kullanıcılara göster ── */}
       {isDriver && (
-        <PremiumSection title="Sürücü">
+        <PremiumSection title={t("profile.section.driverAccount") || "Sürücü Hesabı"}>
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={() => navigation.navigate("Driver")}
@@ -1209,35 +1209,15 @@ export default function ProfileScreen() {
             }}>
               <Car size={20} color={theme.taxi.main} strokeWidth={2} />
             </View>
-            <Text style={{ flex: 1, fontSize: 15, fontWeight: "700", color: theme.taxi.main }}>
-              Sürücü Paneli
-            </Text>
-            <Ionicons name="chevron-forward" size={16} color={theme.taxi.main} />
-          </TouchableOpacity>
-        </PremiumSection>
-      )}
-
-      {!isDriver && (
-        <PremiumSection title="Sürücü">
-          <TouchableOpacity
-            onPress={() => (navigation as any).navigate('DriverRegistration')}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              paddingHorizontal: 16,
-              paddingVertical: 14,
-              gap: 12,
-            }}
-          >
-            <Text style={{ fontSize: 20 }}>🚕</Text>
             <View style={{ flex: 1 }}>
-              <Text style={{ ...theme.typography.labelMd, color: theme.colors.textPrimary }}>
-                Sürücü Ol
+              <Text style={{ fontSize: 15, fontWeight: "700", color: theme.taxi.main }}>
+                {t("profile.driver.switchAccount") || "Sürücü Hesabına Geç"}
               </Text>
-              <Text style={{ ...theme.typography.caption, color: theme.colors.textSecondary }}>
-                Taksi sürücüsü olarak başvur
+              <Text style={{ fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 }}>
+                {t("profile.driver.switchAccountSub") || "Taksi sürücüsü ekranlarına geç"}
               </Text>
             </View>
+            <Ionicons name="chevron-forward" size={16} color={theme.taxi.main} />
           </TouchableOpacity>
         </PremiumSection>
       )}

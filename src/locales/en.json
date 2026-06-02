@@ -3,6 +3,7 @@
     "save": "Save",
     "saving": "Saving...",
     "ok": "OK",
+    "confirm": "Confirm",
     "cancel": "Cancel",
     "close": "Close",
     "retry": "Retry",
@@ -19,10 +20,22 @@
       "restaurant": "Restaurant",
       "admin": "Admin"
     },
+    "unnamed": "(Unnamed)",
     "stats": {
       "upcoming": "Upcoming",
       "confirmed": "Confirmed",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "spending": "Spending"
+    },
+    "quickAction": {
+      "reservations": "Reservations",
+      "favorites": "Favorites",
+      "orders": "Orders",
+      "settings": "Settings"
+    },
+    "spending": {
+      "title": "Total Spending",
+      "sub": "{{count}} reservations • Last 12 months"
     },
     "section": {
       "profileInfo": "Profile Information",
@@ -31,8 +44,14 @@
       "password": "Change Password",
       "favorites": "Favorites",
       "reservations": "My Reservations",
+      "recentReservations": "Recent Reservations",
       "adminShortcuts": "Management Shortcuts",
-      "legalSupport": "Legal and Support"
+      "legalSupport": "Legal and Support",
+      "driverAccount": "Driver Account"
+    },
+    "driver": {
+      "switchAccount": "Switch to Driver Account",
+      "switchAccountSub": "Go to taxi driver screens"
     },
     "field": {
       "name": "Name Surname",
@@ -50,6 +69,7 @@
       "region": "Region",
       "seeAllRegions": "See all regions",
       "language": "Language",
+      "theme": "Appearance",
       "seeAllLanguages": "See all languages",
       "selectRegionTitle": "Choose Region",
       "selectLanguageTitle": "Choose Language",
@@ -91,6 +111,7 @@
       "empty": "No reservations yet.",
       "restaurantFallback": "Restaurant",
       "totalLabel": "Total",
+      "seeAll": "See all",
       "itemTitle": "{{date}} • {{count}} guests",
       "fallbackRestaurant": "Restaurant",
       "status": {
@@ -215,15 +236,46 @@
     "rejected": "Rejected",
     "unknown": "Unknown"
   },
+  "homeLanding": {
+    "serviceReservation": "Reservation",
+    "serviceReservationSub": "Reserve a table",
+    "serviceDelivery": "Delivery",
+    "serviceDeliverySub": "Delivered to your door",
+    "serviceMarket": "Market",
+    "serviceMarketSub": "Fresh products",
+    "serviceQR": "QR Menu",
+    "serviceQRSub": "Scan at the table",
+    "serviceTaxi": "Taxi",
+    "serviceTaxiSub": "Fast and safe transport",
+    "exploreTitle": "Explore Venues",
+    "exploreSub": "Bar • Cafe • Tavern • Restaurant",
+    "featuredTitle": "Featured Venues",
+    "seeAll": "See all"
+  },
   "home": {
     "loading": "Loading...",
     "error": "Connection error",
     "noResults": "No results found. Try clearing filters and search again.",
-    "explore":"Explore",
+    "explore": "Explore",
+    "delivery": "Delivery",
     "actionsMore": "More",
-  "actionsMap": "Map",
-  "actionsAssistant": "Assistant",
-  "actionsFilters": "Filters"
+    "actionsMap": "Map",
+    "actionsAssistant": "Assistant",
+    "actionsFilters": "Filters",
+    "subtitle": "Make a reservation · Explore",
+    "searchPlaceholder": "Search venues...",
+    "venueCount": "{{count}} venues found",
+    "loadingVenues": "Loading venues…",
+    "noVenueTitle": "No venues found",
+    "noResultsTitle": "No results",
+    "noVenueQuery": "No venues matching \"{{query}}\".",
+    "noVenueArea": "No venues in this area.",
+    "typeAll": "All",
+    "typeRestaurant": "Restaurant",
+    "typeCafe": "Cafe",
+    "typeBar": "Bar",
+    "typeMeyhane": "Tavern",
+    "typeCoffeeShop": "Coffee Shop"
   },
   "map": {
   "title": "Nearby Places",
@@ -324,6 +376,19 @@
 
     "aboutTab": "About",
     "menuTab": "Menu",
+    "reviewsTab": "Reviews",
+    "writeReview": "Write a Review",
+    "noReviews": "No reviews yet",
+    "yourRating": "Your rating",
+    "commentPlaceholder": "Write your review... (optional)",
+    "submitReview": "Submit",
+    "cancelReview": "Cancel",
+    "submittingReview": "Submitting...",
+    "reviewsEmpty": "No reviews yet. Be the first to write one!",
+    "reviewsLoading": "Loading reviews…",
+    "noReviewsSub": "If you've visited this venue, share your experience.",
+    "submitReviewError": "Failed to submit review.",
+    "callError": "Unable to initiate a phone call.",
     "menuTitle": "Menu",
     "menuComingSoon": "This venue hasn’t shared its menu yet.",
     "noAbout": "No description for this venue.",
@@ -367,7 +432,21 @@
     "loadError": "Failed to load restaurant",
     "favoriteError": "Favorite operation failed"
   },
-   "reservationStep2": {
+  "reservationStep1": {
+    "stepLabel": "Step 1 / 3",
+    "title": "Date & Time",
+    "dateLabel": "Date",
+    "timeLabel": "Time",
+    "partyLabel": "Number of Guests",
+    "partySuffix": "guests",
+    "errorMinParty": "Number of guests must be at least 1.",
+    "ctaContinue": "Continue",
+    "datePickerTitle": "Select Date",
+    "timePickerTitle": "Select Time",
+    "confirm": "OK"
+  },
+  "reservationStep2": {
+    "stepLabel": "Step 2 / 3",
     "title": "Guest & Menu Selection",
     "subtitle": "Choose one menu for each guest.",
     "loading": "Loading menus…",
@@ -382,6 +461,7 @@
     "skipInfo": "You are continuing without a fixed menu. No fixed-menu fee will be added in the summary."
   },
   "reservationStep3": {
+  "stepLabel": "Step 3 / 3",
   "title": "Reservation Summary",
   "dateTimeLabel": "Date & Time",
   "partySizeLabel": "Guests",
@@ -702,6 +782,53 @@
     "invalidQrMessage": "The scanned QR code does not contain valid restaurant information."
   },
   "delivery": {
+    "title": "Delivery",
+    "subtitle": "Delivered to your door",
+    "addressSheetTitle": "Select Delivery Address",
+    "currentLocation": "Current Location",
+    "gettingLocation": "Getting location…",
+    "savedAddresses": "Saved Addresses",
+    "addressLabel": "Address",
+    "addNewAddress": "Add New Address",
+    "selectAddress": "Select address",
+    "deliveryAddress": "Delivery Address",
+    "searchPlaceholder": "Search restaurants",
+    "loadingRestaurants": "Loading restaurants…",
+    "restaurants": "Restaurants",
+    "updating": "Updating…",
+    "freeDelivery": "Free Delivery",
+    "deliveryChip": "Delivery",
+    "noResults": "No results found",
+    "noRestaurant": "No restaurants found",
+    "noResultsQuery": "No restaurants match \"{{query}}\".",
+    "noRestaurantSub": "No restaurants deliver to the selected address.",
+    "cartItems": "{{count}} items",
+    "goToCart": "Go to Cart",
+    "errorGeneric": "Something went wrong",
+    "cat": {
+      "all": "All",
+      "burger": "Burgers",
+      "doner": "Döner",
+      "pizza": "Pizza",
+      "cigkofte": "Çiğ Köfte",
+      "tavuk": "Chicken",
+      "kofte": "Köfte",
+      "kebap": "Kebab",
+      "pide": "Pide & Lahmacun",
+      "sandvic": "Toast & Sandwiches",
+      "tantuni": "Tantuni",
+      "manti": "Pasta & Noodles",
+      "ev": "Home Cooking",
+      "pastane": "Bakery",
+      "corba": "Soup",
+      "salata": "Salads & Healthy",
+      "tatli": "Desserts",
+      "kahve": "Coffee & Drinks",
+      "sushi": "Asian",
+      "dunya": "World Cuisine",
+      "balik": "Seafood",
+      "sokak": "Street Food"
+    },
     "address": {
       "title": "Add Address",
       "subtitle": "A location pin is required for delivery service.",
@@ -736,6 +863,71 @@
       "pinRequiredBody": "A location pin is required to add an address.",
       "home": "Home",
       "work": "Work"
+    }
+  },
+  "myOrders": {
+    "title": "My Orders",
+    "subtitle": "Delivery & Market",
+    "orderCount": "orders",
+    "loading": "Loading…",
+    "loadError": "Failed to load orders",
+    "retry": "Try Again",
+    "unknownStore": "Restaurant",
+    "filter": {
+      "all": "All",
+      "delivery": "Delivery",
+      "market": "Market"
+    },
+    "status": {
+      "preparing": "Preparing",
+      "onTheWay": "On the way",
+      "delivered": "Delivered",
+      "cancelled": "Cancelled",
+      "ready": "Ready"
+    },
+    "action": {
+      "detail": "Details",
+      "repeat": "Reorder"
+    },
+    "empty": {
+      "title": "No orders yet",
+      "all": "Your delivery and market orders will appear here.",
+      "delivery": "You haven't placed any delivery orders yet.",
+      "market": "You haven't placed any market orders yet."
+    }
+  },
+  "market": {
+    "title": "Market",
+    "subtitle": "Fresh products delivered to your door",
+    "deliveryAddress": "Delivery Address",
+    "currentLocation": "Current Location",
+    "selectAddress": "Select Address",
+    "gettingLocation": "Getting location…",
+    "selectDeliveryAddress": "Select delivery address",
+    "searchPlaceholder": "Search stores or products",
+    "stores": "Stores",
+    "loadError": "Failed to load stores.",
+    "noResultsTitle": "No results found",
+    "noStoreTitle": "No stores yet",
+    "connectionError": "Connection error",
+    "connectionErrorSub": "Check your internet connection.",
+    "noResultsQuery": "No results for \"{{query}}\".",
+    "noStoreSub": "Stores will be added soon.",
+    "retry": "Try Again",
+    "cartItems": "{{count}} items",
+    "goToCart": "Go to Cart",
+    "freeDelivery": "Free Delivery",
+    "freeThreshold": "Free over ₺{{amount}}",
+    "pickupAvailable": "Pickup",
+    "cat": {
+      "all": "All",
+      "supermarket": "Supermarket",
+      "greengrocer": "Greengrocer",
+      "bakery": "Bakery",
+      "organic": "Organic",
+      "water": "Water",
+      "tup": "Gas",
+      "pharmacy": "Pharmacy"
     }
   }
 }
