@@ -16,7 +16,7 @@ import {
   KeyboardAvoidingView,
   ScrollView,
 } from 'react-native';
-import MapView, { Marker, Polyline, UrlTile } from 'react-native-maps';
+import MapView, { Marker, Polyline, UrlTile, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MapPin, Navigation, ChevronLeft, Banknote, CreditCard, Smartphone } from 'lucide-react-native';
 import { useStripe } from '@stripe/stripe-react-native';
@@ -297,6 +297,8 @@ export default function TaxiDestinationScreen({ navigation }: any) {
     >
       {/* Map — top half */}
       <MapView
+        provider={PROVIDER_GOOGLE}
+        mapType="none"
         style={s.map}
         region={mapRegion}
         pitchEnabled={false}

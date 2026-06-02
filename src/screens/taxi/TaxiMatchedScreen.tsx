@@ -9,7 +9,7 @@ import {
   Alert,
   TouchableOpacity,
 } from 'react-native';
-import MapView, { Marker, Polyline, UrlTile } from 'react-native-maps';
+import MapView, { Marker, Polyline, UrlTile, PROVIDER_GOOGLE } from 'react-native-maps';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -244,6 +244,8 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
       {/* Map */}
       <MapView
         ref={mapRef}
+        provider={PROVIDER_GOOGLE}
+        mapType="none"
         style={s.map}
         region={mapRegion}
       >

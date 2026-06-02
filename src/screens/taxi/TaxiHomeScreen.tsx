@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   Pressable,
 } from 'react-native';
-import MapView, { Marker, UrlTile } from 'react-native-maps';
+import MapView, { Marker, UrlTile, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import { MapPin, Car, Users, Crown, PawPrint, ChevronLeft, History } from 'lucide-react-native';
@@ -129,6 +129,8 @@ export default function TaxiHomeScreen({ navigation, route }: any) {
       {/* Full-screen map */}
       <MapView
         ref={mapRef}
+        provider={PROVIDER_GOOGLE}
+        mapType="none"
         style={StyleSheet.absoluteFill}
         initialRegion={userRegion}
         showsUserLocation
