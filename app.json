@@ -58,7 +58,12 @@
           ]
         }
       ],
-      "versionCode": 28
+      "versionCode": 29,
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyBTZ7evrDuZfm81QnzFYbyYTgyCmyL6XLQ"
+        }
+      }
     },
     "web": {
       "favicon": "./src/assets/favicon.png"
