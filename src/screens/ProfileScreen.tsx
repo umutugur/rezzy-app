@@ -5,6 +5,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  Pressable,
   Image,
   Alert,
   ScrollView,
@@ -39,6 +40,7 @@ import { useI18n } from "../i18n";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetStarted } from "../store/useGetStarted";
 import { useTheme } from '../contexts/ThemeContext';
+import { useThemePreference, setThemePreference, type ThemePref } from "../hooks/useThemePreference";
 
 type RegionCode = "CY" | "UK";
 type LangCode = "tr" | "en" | "ru" | "el";
@@ -68,6 +70,7 @@ const Money = ({ n }: { n?: number }) => {
 
 export default function ProfileScreen() {
   const theme = useTheme();
+  const { preference: themePref } = useThemePreference();
   const navigation = useNavigation<any>();
   const { user, updateUser, clear } = useAuth();
   const insets = useSafeAreaInsets();
@@ -604,6 +607,52 @@ export default function ProfileScreen() {
   function AppPrefs() {
     return (
       <>
+        {/* Görünüm / Tema satırı */}
+        <View style={{
+          backgroundColor: theme.colors.surface,
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: theme.colors.borderDefault,
+        }}>
+          <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 13, gap: 13 }}>
+            <View style={{ width: 34, height: 34, borderRadius: 9, backgroundColor: theme.colors.surfaceAlt, alignItems: "center", justifyContent: "center" }}>
+              <Ionicons
+                name={themePref === 'dark' ? "moon-outline" : themePref === 'light' ? "sunny-outline" : "phone-portrait-outline"}
+                size={18}
+                color={theme.colors.primary}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 10, fontWeight: "700", color: theme.colors.textSecondary, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 3 }}>
+                GÖRÜNÜM
+              </Text>
+              <View style={{ flexDirection: "row", gap: 8, marginTop: 4 }}>
+                {(["light", "dark", "system"] as ThemePref[]).map((opt) => {
+                  const labels: Record<ThemePref, string> = { light: "☀️ Açık", dark: "🌙 Koyu", system: "📱 Sistem" };
+                  const active = themePref === opt;
+                  return (
+                    <Pressable
+                      key={opt}
+                      onPress={() => setThemePreference(opt)}
+                      style={{
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        borderRadius: 20,
+                        borderWidth: 1.5,
+                        borderColor: active ? theme.colors.primary : theme.colors.borderDefault,
+                        backgroundColor: active ? theme.colors.primary : theme.colors.surface,
+                      }}
+                    >
+                      <Text style={{ fontSize: 12, fontWeight: "700", color: active ? theme.colors.textInverse : theme.colors.textSecondary }}>
+                        {labels[opt]}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          </View>
+        </View>
+
         {/* Bölge satırı */}
         <Animated.View style={{
           backgroundColor: highlightAnim.interpolate({
