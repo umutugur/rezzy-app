@@ -18,10 +18,21 @@ export interface RideLocation {
 export type VehicleType = 'ride' | 'xl' | 'lux' | 'pet';
 export type RideStatus = 'searching' | 'matched' | 'inProgress' | 'completed' | 'cancelled';
 
+export interface TaxiDriverInfo {
+  _id: string;
+  vehiclePlate: string;
+  vehicleBrand: string;
+  vehicleModel: string;
+  vehicleColor: string;
+  rating: number;
+  ratingCount: number;
+  user?: { _id: string; name: string; phone?: string };
+}
+
 export interface TaxiRide {
   _id: string;
   passenger: string | { _id: string; name: string; phone?: string };
-  driver?: any;
+  driver?: TaxiDriverInfo | null;
   pickup: RideLocation;
   dropoff: RideLocation;
   vehicleType: VehicleType;
@@ -31,10 +42,13 @@ export interface TaxiRide {
   durationMin: number;
   paymentMethod: string;
   requestedAt?: string;
+  matchedAt?: string;
   startedAt?: string;
   completedAt?: string;
-  cancelledBy?: 'passenger' | 'driver';
+  cancelledBy?: 'passenger' | 'driver' | 'system';
   cancelReason?: string;
+  passengerRating?: number | null;
+  driverRating?: number | null;
 }
 
 export interface FareEstimate {
@@ -115,6 +129,22 @@ export async function getRide(id: string): Promise<TaxiRide> {
 export async function cancelRide(id: string, reason?: string): Promise<TaxiRide> {
   const { data } = await api.patch(`/taxi/rides/${id}/cancel`, { reason });
   return data.ride ?? data;
+}
+
+/** GET /api/taxi/my-rides — yolcunun geçmiş yolculukları (sayfalama) */
+export async function getMyRides(page = 1, limit = 20): Promise<{
+  rides: TaxiRide[];
+  total: number;
+  page: number;
+  pages: number;
+}> {
+  const res = await api.get('/taxi/my-rides', { params: { page, limit } });
+  return res.data;
+}
+
+/** PATCH /api/taxi/rides/:id/rate — yolcu sürücüyü puanlar */
+export async function rateRide(rideId: string, passengerRating: number): Promise<void> {
+  await api.patch(`/taxi/rides/${rideId}/rate`, { passengerRating });
 }
 
 /** GET /api/taxi/places/search */
