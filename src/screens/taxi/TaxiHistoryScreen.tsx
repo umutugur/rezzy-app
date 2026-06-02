@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, History, Star } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useI18n } from '../../i18n';
 import { getMyRides, type TaxiRide } from '../../api/taxi';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -21,11 +22,11 @@ function formatDate(dateStr?: string): string {
   return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
-function StatusBadge({ status, theme }: { status: string; theme: ReturnType<typeof useTheme> }) {
+function StatusBadge({ status, theme, t }: { status: string; theme: ReturnType<typeof useTheme>; t: (k: string) => string }) {
   const isCompleted = status === 'completed';
   const isCancelled = status === 'cancelled';
   const bg = isCompleted ? theme.colors.success : isCancelled ? theme.colors.error : theme.colors.textTertiary;
-  const label = isCompleted ? 'Tamamlandı' : isCancelled ? 'İptal' : status;
+  const label = isCompleted ? t('taxi.status.completed') : isCancelled ? t('taxi.status.cancelled') : status;
   return (
     <View style={{ backgroundColor: bg + '22', borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 }}>
       <Text style={{ color: bg, fontSize: 11, fontWeight: '600' }}>{label}</Text>
@@ -38,6 +39,7 @@ function StatusBadge({ status, theme }: { status: string; theme: ReturnType<type
 export default function TaxiHistoryScreen({ navigation }: any) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const { t } = useI18n();
 
   const [rides, setRides] = useState<TaxiRide[]>([]);
   const [page, setPage] = useState(1);
@@ -80,7 +82,7 @@ export default function TaxiHistoryScreen({ navigation }: any) {
         <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()} hitSlop={12}>
           <ChevronLeft size={20} color={theme.colors.textPrimary} strokeWidth={2.5} />
         </TouchableOpacity>
-        <Text style={s.headerTitle}>Geçmiş Yolculuklar</Text>
+        <Text style={s.headerTitle}>{t('taxi.history.title')}</Text>
         <View style={{ width: 34 }} />
       </View>
 
@@ -91,7 +93,7 @@ export default function TaxiHistoryScreen({ navigation }: any) {
       ) : rides.length === 0 ? (
         <View style={s.centered}>
           <History size={48} color={theme.colors.textTertiary} />
-          <Text style={s.emptyText}>Henüz yolculuğunuz yok</Text>
+          <Text style={s.emptyText}>{t('taxi.history.empty')}</Text>
         </View>
       ) : (
         <FlatList
@@ -121,7 +123,7 @@ export default function TaxiHistoryScreen({ navigation }: any) {
 
               {/* Meta row */}
               <View style={s.metaRow}>
-                <StatusBadge status={item.status} theme={theme} />
+                <StatusBadge status={item.status} theme={theme} t={t} />
                 <Text style={s.dateText}>{formatDate(item.completedAt ?? item.requestedAt)}</Text>
                 <Text style={s.fareText}>₺{item.fare?.toFixed(2) ?? '—'}</Text>
                 {item.status === 'completed' && (
@@ -130,7 +132,7 @@ export default function TaxiHistoryScreen({ navigation }: any) {
                         <Star size={11} color={theme.taxi.main} fill={theme.taxi.main} />
                         <Text style={[s.ratingBadgeText, { color: theme.taxi.main }]}>{item.passengerRating}</Text>
                       </View>
-                    : <Text style={s.rateLink}>Değerlendir →</Text>
+                    : <Text style={s.rateLink}>{t('taxi.history.rateLink')}</Text>
                 )}
               </View>
             </TouchableOpacity>

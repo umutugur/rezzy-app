@@ -196,11 +196,11 @@
     "actionsFilters": "Фильтры"
   },
   "map": {
-  "title": "Заведения рядом",
-  "noLocation": "Не удалось получить доступ к геопозиции. Проверьте разрешения или выберите другой город.",
-  "noResults": "В этом районе подходящих заведений не найдено.",
-  "calloutMore": "Подробнее"
-},
+    "title": "Заведения рядом",
+    "noLocation": "Не удалось получить доступ к геопозиции. Проверьте разрешения или выберите другой город.",
+    "noResults": "В этом районе подходящих заведений не найдено.",
+    "calloutMore": "Подробнее"
+  },
   "bookings": {
     "receipt": {
       "upload": "Загрузить квитанцию",
@@ -242,55 +242,46 @@
     "start": "Начало",
     "end": "Конец"
   },
-  "search": { "placeholder": "Поиск ресторана..." },
+  "search": {
+    "placeholder": "Поиск ресторана..."
+  },
   "restaurantDetail": {
     "loading": "Загрузка…",
     "notFoundTitle": "Ресторан не найден",
     "notFoundText": "Этот ресторан не существует или был удалён.",
     "back": "Назад",
-
     "aboutTab": "О заведении",
     "menuTab": "Меню",
     "menuTitle": "Меню",
     "menuComingSoon": "Это заведение ещё не добавило меню.",
     "noAbout": "Описание для этого заведения отсутствует.",
-
     "noPhoto": "Фото отсутствует",
-
     "fixedMenus": "Фикс-меню",
     "noMenu": "Меню отсутствует.",
     "perPerson": "за человека",
     "expandAll": "Открыть все",
     "collapseAll": "Свернуть все",
     "menuLoading": "Загрузка меню...",
-
-
     "findSlot": "Найти время",
     "date": "Дата",
     "partySize": "Количество гостей",
     "slotsSearching": "Поиск доступных времён…",
     "noSlots": "Доступного времени нет.",
-
     "noPhotoShort": "Нет фото",
-
     "about": "О ресторане",
     "contact": "Контакты",
     "noPhone": "Нет телефона",
     "noAddress": "Нет адреса",
-
     "ctaSelectDateTime": "Выберите дату и время",
     "ctaPeople": "{{count}} чел.",
     "ctaContinue": "Продолжить",
-
     "pastTimeTitle": "Прошедшее время",
     "pastTimeBody": "Нельзя бронировать на прошедшее время.",
     "pastDateTimeTitle": "Прошедшая дата",
     "pastDateTimeBody": "Выберите будущую дату и время.",
-
     "loginRequiredTitle": "Требуется вход",
     "loginRequiredBodyReservation": "Чтобы забронировать, необходимо войти.",
     "loginRequiredBodyFavorite": "Чтобы добавить в избранное, необходимо войти.",
-
     "loadError": "Ошибка загрузки ресторана",
     "favoriteError": "Не удалось добавить в избранное"
   },
@@ -304,7 +295,7 @@
     "toastAllRequired": "Пожалуйста, выберите меню для всех.",
     "missingTitle": "Не выбрано",
     "ctaContinue": "Продолжить",
-     "skipFixedMenus": "Не хочу фикс-меню",
+    "skipFixedMenus": "Не хочу фикс-меню",
     "skipFixedMenusHelp": "Вы можете продолжить без выбора фикс-меню.",
     "skipInfo": "Вы продолжаете без фикс-меню. Стоимость фикс-меню не будет добавлена в итог."
   },
@@ -333,25 +324,20 @@
     "toastCreateError": "Ошибка создания/квитанции",
     "fallbackMenuName": "Меню",
     "paymentMethodTitle": "Способ оплаты",
-  "methodBankTransfer": "Банковский перевод / IBAN",
-  "methodCard": "Карта / Apple / Google Pay",
-  "copy": "Копировать",
-
-  "noFixedMenusSelected": "Фикс-меню не выбрано.",
-
-
-  "receiptInfoForCard": "Если вы платите картой, загружать квитанцию не нужно.",
-
-  "ctaStripeProcessing": "Обработка платежа...",
-  "ctaStripePay": "Оплатить картой / Apple / Google Pay",
-
-  "toastNoDepositForCard": "Для этого заведения депозит не настроен.",
-  "toastStripeInitError": "Не удалось начать платеж. Попробуйте еще раз.",
-  "toastStripePaymentError": "Платеж не был завершен. Попробуйте еще раз.",
-  "toastStripeSuccess": "Платеж успешно выполнен.",
-  "methodCardShort": "Оплатить картой",
-  "ctaStripePayWithAmount": "Оплатить {{amount}}",
-  "paySuffix": "оплатить"
+    "methodBankTransfer": "Банковский перевод / IBAN",
+    "methodCard": "Карта / Apple / Google Pay",
+    "copy": "Копировать",
+    "noFixedMenusSelected": "Фикс-меню не выбрано.",
+    "receiptInfoForCard": "Если вы платите картой, загружать квитанцию не нужно.",
+    "ctaStripeProcessing": "Обработка платежа...",
+    "ctaStripePay": "Оплатить картой / Apple / Google Pay",
+    "toastNoDepositForCard": "Для этого заведения депозит не настроен.",
+    "toastStripeInitError": "Не удалось начать платеж. Попробуйте еще раз.",
+    "toastStripePaymentError": "Платеж не был завершен. Попробуйте еще раз.",
+    "toastStripeSuccess": "Платеж успешно выполнен.",
+    "methodCardShort": "Оплатить картой",
+    "ctaStripePayWithAmount": "Оплатить {{amount}}",
+    "paySuffix": "оплатить"
   },
   "restaurant": {
     "noMenus": "Меню отсутствует."
@@ -400,14 +386,11 @@
   "contact": {
     "title": "Контакты",
     "subtitle": "Свяжитесь с нами по вопросам бронирований, доставки, QR‑меню и платежей.",
-
     "emailTitle": "Поддержка по email",
     "emailDesc": "Пишите нам по любым вопросам и запросам поддержки.",
-
     "workHoursTitle": "Часы работы",
     "workdays": "Будни",
     "workhours": "09:00 — 18:00",
-
     "moreInfo": "Дополнительная информация",
     "moreInfoDesc": "Скоро здесь появится больше сведений и каналов поддержки."
   },
@@ -474,30 +457,23 @@
   "privacy": {
     "title": "Политика конфиденциальности",
     "subtitle": "Мы ценим вашу конфиденциальность.",
-
     "collected": "Собираемые данные",
     "collected_id": "Контактные данные (имя, email, телефон) и адреса доставки",
     "collected_usage": "Данные о бронированиях, доставке и заказах по QR‑меню; предпочтения по оплате",
     "collected_device": "Информация об устройстве/сессии, push‑токен и геолокация при разрешении",
-
     "usage": "Использование данных",
     "usage_reservation": "Для управления бронированиями, доставкой и заказами по QR‑меню",
     "usage_notifications": "Для уведомлений о заказах, оплате и доставке",
     "usage_security": "Для безопасности, предотвращения мошенничества и соблюдения закона",
-
     "sharing": "Передача данных",
     "sharing_restaurants": "Данные заказов и бронирований передаются соответствующим ресторанам",
     "sharing_law": "Оплата может обрабатываться доверенными провайдерами (например, Stripe) и по требованиям закона",
-
     "retention": "Хранение данных",
     "retention_text": "Хранится только при необходимости.",
-
     "rights": "Ваши права",
     "rights_text": "Вы можете запросить изменение или удаление своих данных.",
-
     "cookies": "Cookies",
     "cookies_text": "Мы используем базовые cookies.",
-
     "contact": "Контакты",
     "contact_text": "Свяжитесь с нами по любым вопросам или запросам.",
     "disclaimer": "Политика может быть обновлена."
@@ -532,27 +508,27 @@
     "continueAsGuest": "Продолжить как гость"
   },
   "filter": {
-  "open": "Фильтр",
-  "title": "Фильтр",
-  "clearAll": "Сбросить всё",
-  "date": "Дата",
-  "datePlaceholder": "Выберите дату",
-  "time": "Время",
-  "timePlaceholder": "Выберите время",
-  "people": "Количество человек",
-  "city": "Город",
-  "cityHint": "Город можно изменить в верхней панели.",
-  "price": "Ценовой диапазон",
-  "apply": "Найти заведение"
-},
- "qrMenu": {
-   "cartTitle": "Корзина",
-  "cartTotalShort": "Итого",
-  "cleared": "Корзина очищена.",
-  "unit": "Цена за единицу",
-  "line": "Промежуточный итог",
-  "cartClearTitle": "Очистить корзину",
-  "cartClearMessage": "Удалить все товары из корзины?",
+    "open": "Фильтр",
+    "title": "Фильтр",
+    "clearAll": "Сбросить всё",
+    "date": "Дата",
+    "datePlaceholder": "Выберите дату",
+    "time": "Время",
+    "timePlaceholder": "Выберите время",
+    "people": "Количество человек",
+    "city": "Город",
+    "cityHint": "Город можно изменить в верхней панели.",
+    "price": "Ценовой диапазон",
+    "apply": "Найти заведение"
+  },
+  "qrMenu": {
+    "cartTitle": "Корзина",
+    "cartTotalShort": "Итого",
+    "cleared": "Корзина очищена.",
+    "unit": "Цена за единицу",
+    "line": "Промежуточный итог",
+    "cartClearTitle": "Очистить корзину",
+    "cartClearMessage": "Удалить все товары из корзины?",
     "loading": "Загрузка…",
     "cartEmptyTitle": "Корзина пуста",
     "cartEmptyMessage": "Пожалуйста, выберите хотя бы одно блюдо.",
@@ -603,19 +579,18 @@
     "billItemFallback": "Блюдо",
     "photoMissing": "Нет фото",
     "waiterCallSuccessTitle": "Официант вызван",
-  "waiterCallSuccessMessage": "Официант скоро подойдёт к вашему столику.",
-  "billRequestSuccessTitle": "Счёт запрошен",
-  "billRequestSuccessMessage": "Ваш счёт готовится.",
-  "quickRequestError": "Не удалось отправить запрос. Попробуйте ещё раз."
+    "waiterCallSuccessMessage": "Официант скоро подойдёт к вашему столику.",
+    "billRequestSuccessTitle": "Счёт запрошен",
+    "billRequestSuccessMessage": "Ваш счёт готовится.",
+    "quickRequestError": "Не удалось отправить запрос. Попробуйте ещё раз."
   },
-   "assistant": {
+  "assistant": {
     "loading": "Ассистент загружается...",
     "inputPlaceholder": "Спросите о заведениях, бронированиях или о чём-нибудь в Rezvix...",
     "hint": "Напр.: «Можешь посоветовать место в Кирении на 4 человек сегодня вечером?»",
     "errorInit": "Ассистент сейчас недоступен. Попробуйте позже.",
     "errorSend": "Не удалось обработать сообщение. Пожалуйста, попробуйте ещё раз."
   },
-  
   "qrScan": {
     "permissionCheckingText": "Проверка разрешения на камеру…",
     "cameraRequiredTitle": "Необходимо разрешение на камеру",
@@ -663,6 +638,38 @@
       "pinRequiredBody": "Для добавления адреса необходимо указать точку на карте.",
       "home": "Дом",
       "work": "Работа"
+    }
+  },
+  "taxi": {
+    "history": {
+      "title": "История поездок",
+      "empty": "Поездок пока нет",
+      "rateLink": "Оценить →"
+    },
+    "status": {
+      "completed": "Завершено",
+      "cancelled": "Отменено"
+    },
+    "detail": {
+      "title": "Детали поездки",
+      "fetchError": "Не удалось загрузить данные поездки.",
+      "route": "Маршрут",
+      "tripInfo": "Информация о поездке",
+      "driverVehicle": "Водитель и автомобиль",
+      "rating": "Оценка",
+      "date": "Дата",
+      "distance": "Расстояние",
+      "duration": "Длительность",
+      "fare": "Стоимость",
+      "payment": "Оплата",
+      "cash": "Наличные",
+      "card": "Карта",
+      "online": "Online",
+      "driver": "Водитель",
+      "ratePrompt": "Как вам поездка?",
+      "ratedText": "Вы оценили поездку",
+      "submit": "Отправить",
+      "ratingError": "Не удалось сохранить оценку."
     }
   }
 }

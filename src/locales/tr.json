@@ -240,37 +240,55 @@
     "typeCoffeeShop": "Coffee Shop"
   },
   "map": {
-  "title": "Yakındaki Mekanlar",
-  "noLocation": "Konum bilgisine erişilemedi. Lütfen konum iznini kontrol edin veya farklı bir şehir seçin.",
-  "noResults": "Bu bölgede uygun mekan bulunamadı.",
-  "calloutMore": "Detaya git"
-},
+    "title": "Yakındaki Mekanlar",
+    "noLocation": "Konum bilgisine erişilemedi. Lütfen konum iznini kontrol edin veya farklı bir şehir seçin.",
+    "noResults": "Bu bölgede uygun mekan bulunamadı.",
+    "calloutMore": "Detaya git"
+  },
   "bookings": {
-     "receipt": {
-    "upload": "Dekont Yükle",
-    "uploading": "Yükleniyor…",
-    "acceptedFormats": "Kabul edilen: JPG/PNG",
-    "view": "Görüntüle",
-    "replace": "Değiştir",
-    "share": "Paylaş",
-    "tapToClose": "Kapatmak için dokun"
+    "receipt": {
+      "upload": "Dekont Yükle",
+      "uploading": "Yükleniyor…",
+      "acceptedFormats": "Kabul edilen: JPG/PNG",
+      "view": "Görüntüle",
+      "replace": "Değiştir",
+      "share": "Paylaş",
+      "tapToClose": "Kapatmak için dokun"
+    },
+    "title": "Rezervasyonlarım",
+    "guest": {
+      "title": "Rezervasyonlarınız",
+      "subtitle": "Tüm rezervasyonlarınızı tek yerden görüntülemek ve yönetmek için giriş yapın.",
+      "login": "Giriş Yap"
+    },
+    "loading": "Rezervasyonlar yükleniyor...",
+    "loadError": "Rezervasyonlar yüklenemedi.",
+    "errorPrefix": "Hata:",
+    "emptyTitle": "Sonuç Yok",
+    "emptySubtitle": "Bu filtreye uygun rezervasyon bulunamadı.",
+    "restaurantFallback": "Restoran"
   },
-  "title": "Rezervasyonlarım",
-  "guest": {
-    "title": "Rezervasyonlarınız",
-    "subtitle": "Tüm rezervasyonlarınızı tek yerden görüntülemek ve yönetmek için giriş yapın.",
-    "login": "Giriş Yap"
+  "filters": {
+    "all": "Tümü",
+    "active": "Aktif",
+    "past": "Geçmiş",
+    "advanced": "Gelişmiş Filtre",
+    "byStatus": "Duruma Göre Filtrele"
   },
-  "loading": "Rezervasyonlar yükleniyor...",
-  "loadError": "Rezervasyonlar yüklenemedi.",
-  "errorPrefix": "Hata:",
-  "emptyTitle": "Sonuç Yok",
-  "emptySubtitle": "Bu filtreye uygun rezervasyon bulunamadı.",
-  "restaurantFallback": "Restoran"
-},
- "filters": { "all": "Tümü", "active": "Aktif", "past": "Geçmiş", "advanced": "Gelişmiş Filtre", "byStatus": "Duruma Göre Filtrele" },
-  "time": { "all": "Hepsi", "today": "Bugün", "week": "Bu Hafta", "custom": "Tarih Seç", "rangeTitle": "Tarih Aralığı Seçin", "apply": "Uygula", "clear": "Temizle", "start": "Başlangıç", "end": "Bitiş" },
-  "search": { "placeholder": "Restoran ara..." },
+  "time": {
+    "all": "Hepsi",
+    "today": "Bugün",
+    "week": "Bu Hafta",
+    "custom": "Tarih Seç",
+    "rangeTitle": "Tarih Aralığı Seçin",
+    "apply": "Uygula",
+    "clear": "Temizle",
+    "start": "Başlangıç",
+    "end": "Bitiş"
+  },
+  "search": {
+    "placeholder": "Restoran ara..."
+  },
   "restaurantDetail": {
     "loading": "Yükleniyor…",
     "notFoundTitle": "Restoran Bulunamadı",
@@ -279,7 +297,6 @@
     "expandAll": "Hepsini Aç",
     "collapseAll": "Hepsini Kapat",
     "menuLoading": "Menü yükleniyor...",
-    
     "aboutTab": "Hakkında",
     "menuTab": "Menü",
     "reviewsTab": "Yorumlar",
@@ -298,40 +315,30 @@
     "menuTitle": "Menü",
     "menuComingSoon": "Bu mekan henüz menüsünü paylaşmadı.",
     "noAbout": "Bu mekan için açıklama yok.",
-
     "noPhoto": "Fotoğraf bulunamadı",
-
     "fixedMenus": "Fix Menüler",
     "noMenu": "Bu restoran için menü bulunamadı.",
     "perPerson": "kişi başı",
-
     "findSlot": "Uygun Saat Bul",
     "date": "Tarih",
     "partySize": "Kişi Sayısı",
     "slotsSearching": "Uygun saatler aranıyor…",
     "noSlots": "Uygun saat bulunamadı.",
-
     "noPhotoShort": "Foto yok",
-
-
     "about": "Hakkında",
     "contact": "İletişim",
     "noPhone": "Telefon bilgisi yok",
     "noAddress": "Adres bilgisi yok",
-
     "ctaSelectDateTime": "Tarih & Saat Seçin",
     "ctaPeople": "{{count}} Kişi",
     "ctaContinue": "Devam Et",
-
     "pastTimeTitle": "Geçmiş saat",
     "pastTimeBody": "Geçmiş bir tarih/saat için rezervasyon yapılamaz.",
     "pastDateTimeTitle": "Geçmiş tarih/saat",
     "pastDateTimeBody": "Lütfen ileri bir tarih ve saat seçin.",
-
     "loginRequiredTitle": "Giriş gerekli",
     "loginRequiredBodyReservation": "Rezervasyon oluşturmak için giriş yapmalısın.",
     "loginRequiredBodyFavorite": "Favorilere eklemek için giriş yapmalısın.",
-
     "loadError": "Restoran yüklenemedi",
     "favoriteError": "Favori işlemi başarısız"
   },
@@ -364,105 +371,98 @@
     "skipInfo": "Fix menü seçmeden devam ediyorsunuz. Özet ekranında fix menü ücreti eklenmeyecek."
   },
   "reservationStep3": {
-  "stepLabel": "Adım 3 / 3",
-  "title": "Rezervasyon Özeti",
-  "dateTimeLabel": "Tarih & Saat",
-  "partySizeLabel": "Kişi",
-  "selectedMenusTitle": "Seçilen Menüler",
-  "subtotalLabel": "Ara toplam",
-  "depositLabel": "Kapora",
-  "totalLabel": "Genel toplam",
-  "noMenus": "Menü seçimi bulunamadı.",
-  "paymentInfoTitle": "Ödeme Bilgileri",
-  "bankLabel": "Banka",
-  "ibanNameLabel": "IBAN İsim",
-  "ibanLabel": "IBAN",
-  "depositHint": "Lütfen kaporayı yatırdıktan sonra dekontu yükleyin.",
-  "receiptTitle": "Dekont",
-  "ctaCreating": "Oluşturuluyor...",
-  "ctaCreate": "Rezervasyonu Oluştur",
-  "ctaPickReceipt": "Dekont Seçin",
-  "toastCopied": "Kopyalandı",
-  "toastReceiptSelected": "Dekont seçildi",
-  "toastMissing": "Eksik bilgi",
-  "toastNoId": "Rezervasyon ID alınamadı",
-  "toastCreateError": "Oluşturma/Dekont hatası",
-  "fallbackMenuName": "Menü",
-   "paymentMethodTitle": "Ödeme yöntemi",
-  "methodBankTransfer": "Havale / IBAN",
-  "methodCard": "Kart / Apple / Google Pay",
-  "copy": "Kopyala",
-
-   "noFixedMenusSelected": "Fix menü seçilmedi.",
-
-  "receiptInfoForCard": "Kart ile ödeme yaparsan ayrıca dekont yüklemene gerek kalmaz.",
-
-  "ctaStripeProcessing": "Ödeme işleniyor...",
-  "ctaStripePay": "Kart / Apple / Google Pay ile öde",
-
-  "toastNoDepositForCard": "Bu restoran için depozito tanımlı değil.",
-  "toastStripeInitError": "Ödeme başlatılamadı. Lütfen tekrar dene.",
-  "toastStripePaymentError": "Ödeme tamamlanamadı. Lütfen tekrar dene.",
-  "toastStripeSuccess": "Ödeme başarıyla alındı.",
-  "methodCardShort": "Kart ile Öde",
-  "ctaStripePayWithAmount": "{{amount}} öde",
-  "paySuffix": "öde"
-},
-"restaurant": {
-  "noMenus": "Bu restoran için menü bulunamadı."
-},
-"upload": {
-  "receipt": {
-    "button": "Dekont Yükle",
-    "permissionTitle": "İzin gerekli",
-    "permissionMessage": "Galeriye erişim izni verilmedi.",
-    "errorTitle": "Hata",
-    "errorMessage": "Dosya seçilirken bir sorun oluştu.",
-    "acceptedTypes": "Kabul edilen: JPG/PNG"
-  }
-},
-"about": {
-  "title": "Hakkında",
-  "subtitle": "Rezervasyon, paket servis ve QR menü siparişlerinde hızlı, güvenli ve şeffaf bir deneyim sunar.",
-  "headline": "Keşfet, sipariş ver ve güvenle öde — hepsi Rezvix’te.",
-  "description": "Rezvix; rezervasyonları, paket servis siparişlerini ve QR menü deneyimini tek yerde toplar. Online ödeme (Stripe) ve kapıda ödeme seçenekleriyle süreci kolaylaştırır; konum bazlı keşif ve bildirimlerle akışı yönetmeni sağlar.",
-  "features": {
-    "smartBooking": {
-      "title": "Akıllı rezervasyon ve sipariş akışı",
-      "desc": "Rezervasyon ve paket servis siparişleri; tarih, saat, kişi sayısı ve adres bilgileriyle hızlıca oluşturulur."
-    },
-    "deposit": {
-      "title": "Ödeme seçenekleri",
-      "desc": "Online ödeme (Stripe) veya kapıda kart/nakit seçenekleriyle esnek ve güvenli bir ödeme deneyimi."
-    },
-    "qr": {
-      "title": "QR menü ve hızlı sipariş",
-      "desc": "Mekandayken QR menüden sipariş ver, ödeme yöntemini seç ve siparişini anında ilet."
-    },
-    "transparency": {
-      "title": "Anlık durum ve bildirimler",
-      "desc": "Sipariş, teslimat ve rezervasyon durumlarını bildirimlerle takip et; süreçleri tek ekrandan yönet."
+    "stepLabel": "Adım 3 / 3",
+    "title": "Rezervasyon Özeti",
+    "dateTimeLabel": "Tarih & Saat",
+    "partySizeLabel": "Kişi",
+    "selectedMenusTitle": "Seçilen Menüler",
+    "subtotalLabel": "Ara toplam",
+    "depositLabel": "Kapora",
+    "totalLabel": "Genel toplam",
+    "noMenus": "Menü seçimi bulunamadı.",
+    "paymentInfoTitle": "Ödeme Bilgileri",
+    "bankLabel": "Banka",
+    "ibanNameLabel": "IBAN İsim",
+    "ibanLabel": "IBAN",
+    "depositHint": "Lütfen kaporayı yatırdıktan sonra dekontu yükleyin.",
+    "receiptTitle": "Dekont",
+    "ctaCreating": "Oluşturuluyor...",
+    "ctaCreate": "Rezervasyonu Oluştur",
+    "ctaPickReceipt": "Dekont Seçin",
+    "toastCopied": "Kopyalandı",
+    "toastReceiptSelected": "Dekont seçildi",
+    "toastMissing": "Eksik bilgi",
+    "toastNoId": "Rezervasyon ID alınamadı",
+    "toastCreateError": "Oluşturma/Dekont hatası",
+    "fallbackMenuName": "Menü",
+    "paymentMethodTitle": "Ödeme yöntemi",
+    "methodBankTransfer": "Havale / IBAN",
+    "methodCard": "Kart / Apple / Google Pay",
+    "copy": "Kopyala",
+    "noFixedMenusSelected": "Fix menü seçilmedi.",
+    "receiptInfoForCard": "Kart ile ödeme yaparsan ayrıca dekont yüklemene gerek kalmaz.",
+    "ctaStripeProcessing": "Ödeme işleniyor...",
+    "ctaStripePay": "Kart / Apple / Google Pay ile öde",
+    "toastNoDepositForCard": "Bu restoran için depozito tanımlı değil.",
+    "toastStripeInitError": "Ödeme başlatılamadı. Lütfen tekrar dene.",
+    "toastStripePaymentError": "Ödeme tamamlanamadı. Lütfen tekrar dene.",
+    "toastStripeSuccess": "Ödeme başarıyla alındı.",
+    "methodCardShort": "Kart ile Öde",
+    "ctaStripePayWithAmount": "{{amount}} öde",
+    "paySuffix": "öde"
+  },
+  "restaurant": {
+    "noMenus": "Bu restoran için menü bulunamadı."
+  },
+  "upload": {
+    "receipt": {
+      "button": "Dekont Yükle",
+      "permissionTitle": "İzin gerekli",
+      "permissionMessage": "Galeriye erişim izni verilmedi.",
+      "errorTitle": "Hata",
+      "errorMessage": "Dosya seçilirken bir sorun oluştu.",
+      "acceptedTypes": "Kabul edilen: JPG/PNG"
     }
   },
-  "meta": {
-    "title": "Uygulama bilgileri",
-    "version": "Sürüm",
-    "regions": "Aktif bölgeler",
-    "regionsValue": "Birleşik Krallık & Kuzey Kıbrıs (pilot)",
-    "contact": "İletişim"
-  }
-},
+  "about": {
+    "title": "Hakkında",
+    "subtitle": "Rezervasyon, paket servis ve QR menü siparişlerinde hızlı, güvenli ve şeffaf bir deneyim sunar.",
+    "headline": "Keşfet, sipariş ver ve güvenle öde — hepsi Rezvix’te.",
+    "description": "Rezvix; rezervasyonları, paket servis siparişlerini ve QR menü deneyimini tek yerde toplar. Online ödeme (Stripe) ve kapıda ödeme seçenekleriyle süreci kolaylaştırır; konum bazlı keşif ve bildirimlerle akışı yönetmeni sağlar.",
+    "features": {
+      "smartBooking": {
+        "title": "Akıllı rezervasyon ve sipariş akışı",
+        "desc": "Rezervasyon ve paket servis siparişleri; tarih, saat, kişi sayısı ve adres bilgileriyle hızlıca oluşturulur."
+      },
+      "deposit": {
+        "title": "Ödeme seçenekleri",
+        "desc": "Online ödeme (Stripe) veya kapıda kart/nakit seçenekleriyle esnek ve güvenli bir ödeme deneyimi."
+      },
+      "qr": {
+        "title": "QR menü ve hızlı sipariş",
+        "desc": "Mekandayken QR menüden sipariş ver, ödeme yöntemini seç ve siparişini anında ilet."
+      },
+      "transparency": {
+        "title": "Anlık durum ve bildirimler",
+        "desc": "Sipariş, teslimat ve rezervasyon durumlarını bildirimlerle takip et; süreçleri tek ekrandan yönet."
+      }
+    },
+    "meta": {
+      "title": "Uygulama bilgileri",
+      "version": "Sürüm",
+      "regions": "Aktif bölgeler",
+      "regionsValue": "Birleşik Krallık & Kuzey Kıbrıs (pilot)",
+      "contact": "İletişim"
+    }
+  },
   "contact": {
     "title": "İletişim",
     "subtitle": "Rezervasyon, paket servis, QR menü ve ödeme süreçleriyle ilgili her konuda bize ulaşabilirsiniz.",
-
     "emailTitle": "E-posta ile destek",
     "emailDesc": "Sorularınız, önerileriniz veya destek talepleriniz için bize e-posta gönderebilirsiniz.",
-
     "workHoursTitle": "Çalışma Saatleri",
     "workdays": "Hafta içi",
     "workhours": "09:00 — 18:00",
-
     "moreInfo": "Ek Bilgi",
     "moreInfoDesc": "Yakında Rezvix hakkında daha fazla bilgi ve ek destek kanallarını burada bulabileceksiniz."
   },
@@ -484,75 +484,68 @@
     "errorGeneric": "Hesap silme işlemi sırasında bir hata oluştu."
   },
   "helpSupport": {
-  "title": "Yardım & Destek",
-  "subtitle": "Paket servis, QR menü, ödemeler ve bildirimlerle ilgili sık sorulan sorulara hızlıca göz at.",
-  "faq": {
-    "title": "Sık Sorulan Sorular",
-    "subtitle": "En çok merak edilen konuları senin için derledik.",
-    "q1": "Paket servis veya rezervasyon nasıl oluşturulur?",
-    "q2": "QR menü ile nasıl sipariş veririm?",
-    "q3": "Ödeme ekranı açılmıyor / ödeme başarısız oldu. Ne yapmalıyım?",
-    "q4": "Konum ve bildirim izinleri neden gerekli?",
-    "a1": "İstediğin restoranı seçip tarih, saat ve kişi sayısını girerek rezervasyon oluşturabilirsin. Paket servis için adresini seçip sepetini onaylaman yeterli.",
-    "a2": "Masadaki QR kodu tarayıp menüden ürünlerini seçebilir, ödeme yöntemini belirleyerek siparişini gönderebilirsin.",
-    "a3": "İnternet bağlantını kontrol et, uygulamayı güncelle ve tekrar dene. Online ödemeler Stripe üzerinden güvenle işlenir; kart bilgileri Rezvix’te saklanmaz.",
-    "a4": "Konum izni, yakınındaki mekanları göstermek ve paket servis adresini kolaylaştırmak için gerekir. Bildirimler ise sipariş ve teslimat durumlarını anında iletmek için kullanılır."
+    "title": "Yardım & Destek",
+    "subtitle": "Paket servis, QR menü, ödemeler ve bildirimlerle ilgili sık sorulan sorulara hızlıca göz at.",
+    "faq": {
+      "title": "Sık Sorulan Sorular",
+      "subtitle": "En çok merak edilen konuları senin için derledik.",
+      "q1": "Paket servis veya rezervasyon nasıl oluşturulur?",
+      "q2": "QR menü ile nasıl sipariş veririm?",
+      "q3": "Ödeme ekranı açılmıyor / ödeme başarısız oldu. Ne yapmalıyım?",
+      "q4": "Konum ve bildirim izinleri neden gerekli?",
+      "a1": "İstediğin restoranı seçip tarih, saat ve kişi sayısını girerek rezervasyon oluşturabilirsin. Paket servis için adresini seçip sepetini onaylaman yeterli.",
+      "a2": "Masadaki QR kodu tarayıp menüden ürünlerini seçebilir, ödeme yöntemini belirleyerek siparişini gönderebilirsin.",
+      "a3": "İnternet bağlantını kontrol et, uygulamayı güncelle ve tekrar dene. Online ödemeler Stripe üzerinden güvenle işlenir; kart bilgileri Rezvix’te saklanmaz.",
+      "a4": "Konum izni, yakınındaki mekanları göstermek ve paket servis adresini kolaylaştırmak için gerekir. Bildirimler ise sipariş ve teslimat durumlarını anında iletmek için kullanılır."
+    },
+    "tips": {
+      "title": "Hızlı İpuçları",
+      "subtitle": "Sorun yaşamamak için aşağıdaki adımları kontrol et.",
+      "item1": "Bildirim ve konum izinlerinin açık olduğundan emin ol.",
+      "item2": "Rezvix uygulamasının en güncel sürümünü kullandığından emin ol.",
+      "item3": "Ödeme veya sipariş sorunlarında uygulamayı yeniden başlatmayı deneyebilirsin."
+    },
+    "contact": {
+      "title": "Hâlâ yardıma mı ihtiyacın var?",
+      "subtitle": "Bize dilediğin zaman ulaşabilirsin. En kısa sürede geri dönüş yapmaya çalışacağız.",
+      "button": "Bize ulaş"
+    }
   },
-  "tips": {
-    "title": "Hızlı İpuçları",
-    "subtitle": "Sorun yaşamamak için aşağıdaki adımları kontrol et.",
-    "item1": "Bildirim ve konum izinlerinin açık olduğundan emin ol.",
-    "item2": "Rezvix uygulamasının en güncel sürümünü kullandığından emin ol.",
-    "item3": "Ödeme veya sipariş sorunlarında uygulamayı yeniden başlatmayı deneyebilirsin."
+  "licenses": {
+    "title": "Açık Kaynak Lisansları",
+    "subtitle": "Rezvix; performans, güvenlik ve kullanıcı deneyimi için birçok açık kaynak kütüphane kullanır.",
+    "section": {
+      "overviewTitle": "Neden açık kaynak?",
+      "overviewBody1": "Rezvix, modern web ve mobil ekosisteminin güçlü açık kaynak kütüphaneleri üzerine inşa edilmiştir. Bu kütüphaneler; performans, güvenlik ve hızlı geliştirme imkânı sağlar.",
+      "overviewBody2": "Aşağıda, uygulama içerisinde kullanılan temel kütüphane gruplarını ve lisans türlerini özetledik. Detaylı lisans metinleri, ilgili projelerin GitHub sayfalarında bulunabilir.",
+      "coreTitle": "Çekirdek & Altyapı",
+      "uiTitle": "Arayüz & Etkileşim",
+      "toolingTitle": "Araçlar & Yardımcılar",
+      "noteTitle": "Önemli Not",
+      "noteBody1": "Bu liste, uygulamanın en sık kullanılan başlıca kütüphanelerini özetler. Projede ek yardımcı paketler ve geliştirme araçları da bulunabilir.",
+      "noteBody2": "Tüm kütüphaneler, kendi lisans şartlarına uygun şekilde kullanılmakta olup; hak sahiplerinin emeklerine saygı duyuyor ve açık kaynak topluluğuna teşekkür ediyoruz."
+    }
   },
-  "contact": {
-    "title": "Hâlâ yardıma mı ihtiyacın var?",
-    "subtitle": "Bize dilediğin zaman ulaşabilirsin. En kısa sürede geri dönüş yapmaya çalışacağız.",
-    "button": "Bize ulaş"
-  }
-},
-"licenses": {
-  "title": "Açık Kaynak Lisansları",
-  "subtitle": "Rezvix; performans, güvenlik ve kullanıcı deneyimi için birçok açık kaynak kütüphane kullanır.",
-  "section": {
-    "overviewTitle": "Neden açık kaynak?",
-    "overviewBody1": "Rezvix, modern web ve mobil ekosisteminin güçlü açık kaynak kütüphaneleri üzerine inşa edilmiştir. Bu kütüphaneler; performans, güvenlik ve hızlı geliştirme imkânı sağlar.",
-    "overviewBody2": "Aşağıda, uygulama içerisinde kullanılan temel kütüphane gruplarını ve lisans türlerini özetledik. Detaylı lisans metinleri, ilgili projelerin GitHub sayfalarında bulunabilir.",
-    "coreTitle": "Çekirdek & Altyapı",
-    "uiTitle": "Arayüz & Etkileşim",
-    "toolingTitle": "Araçlar & Yardımcılar",
-    "noteTitle": "Önemli Not",
-    "noteBody1": "Bu liste, uygulamanın en sık kullanılan başlıca kütüphanelerini özetler. Projede ek yardımcı paketler ve geliştirme araçları da bulunabilir.",
-    "noteBody2": "Tüm kütüphaneler, kendi lisans şartlarına uygun şekilde kullanılmakta olup; hak sahiplerinin emeklerine saygı duyuyor ve açık kaynak topluluğuna teşekkür ediyoruz."
-  }
-},
-"privacy": {
+  "privacy": {
     "title": "Gizlilik Politikası",
     "subtitle": "Gizliliğiniz bizim için önemlidir. Rezvix’nin verilerinizi nasıl topladığı, kullandığı ve koruduğunu aşağıda bulabilirsiniz.",
-
     "collected": "Topladığımız Veriler",
     "collected_id": "Kimlik ve iletişim bilgileri (isim, e-posta, telefon) ve teslimat adresleri",
     "collected_usage": "Rezervasyon, paket servis ve QR menü sipariş bilgileri; ödeme tercihleri",
     "collected_device": "Cihaz/oturum bilgileri, push token ve izin verdiğinizde konum verisi",
-
     "usage": "Verilerin Kullanımı",
     "usage_reservation": "Rezervasyonları ve paket servis siparişlerini yönetmek, QR menü siparişlerini işlemek için",
     "usage_notifications": "Sipariş, ödeme ve teslimat durum bildirimleri göndermek için",
     "usage_security": "Güvenliği artırmak, dolandırıcılığı önlemek ve yasal yükümlülükleri karşılamak için",
-
     "sharing": "Veri Paylaşımı",
     "sharing_restaurants": "Sipariş ve rezervasyon bilgileri ilgili restoranlarla paylaşılabilir",
     "sharing_law": "Ödeme işlemleri için güvenilir ödeme sağlayıcılarıyla (ör. Stripe) ve yasal zorunluluklarda paylaşım yapılabilir",
-
     "retention": "Veri Saklama",
     "retention_text": "Verileriniz yalnızca operasyonel, yasal ve güvenlik gereksinimleri için gerekli süre boyunca saklanır.",
-
     "rights": "Haklarınız",
     "rights_text": "Kişisel verilerinize erişim, düzeltme veya silme talebinde bulunabilirsiniz.",
-
     "cookies": "Çerezler",
     "cookies_text": "Rezvix, performansı artırmak ve deneyiminizi kişiselleştirmek için temel çerezler kullanır.",
-
     "contact": "İletişim",
     "contact_text": "Gizlilik politikamızla ilgili her türlü soru, görüş veya talebiniz için bizimle iletişime geçebilirsiniz.",
     "disclaimer": "Bu gizlilik politikası, şeffaflığı artırmak ve yasal uyumu sağlamak adına zaman zaman güncellenebilir."
@@ -578,30 +571,30 @@
     "lastUpdate": "Son güncelleme tarihi: 2026"
   },
   "auth": {
-  "emailLabel": "E-posta",
-  "emailPlaceholder": "ornek@mail.com",
-  "passwordLabel": "Şifre",
-  "passwordPlaceholder": "Şifreniz",
-  "loginButton": "Giriş Yap",
-  "continueWithGoogle": "Google ile devam et",
-  "continueAsGuest": "Üye olmadan devam et"
-},
-"filter": {
-  "open": "Filtrele",
-  "title": "Filtrele",
-  "clearAll": "Tümünü temizle",
-  "date": "Tarih",
-  "datePlaceholder": "Tarih seç",
-  "time": "Saat",
-  "timePlaceholder": "Saat seç",
-  "people": "Kişi sayısı",
-  "city": "Şehir",
-  "cityHint": "Şehir filtresini üst bardan değiştirebilirsin.",
-  "price": "Fiyat aralığı",
-  "apply": "Mekan Bul"
-},
-"qrMenu": {
-   "cartTitle": "Sepet",
+    "emailLabel": "E-posta",
+    "emailPlaceholder": "ornek@mail.com",
+    "passwordLabel": "Şifre",
+    "passwordPlaceholder": "Şifreniz",
+    "loginButton": "Giriş Yap",
+    "continueWithGoogle": "Google ile devam et",
+    "continueAsGuest": "Üye olmadan devam et"
+  },
+  "filter": {
+    "open": "Filtrele",
+    "title": "Filtrele",
+    "clearAll": "Tümünü temizle",
+    "date": "Tarih",
+    "datePlaceholder": "Tarih seç",
+    "time": "Saat",
+    "timePlaceholder": "Saat seç",
+    "people": "Kişi sayısı",
+    "city": "Şehir",
+    "cityHint": "Şehir filtresini üst bardan değiştirebilirsin.",
+    "price": "Fiyat aralığı",
+    "apply": "Mekan Bul"
+  },
+  "qrMenu": {
+    "cartTitle": "Sepet",
     "cartTotalShort": "Toplam",
     "cleared": "Sepet temizlendi.",
     "unit": "Fiyat",
@@ -657,20 +650,20 @@
     "billPaymentMethodVenue": "Mekan",
     "billItemFallback": "Ürün",
     "photoMissing": "Fotoğraf yok",
-     "waiterCallSuccessTitle": "Garson çağrıldı",
-  "waiterCallSuccessMessage": "Birazdan garsonunuz masanıza gelecek.",
-  "billRequestSuccessTitle": "Hesap istendi",
-  "billRequestSuccessMessage": "Hesabınız hazırlanıyor, lütfen bekleyin.",
-  "quickRequestError": "İsteğiniz gönderilemedi, lütfen tekrar deneyin."
+    "waiterCallSuccessTitle": "Garson çağrıldı",
+    "waiterCallSuccessMessage": "Birazdan garsonunuz masanıza gelecek.",
+    "billRequestSuccessTitle": "Hesap istendi",
+    "billRequestSuccessMessage": "Hesabınız hazırlanıyor, lütfen bekleyin.",
+    "quickRequestError": "İsteğiniz gönderilemedi, lütfen tekrar deneyin."
   },
   "assistant": {
-  "loading": "Asistan hazırlanıyor...",
-  "inputPlaceholder": "Mekan, rezervasyon veya Rezvix ile ilgili bir soru sor...",
-  "hint": "Örn: “Bu akşam 4 kişi Girne’de meyhane önerir misin?”",
-  "errorInit": "Asistan şu anda başlatılamadı. Lütfen tekrar dene ya da birazdan yeniden aç.",
-  "errorSend": "Şu anda mesajını işleyemedim. Lütfen tekrar dene."
-},
-"qrScan": {
+    "loading": "Asistan hazırlanıyor...",
+    "inputPlaceholder": "Mekan, rezervasyon veya Rezvix ile ilgili bir soru sor...",
+    "hint": "Örn: “Bu akşam 4 kişi Girne’de meyhane önerir misin?”",
+    "errorInit": "Asistan şu anda başlatılamadı. Lütfen tekrar dene ya da birazdan yeniden aç.",
+    "errorSend": "Şu anda mesajını işleyemedim. Lütfen tekrar dene."
+  },
+  "qrScan": {
     "permissionCheckingText": "Kamera izni kontrol ediliyor…",
     "cameraRequiredTitle": "Kamera izni gerekli",
     "cameraRequiredMessage": "Masadaki QR kodu okuyabilmek için kamera izni vermeniz gerekiyor.",
@@ -762,7 +755,7 @@
       "missingBody": "Lütfen adres bilgilerini daha detaylı doldur.",
       "pinRequiredTitle": "Konum Gerekli",
       "pinRequiredBody": "Bu sistemde adres için konum (pin) zorunlu.",
-       "home": "Ev",
+      "home": "Ev",
       "work": "İş"
     }
   },
@@ -829,6 +822,38 @@
       "water": "Su & Damacana",
       "tup": "Tüp",
       "pharmacy": "Eczane"
+    }
+  },
+  "taxi": {
+    "history": {
+      "title": "Geçmiş Yolculuklar",
+      "empty": "Henüz yolculuğunuz yok",
+      "rateLink": "Değerlendir →"
+    },
+    "status": {
+      "completed": "Tamamlandı",
+      "cancelled": "İptal"
+    },
+    "detail": {
+      "title": "Yolculuk Detayı",
+      "fetchError": "Yolculuk bilgileri alınamadı.",
+      "route": "Güzergah",
+      "tripInfo": "Yolculuk Bilgileri",
+      "driverVehicle": "Sürücü & Araç",
+      "rating": "Değerlendirme",
+      "date": "Tarih",
+      "distance": "Mesafe",
+      "duration": "Süre",
+      "fare": "Ücret",
+      "payment": "Ödeme",
+      "cash": "Nakit",
+      "card": "Kart",
+      "online": "Online",
+      "driver": "Sürücü",
+      "ratePrompt": "Bu yolculuğu nasıl buldunuz?",
+      "ratedText": "Değerlendirdiniz",
+      "submit": "Gönder",
+      "ratingError": "Puanlama kaydedilemedi."
     }
   }
 }

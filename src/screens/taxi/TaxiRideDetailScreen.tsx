@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, MapPin, Navigation, Car, User, Star } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useI18n } from '../../i18n';
 import { getRide, rateRide, type TaxiRide, type TaxiDriverInfo } from '../../api/taxi';
 
 // ─── Star Rating Component ─────────────────────────────────────────────────────
@@ -75,6 +76,7 @@ export default function TaxiRideDetailScreen({ navigation, route }: any) {
   const { rideId } = route.params as { rideId: string };
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const { t } = useI18n();
 
   const [ride, setRide] = useState<TaxiRide | null>(null);
   const [loading, setLoading] = useState(true);
@@ -84,7 +86,7 @@ export default function TaxiRideDetailScreen({ navigation, route }: any) {
   useEffect(() => {
     getRide(rideId)
       .then(setRide)
-      .catch(() => Alert.alert('Hata', 'Yolculuk bilgileri alınamadı.'))
+      .catch(() => Alert.alert(t('common.error'), t('taxi.detail.fetchError')))
       .finally(() => setLoading(false));
   }, [rideId]);
 
@@ -95,7 +97,7 @@ export default function TaxiRideDetailScreen({ navigation, route }: any) {
       await rateRide(ride._id, selectedStar);
       setRide((prev) => prev ? { ...prev, passengerRating: selectedStar } : prev);
     } catch (e: any) {
-      Alert.alert('Hata', e?.response?.data?.message ?? 'Puanlama kaydedilemedi.');
+      Alert.alert(t('common.error'), e?.response?.data?.message ?? t('taxi.detail.ratingError'));
     } finally {
       setSubmitting(false);
     }
@@ -125,7 +127,7 @@ export default function TaxiRideDetailScreen({ navigation, route }: any) {
         <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()} hitSlop={12}>
           <ChevronLeft size={20} color={theme.colors.textPrimary} strokeWidth={2.5} />
         </TouchableOpacity>
-        <Text style={s.headerTitle}>Yolculuk Detayı</Text>
+        <Text style={s.headerTitle}>{t('taxi.detail.title')}</Text>
         <View style={{ width: 34 }} />
       </View>
 
@@ -133,7 +135,7 @@ export default function TaxiRideDetailScreen({ navigation, route }: any) {
 
         {/* Route Section */}
         <View style={s.section}>
-          <Text style={s.sectionTitle}>Güzergah</Text>
+          <Text style={s.sectionTitle}>{t('taxi.detail.route')}</Text>
           <View style={s.routeRow}>
             <Navigation size={16} color={theme.colors.success} strokeWidth={2.5} />
             <Text style={s.routeText} numberOfLines={2}>{ride.pickup.address}</Text>
@@ -147,31 +149,31 @@ export default function TaxiRideDetailScreen({ navigation, route }: any) {
 
         {/* Trip Info */}
         <View style={s.section}>
-          <Text style={s.sectionTitle}>Yolculuk Bilgileri</Text>
-          <InfoRow label="Tarih" value={formatDate(ride.completedAt ?? ride.requestedAt)} theme={theme} />
+          <Text style={s.sectionTitle}>{t('taxi.detail.tripInfo')}</Text>
+          <InfoRow label={t('taxi.detail.date')} value={formatDate(ride.completedAt ?? ride.requestedAt)} theme={theme} />
           <View style={s.divider} />
-          <InfoRow label="Mesafe" value={ride.distanceKm ? `${ride.distanceKm.toFixed(1)} km` : '—'} theme={theme} />
+          <InfoRow label={t('taxi.detail.distance')} value={ride.distanceKm ? `${ride.distanceKm.toFixed(1)} km` : '—'} theme={theme} />
           <View style={s.divider} />
-          <InfoRow label="Süre" value={ride.durationMin ? `${ride.durationMin} dk` : '—'} theme={theme} />
+          <InfoRow label={t('taxi.detail.duration')} value={ride.durationMin ? `${ride.durationMin} dk` : '—'} theme={theme} />
           <View style={s.divider} />
-          <InfoRow label="Ücret" value={ride.fare ? `₺${ride.fare.toFixed(2)}` : '—'} theme={theme} />
+          <InfoRow label={t('taxi.detail.fare')} value={ride.fare ? `₺${ride.fare.toFixed(2)}` : '—'} theme={theme} />
           <View style={s.divider} />
-          <InfoRow label="Ödeme" value={
-            ride.paymentMethod === 'cash' ? 'Nakit' :
-            ride.paymentMethod === 'card' ? 'Kart' : 'Online'
+          <InfoRow label={t('taxi.detail.payment')} value={
+            ride.paymentMethod === 'cash' ? t('taxi.detail.cash') :
+            ride.paymentMethod === 'card' ? t('taxi.detail.card') : t('taxi.detail.online')
           } theme={theme} />
         </View>
 
         {/* Driver & Vehicle */}
         {hasDriver && driver && (
           <View style={s.section}>
-            <Text style={s.sectionTitle}>Sürücü & Araç</Text>
+            <Text style={s.sectionTitle}>{t('taxi.detail.driverVehicle')}</Text>
             <View style={s.driverRow}>
               <View style={s.driverAvatar}>
                 <User size={22} color={theme.taxi.main} strokeWidth={2} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={s.driverName}>{driver.user?.name ?? 'Sürücü'}</Text>
+                <Text style={s.driverName}>{driver.user?.name ?? t('taxi.detail.driver')}</Text>
                 {driver.user?.phone ? (
                   <Text style={s.driverPhone}>{driver.user.phone}</Text>
                 ) : null}
@@ -208,15 +210,15 @@ export default function TaxiRideDetailScreen({ navigation, route }: any) {
         {/* Rating Section */}
         {isCompleted && (
           <View style={s.section}>
-            <Text style={s.sectionTitle}>Değerlendirme</Text>
+            <Text style={s.sectionTitle}>{t('taxi.detail.rating')}</Text>
             {alreadyRated ? (
               <View style={{ alignItems: 'center', gap: 8, paddingVertical: 8 }}>
                 <StarRating value={ride.passengerRating!} readonly color={theme.taxi.main} />
-                <Text style={s.ratedText}>Değerlendirdiniz</Text>
+                <Text style={s.ratedText}>{t('taxi.detail.ratedText')}</Text>
               </View>
             ) : (
               <View style={{ alignItems: 'center', gap: 12, paddingVertical: 8 }}>
-                <Text style={s.ratePrompt}>Bu yolculuğu nasıl buldunuz?</Text>
+                <Text style={s.ratePrompt}>{t('taxi.detail.ratePrompt')}</Text>
                 <StarRating value={selectedStar} onChange={setSelectedStar} color={theme.taxi.main} />
                 <TouchableOpacity
                   style={[
@@ -228,7 +230,7 @@ export default function TaxiRideDetailScreen({ navigation, route }: any) {
                 >
                   {submitting
                     ? <ActivityIndicator size="small" color="#000" />
-                    : <Text style={s.submitBtnText}>Gönder</Text>
+                    : <Text style={s.submitBtnText}>{t('taxi.detail.submit')}</Text>
                   }
                 </TouchableOpacity>
               </View>

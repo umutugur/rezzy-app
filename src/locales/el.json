@@ -210,17 +210,17 @@
     "noResults": "Δεν βρέθηκαν αποτελέσματα. Δοκιμάστε ξανά.",
     "explore": "Εξερεύνηση",
     "delivery": "Παράδοση",
-     "actionsMore": "Περισσότερα",
-  "actionsMap": "Χάρτης",
-  "actionsAssistant": "Βοηθός",
-  "actionsFilters": "Φίλτρα"
+    "actionsMore": "Περισσότερα",
+    "actionsMap": "Χάρτης",
+    "actionsAssistant": "Βοηθός",
+    "actionsFilters": "Φίλτρα"
   },
   "map": {
-  "title": "Κοντινά καταστήματα",
-  "noLocation": "Δεν ήταν δυνατή η πρόσβαση στην τοποθεσία σας. Ελέγξτε τα δικαιώματα τοποθεσίας ή επιλέξτε άλλη πόλη.",
-  "noResults": "Δεν βρέθηκαν κατάλληλοι χώροι σε αυτή την περιοχή.",
-  "calloutMore": "Προβολή λεπτομερειών"
-},
+    "title": "Κοντινά καταστήματα",
+    "noLocation": "Δεν ήταν δυνατή η πρόσβαση στην τοποθεσία σας. Ελέγξτε τα δικαιώματα τοποθεσίας ή επιλέξτε άλλη πόλη.",
+    "noResults": "Δεν βρέθηκαν κατάλληλοι χώροι σε αυτή την περιοχή.",
+    "calloutMore": "Προβολή λεπτομερειών"
+  },
   "bookings": {
     "receipt": {
       "upload": "Μεταφόρτωση απόδειξης",
@@ -271,48 +271,37 @@
     "notFoundText": "Δεν υπάρχει ή έχει αφαιρεθεί.",
     "back": "Πίσω",
     "noPhoto": "Δεν υπάρχει φωτογραφία",
-
     "noPhotoShort": "Χωρίς φωτογραφία",
-
     "aboutTab": "Σχετικά",
     "menuTab": "Μενού",
     "menuTitle": "Μενού",
     "menuComingSoon": "Το κατάστημα δεν έχει ανεβάσει ακόμη μενού.",
     "noAbout": "Δεν υπάρχει περιγραφή για αυτό το κατάστημα.",
-
-
     "fixedMenus": "Σταθερά Μενού",
     "noMenu": "Δεν υπάρχουν διαθέσιμα μενού.",
     "perPerson": "ανά άτομο",
-
     "expandAll": "Άνοιγμα όλων",
     "collapseAll": "Κλείσιμο όλων",
     "menuLoading": "Φόρτωση μενού...",
-
     "findSlot": "Εύρεση ώρας",
     "date": "Ημερομηνία",
     "partySize": "Άτομα",
     "slotsSearching": "Αναζήτηση διαθέσιμων ωρών…",
     "noSlots": "Δεν βρέθηκαν διαθέσιμες ώρες.",
-
     "about": "Σχετικά",
     "contact": "Επικοινωνία",
     "noPhone": "Δεν υπάρχει τηλέφωνο",
     "noAddress": "Δεν υπάρχει διεύθυνση",
-
     "ctaSelectDateTime": "Επιλέξτε ημερομηνία & ώρα",
     "ctaPeople": "{{count}} άτομα",
     "ctaContinue": "Συνέχεια",
-
     "pastTimeTitle": "Προηγούμενη ώρα",
     "pastTimeBody": "Δεν μπορείτε να κάνετε κράτηση για προηγούμενη ώρα.",
     "pastDateTimeTitle": "Προηγούμενη ημερομηνία",
     "pastDateTimeBody": "Επιλέξτε μελλοντική ημερομηνία.",
-
     "loginRequiredTitle": "Απαιτείται σύνδεση",
     "loginRequiredBodyReservation": "Για να κάνετε κράτηση, πρέπει να συνδεθείτε.",
     "loginRequiredBodyFavorite": "Για να προσθέσετε στα αγαπημένα, πρέπει να συνδεθείτε.",
-
     "loadError": "Αποτυχία φόρτωσης",
     "favoriteError": "Αποτυχία προσθήκης"
   },
@@ -354,25 +343,21 @@
     "toastNoId": "Σφάλμα ID κράτησης",
     "toastCreateError": "Σφάλμα δημιουργίας",
     "fallbackMenuName": "Μενού",
-     "paymentMethodTitle": "Τρόπος πληρωμής",
-  "methodBankTransfer": "Τραπεζική μεταφορά / IBAN",
-  "methodCard": "Κάρτα / Apple / Google Pay",
-  "copy": "Αντιγραφή",
-
-  "noFixedMenusSelected": "Δεν επιλέχθηκε σταθερό μενού.",
-
-  "receiptInfoForCard": "Αν πληρώσετε με κάρτα, δεν χρειάζεται να ανεβάσετε αποδεικτικό.",
-
-  "ctaStripeProcessing": "Γίνεται επεξεργασία πληρωμής...",
-  "ctaStripePay": "Πληρωμή με κάρτα / Apple / Google Pay",
-
-  "toastNoDepositForCard": "Δεν έχει οριστεί προκαταβολή για αυτό το κατάστημα.",
-  "toastStripeInitError": "Δεν ήταν δυνατή η έναρξη της πληρωμής. Προσπαθήστε ξανά.",
-  "toastStripePaymentError": "Η πληρωμή δεν ολοκληρώθηκε. Προσπαθήστε ξανά.",
-  "toastStripeSuccess": "Η πληρωμή ολοκληρώθηκε με επιτυχία.",
-  "methodCardShort": "Πλήρωσε με κάρτα",
-  "ctaStripePayWithAmount": "Πλήρωσε {{amount}}",
-  "paySuffix": "πλήρωσε"
+    "paymentMethodTitle": "Τρόπος πληρωμής",
+    "methodBankTransfer": "Τραπεζική μεταφορά / IBAN",
+    "methodCard": "Κάρτα / Apple / Google Pay",
+    "copy": "Αντιγραφή",
+    "noFixedMenusSelected": "Δεν επιλέχθηκε σταθερό μενού.",
+    "receiptInfoForCard": "Αν πληρώσετε με κάρτα, δεν χρειάζεται να ανεβάσετε αποδεικτικό.",
+    "ctaStripeProcessing": "Γίνεται επεξεργασία πληρωμής...",
+    "ctaStripePay": "Πληρωμή με κάρτα / Apple / Google Pay",
+    "toastNoDepositForCard": "Δεν έχει οριστεί προκαταβολή για αυτό το κατάστημα.",
+    "toastStripeInitError": "Δεν ήταν δυνατή η έναρξη της πληρωμής. Προσπαθήστε ξανά.",
+    "toastStripePaymentError": "Η πληρωμή δεν ολοκληρώθηκε. Προσπαθήστε ξανά.",
+    "toastStripeSuccess": "Η πληρωμή ολοκληρώθηκε με επιτυχία.",
+    "methodCardShort": "Πλήρωσε με κάρτα",
+    "ctaStripePayWithAmount": "Πλήρωσε {{amount}}",
+    "paySuffix": "πλήρωσε"
   },
   "restaurant": {
     "noMenus": "Δεν υπάρχουν μενού."
@@ -421,14 +406,11 @@
   "contact": {
     "title": "Επικοινωνία",
     "subtitle": "Επικοινωνήστε μαζί μας για κρατήσεις, delivery, QR menu και πληρωμές.",
-
     "emailTitle": "Υποστήριξη μέσω email",
     "emailDesc": "Στείλτε μας τις απορίες ή τα αιτήματά σας.",
-
     "workHoursTitle": "Ώρες λειτουργίας",
     "workdays": "Καθημερινές",
     "workhours": "09:00 — 18:00",
-
     "moreInfo": "Περισσότερες πληροφορίες",
     "moreInfoDesc": "Περισσότερες πληροφορίες και κανάλια υποστήριξης σύντομα."
   },
@@ -495,30 +477,23 @@
   "privacy": {
     "title": "Πολιτική Απορρήτου",
     "subtitle": "Σεβόμαστε το απόρρητό σας.",
-
     "collected": "Συλλογή δεδομένων",
     "collected_id": "Στοιχεία ταυτοποίησης και επικοινωνίας και διευθύνσεις delivery",
     "collected_usage": "Δεδομένα κρατήσεων, delivery και QR παραγγελιών· προτιμήσεις πληρωμής",
     "collected_device": "Στοιχεία συσκευής/συνεδρίας, push token και τοποθεσία με άδεια",
-
     "usage": "Χρήση δεδομένων",
     "usage_reservation": "Για διαχείριση κρατήσεων, delivery και QR παραγγελιών",
     "usage_notifications": "Για ενημερώσεις παραγγελίας, πληρωμής και παράδοσης",
     "usage_security": "Για ασφάλεια, πρόληψη απάτης και νομικές υποχρεώσεις",
-
     "sharing": "Κοινοποίηση δεδομένων",
     "sharing_restaurants": "Κοινοποιούνται στα σχετικά εστιατόρια",
     "sharing_law": "Η επεξεργασία πληρωμών μπορεί να περιλαμβάνει παρόχους (π.χ. Stripe) ή νομικές απαιτήσεις",
-
     "retention": "Διατήρηση",
     "retention_text": "Μόνο όσο απαιτείται.",
-
     "rights": "Δικαιώματα",
     "rights_text": "Μπορείτε να ζητήσετε διαγραφή ή τροποποίηση.",
-
     "cookies": "Cookies",
     "cookies_text": "Χρησιμοποιούμε βασικά cookies.",
-
     "contact": "Επικοινωνία",
     "contact_text": "Επικοινωνήστε μαζί μας για απορίες ή αιτήματα.",
     "disclaimer": "Η πολιτική μπορεί να αλλάξει."
@@ -553,27 +528,27 @@
     "continueAsGuest": "Συνέχεια χωρίς λογαριασμό"
   },
   "filter": {
-  "open": "Φίλτρα",
-  "title": "Φίλτρα",
-  "clearAll": "Καθαρισμός όλων",
-  "date": "Ημερομηνία",
-  "datePlaceholder": "Επιλέξτε ημερομηνία",
-  "time": "Ώρα",
-  "timePlaceholder": "Επιλέξτε ώρα",
-  "people": "Αριθμός ατόμων",
-  "city": "Πόλη",
-  "cityHint": "Μπορείτε να αλλάξετε την πόλη από την πάνω μπάρα.",
-  "price": "Εύρος τιμής",
-  "apply": "Βρες μαγαζί"
-},
- "qrMenu": {
-   "cartTitle": "Καλάθι",
-  "cartTotalShort": "Σύνολο",
-  "cleared": "Το καλάθι καθαρίστηκε.",
-  "unit": "Τιμή μονάδας",
-  "line": "Μερικό σύνολο",
-  "cartClearTitle": "Καθαρισμός καλαθιού",
-  "cartClearMessage": "Να αφαιρεθούν όλα τα προϊόντα από το καλάθι;",
+    "open": "Φίλτρα",
+    "title": "Φίλτρα",
+    "clearAll": "Καθαρισμός όλων",
+    "date": "Ημερομηνία",
+    "datePlaceholder": "Επιλέξτε ημερομηνία",
+    "time": "Ώρα",
+    "timePlaceholder": "Επιλέξτε ώρα",
+    "people": "Αριθμός ατόμων",
+    "city": "Πόλη",
+    "cityHint": "Μπορείτε να αλλάξετε την πόλη από την πάνω μπάρα.",
+    "price": "Εύρος τιμής",
+    "apply": "Βρες μαγαζί"
+  },
+  "qrMenu": {
+    "cartTitle": "Καλάθι",
+    "cartTotalShort": "Σύνολο",
+    "cleared": "Το καλάθι καθαρίστηκε.",
+    "unit": "Τιμή μονάδας",
+    "line": "Μερικό σύνολο",
+    "cartClearTitle": "Καθαρισμός καλαθιού",
+    "cartClearMessage": "Να αφαιρεθούν όλα τα προϊόντα από το καλάθι;",
     "loading": "Φόρτωση…",
     "cartEmptyTitle": "Το καλάθι είναι άδειο",
     "cartEmptyMessage": "Παρακαλώ επιλέξτε τουλάχιστον ένα πιάτο.",
@@ -624,10 +599,10 @@
     "billItemFallback": "Πιάτο",
     "photoMissing": "Δεν υπάρχει φωτογραφία",
     "waiterCallSuccessTitle": "Κλήθηκε σερβιτόρος",
-  "waiterCallSuccessMessage": "Ένας σερβιτόρος έρχεται στο τραπέζι σας.",
-  "billRequestSuccessTitle": "Ζητήθηκε ο λογαριασμός",
-  "billRequestSuccessMessage": "Ο λογαριασμός σας ετοιμάζεται.",
-  "quickRequestError": "Δεν ήταν δυνατή η αποστολή του αιτήματος. Προσπαθήστε ξανά."
+    "waiterCallSuccessMessage": "Ένας σερβιτόρος έρχεται στο τραπέζι σας.",
+    "billRequestSuccessTitle": "Ζητήθηκε ο λογαριασμός",
+    "billRequestSuccessMessage": "Ο λογαριασμός σας ετοιμάζεται.",
+    "quickRequestError": "Δεν ήταν δυνατή η αποστολή του αιτήματος. Προσπαθήστε ξανά."
   },
   "assistant": {
     "loading": "Ο βοηθός προετοιμάζεται...",
@@ -683,6 +658,38 @@
       "pinRequiredBody": "Για την προσθήκη διεύθυνσης απαιτείται pin τοποθεσίας.",
       "home": "Σπίτι",
       "work": "Εργασία"
+    }
+  },
+  "taxi": {
+    "history": {
+      "title": "Ιστορικό Διαδρομών",
+      "empty": "Δεν υπάρχουν ακόμη διαδρομές",
+      "rateLink": "Αξιολόγηση →"
+    },
+    "status": {
+      "completed": "Ολοκληρώθηκε",
+      "cancelled": "Ακυρώθηκε"
+    },
+    "detail": {
+      "title": "Λεπτομέρειες Διαδρομής",
+      "fetchError": "Δεν ήταν δυνατή η φόρτωση.",
+      "route": "Διαδρομή",
+      "tripInfo": "Πληροφορίες Διαδρομής",
+      "driverVehicle": "Οδηγός & Όχημα",
+      "rating": "Αξιολόγηση",
+      "date": "Ημερομηνία",
+      "distance": "Απόσταση",
+      "duration": "Διάρκεια",
+      "fare": "Κόστος",
+      "payment": "Πληρωμή",
+      "cash": "Μετρητά",
+      "card": "Κάρτα",
+      "online": "Online",
+      "driver": "Οδηγός",
+      "ratePrompt": "Πώς ήταν η διαδρομή σας;",
+      "ratedText": "Αξιολογήσατε αυτή τη διαδρομή",
+      "submit": "Υποβολή",
+      "ratingError": "Δεν ήταν δυνατή η αποθήκευση."
     }
   }
 }
