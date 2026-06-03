@@ -6,7 +6,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -81,6 +80,8 @@ export default function DriverRegistrationScreen() {
   const [license, setLicense] = useState('');
   const [vehicleType, setVehicleType] = useState<VehicleType>('sedan');
   const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const isValid = plate.trim() && brand.trim() && model.trim() && color.trim();
 
@@ -98,18 +99,29 @@ export default function DriverRegistrationScreen() {
       };
       await registerDriver(payload);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert(
-        'Başvuru Alındı! 🎉',
-        'Sürücü başvurunuz alındı. Admin onayından sonra sürücü paneline erişebilirsiniz. Onay genellikle 1-2 iş günü içinde tamamlanır.',
-        [{ text: 'Tamam', onPress: () => navigation.goBack() }],
-      );
+      setSubmitted(true);
+      setTimeout(() => navigation.goBack(), 2000);
     } catch (e: any) {
       const msg = e?.response?.data?.message ?? 'Başvuru gönderilemedi. Lütfen tekrar deneyin.';
-      Alert.alert('Hata', msg);
+      setSubmitError(msg);
     } finally {
       setSubmitting(false);
     }
   }, [plate, brand, model, color, license, vehicleType, isValid, submitting, navigation]);
+
+  if (submitted) {
+    return (
+      <View style={{ flex: 1, backgroundColor: theme.colors.background, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+        <Text style={{ fontSize: 48, marginBottom: 16 }}>🎉</Text>
+        <Text style={{ ...theme.typography.headingMd, color: theme.colors.textPrimary, textAlign: 'center', marginBottom: 8 }}>
+          Başvuru Alındı!
+        </Text>
+        <Text style={{ ...theme.typography.bodyMd, color: theme.colors.textSecondary, textAlign: 'center' }}>
+          Admin onayından sonra sürücü paneline erişebilirsiniz. Yönlendiriliyorsunuz...
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -216,6 +228,12 @@ export default function DriverRegistrationScreen() {
             {submitting ? 'Gönderiliyor…' : 'Başvuruyu Gönder'}
           </Text>
         </TouchableOpacity>
+
+        {submitError && (
+          <Text style={{ color: theme.colors.error, fontSize: 13, textAlign: 'center', marginTop: 8 }}>
+            {submitError}
+          </Text>
+        )}
 
         <Text style={{ ...theme.typography.caption, color: theme.colors.textTertiary, textAlign: 'center', marginTop: 16 }}>
           Başvurunuz 1-2 iş günü içinde değerlendirilir.

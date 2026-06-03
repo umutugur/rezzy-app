@@ -7,7 +7,6 @@ import {
   View,
   Text,
   StyleSheet,
-  Alert,
   Pressable,
 } from 'react-native';
 import Animated, {
@@ -52,6 +51,7 @@ export default function DriverIncomingRideScreen({ payload, onClose, onAccepted 
 
   const [secondsLeft, setSecondsLeft] = useState(COUNTDOWN_SECONDS);
   const [responding, setResponding] = useState(false);
+  const [acceptError, setAcceptError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Countdown bar: 1 → 0 over COUNTDOWN_SECONDS
@@ -108,6 +108,7 @@ export default function DriverIncomingRideScreen({ payload, onClose, onAccepted 
   const handleAccept = useCallback(async () => {
     if (responding) return;
     clearInterval(timerRef.current!);
+    setAcceptError(null);
     setResponding(true);
     try {
       await respondToRide(payload.rideId, 'accept');
@@ -116,7 +117,7 @@ export default function DriverIncomingRideScreen({ payload, onClose, onAccepted 
       onAccepted?.(payload);
       onClose();
     } catch (e: any) {
-      Alert.alert('Hata', e?.response?.data?.message ?? 'Kabul edilemedi.');
+      setAcceptError(e?.response?.data?.message ?? 'Kabul edilemedi.');
       setResponding(false);
     }
   }, [responding, payload.rideId, onClose]);
@@ -232,6 +233,11 @@ export default function DriverIncomingRideScreen({ payload, onClose, onAccepted 
           <Text style={s.acceptText}>KABUL ET</Text>
         </Pressable>
       </View>
+      {acceptError && (
+        <Text style={{ color: theme.colors.error, fontSize: 12, textAlign: 'center', marginTop: 6, paddingHorizontal: 20, paddingBottom: 8 }}>
+          {acceptError}
+        </Text>
+      )}
     </View>
   );
 }
