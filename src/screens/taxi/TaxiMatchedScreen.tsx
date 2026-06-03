@@ -34,6 +34,12 @@ import { Badge } from '../../components/ui/Badge';
 
 const FREE_CANCEL_SECONDS = 120;
 
+function calcSecondsLeft(requestedAt?: string | Date): number {
+  if (!requestedAt) return FREE_CANCEL_SECONDS;
+  const elapsed = (Date.now() - new Date(requestedAt).getTime()) / 1000;
+  return Math.max(0, Math.floor(FREE_CANCEL_SECONDS - elapsed));
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function TaxiMatchedScreen({ route, navigation }: any) {
@@ -48,7 +54,9 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
 
   const [ride, setRide] = useState<TaxiRide | null>(activeRide);
   const [driverLoc, setDriverLoc] = useState<{ lat: number; lng: number } | null>(null);
-  const [secondsLeft, setSecondsLeft] = useState(FREE_CANCEL_SECONDS);
+  const [secondsLeft, setSecondsLeft] = useState(() =>
+    calcSecondsLeft(activeRide?.requestedAt),
+  );
   const [cancelling, setCancelling] = useState(false);
   const [ratingOpen, setRatingOpen] = useState(false);
   const [userRating, setUserRating] = useState(5);
@@ -73,7 +81,20 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
   useEffect(() => {
     let cancelled = false;
     getRide(rideId)
-      .then((r) => { if (!cancelled) { setRide(r); setActiveRide(r); } })
+      .then((r) => {
+        if (!cancelled) {
+          setRide(r);
+          setActiveRide(r);
+          // Doğru kalan süreyi hesapla ve timer'ı düzelt
+          const sLeft = calcSecondsLeft(r.requestedAt);
+          setSecondsLeft(sLeft);
+          progress.value = sLeft / FREE_CANCEL_SECONDS;
+          progress.value = withTiming(0, {
+            duration: sLeft * 1000,
+            easing: Easing.linear,
+          });
+        }
+      })
       .catch(() => {});
     return () => { cancelled = true; };
   }, [rideId, setActiveRide]);
@@ -137,8 +158,11 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
 
   // Countdown timer + auto-cancel when searching and time is up
   useEffect(() => {
+    // Animasyonu mevcut kalan süreden başlat
+    const initial = calcSecondsLeft(activeRide?.requestedAt);
+    progress.value = initial / FREE_CANCEL_SECONDS;
     progress.value = withTiming(0, {
-      duration: FREE_CANCEL_SECONDS * 1000,
+      duration: initial * 1000,
       easing: Easing.linear,
     });
 
@@ -153,7 +177,8 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
     }, 1000);
 
     return () => { clearInterval(timerRef.current!); };
-  }, [progress]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Sadece mount'ta çalışır; ride fetch sonrası progress ayrıca güncellenir
 
   // Süre dolunca sürücü bulunamadıysa otomatik iptal et
   useEffect(() => {
