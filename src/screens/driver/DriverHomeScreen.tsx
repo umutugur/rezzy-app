@@ -25,6 +25,9 @@ import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { Wifi, WifiOff, TrendingUp, Star, MapPin, Navigation, CheckCircle, Clock, CircleDollarSign, Ruler } from 'lucide-react-native';
 
+import { Audio } from 'expo-av';
+import * as Notifications from 'expo-notifications';
+
 import { useTheme } from '../../contexts/ThemeContext';
 import { useTaxiStore } from '../../store/useTaxiStore';
 import { taxiSocket } from '../../services/taxiSocket.service';
@@ -35,6 +38,16 @@ import type { NewRideRequestPayload } from '../../services/taxiSocket.service';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui';
 import DriverIncomingRideScreen from './DriverIncomingRideScreen';
+
+// Show notification banner even when app is in foreground
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -230,6 +243,23 @@ export default function DriverHomeScreen() {
     }
   }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Taxi call sound ──────────────────────────────────────────────────────
+
+  const playTaxiSound = useCallback(async () => {
+    try {
+      await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
+      const { sound } = await Audio.Sound.createAsync(
+        require('../../../assets/sounds/taxi_call.wav'),
+      );
+      await sound.playAsync();
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.didJustFinish) sound.unloadAsync();
+      });
+    } catch {
+      // ses çalınamazsa sessizce devam et
+    }
+  }, []);
+
   // ── Online / offline toggle ───────────────────────────────────────────────
 
   const handleToggle = useCallback(async () => {
@@ -244,13 +274,23 @@ export default function DriverHomeScreen() {
         if (!locationGranted) { setToggling(false); return; }
 
         await updateDriverStatus(true);
-        if (token) taxiSocket.connect(token, 'driver');
+        if (token) {
+          taxiSocket.connect(token, 'driver');
 
-        // Listen for incoming ride requests
-        taxiSocket.on('ride:new_request', (payload: any) => {
-          setIncomingRide(payload);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-        });
+          // driver:online'ı socket bağlantısı kurulunca gönder
+          const onConnect = () => {
+            taxiSocket.emit('driver:online');
+            taxiSocket.off('connect', onConnect);
+          };
+          taxiSocket.on('connect', onConnect);
+
+          // Gelen çağrıları dinle
+          taxiSocket.on('ride:new_request', (payload: any) => {
+            setIncomingRide(payload);
+            playTaxiSound();
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          });
+        }
 
         onlineProgress.value = withTiming(1, { duration: 300 });
         setDriverOnline(true);
@@ -278,6 +318,7 @@ export default function DriverHomeScreen() {
     onlineProgress,
     setDriverOnline,
     setIncomingRide,
+    playTaxiSound,
   ]);
 
   // Cleanup on unmount
@@ -286,6 +327,26 @@ export default function DriverHomeScreen() {
       stopLocationWatch();
     };
   }, [stopLocationWatch]);
+
+  // Bildirime tıklanınca gelen ride request'i işle
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data as any;
+      if (data?.type === 'ride:new_request' && data?.rideId) {
+        setIncomingRide({
+          rideId: data.rideId,
+          pickup: data.pickup,
+          dropoff: data.dropoff,
+          vehicleType: data.vehicleType,
+          fare: data.fare,
+          distanceKm: data.distanceKm ?? 0,
+          durationMin: data.durationMin ?? 0,
+          requestedAt: new Date().toISOString(),
+        });
+      }
+    });
+    return () => sub.remove();
+  }, [setIncomingRide]);
 
   const earnings = driverEarnings;
   const s = styles(theme, insets);
