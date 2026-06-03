@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   Pressable,
   ActivityIndicator,
-  Alert,
+  Modal,
   Platform,
   Keyboard,
   KeyboardAvoidingView,
@@ -75,6 +75,7 @@ export default function TaxiDestinationScreen({ navigation }: any) {
   const [loadingCreate, setLoadingCreate] = useState(false);
   const [stripeBusy, setStripeBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeRideModal, setActiveRideModal] = useState<{ rideId: string } | null>(null);
 
   const pickupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dropoffTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -223,17 +224,7 @@ export default function TaxiDestinationScreen({ navigation }: any) {
       // 409 — zaten aktif bir yolculuk var → mevcut yolculuğa yönlendir
       if (e?.response?.status === 409 && e?.response?.data?.rideId) {
         const existingId = e.response.data.rideId;
-        Alert.alert(
-          'Aktif Yolculuk',
-          'Devam eden bir yolculuğunuz var.',
-          [
-            {
-              text: 'Takip Et',
-              onPress: () => navigation.replace('TaxiMatched', { rideId: existingId }),
-            },
-            { text: 'İptal', style: 'cancel' },
-          ],
-        );
+        setActiveRideModal({ rideId: existingId });
         return;
       }
       setError(e?.response?.data?.message ?? 'Yolculuk oluşturulamadı.');
@@ -493,6 +484,47 @@ export default function TaxiDestinationScreen({ navigation }: any) {
         </Button>
         </ScrollView>
       </View>
+      <Modal
+        transparent
+        visible={activeRideModal !== null}
+        animationType="fade"
+        onRequestClose={() => setActiveRideModal(null)}
+      >
+        <Pressable
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' }}
+          onPress={() => setActiveRideModal(null)}
+        >
+          <Pressable
+            style={{ backgroundColor: theme.colors.surface, borderRadius: theme.radius.xl, padding: theme.space[6], margin: theme.space[5], width: '85%' }}
+            onPress={() => {}}
+          >
+            <Text style={{ ...theme.typography.headingMd, color: theme.colors.textPrimary, marginBottom: theme.space[2] }}>
+              Aktif Yolculuk
+            </Text>
+            <Text style={{ ...theme.typography.bodyMd, color: theme.colors.textSecondary, marginBottom: theme.space[5] }}>
+              Devam eden bir yolculuğunuz var.
+            </Text>
+            <View style={{ flexDirection: 'row', gap: theme.space[3] }}>
+              <TouchableOpacity
+                onPress={() => setActiveRideModal(null)}
+                style={{ flex: 1, padding: theme.space[3], borderRadius: theme.radius.lg, borderWidth: 1, borderColor: theme.colors.borderDefault, alignItems: 'center' }}
+              >
+                <Text style={{ ...theme.typography.labelMd, color: theme.colors.textPrimary }}>İptal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  const id = activeRideModal!.rideId;
+                  setActiveRideModal(null);
+                  navigation.replace('TaxiMatched', { rideId: id });
+                }}
+                style={{ flex: 1, padding: theme.space[3], borderRadius: theme.radius.lg, backgroundColor: theme.taxi.main, alignItems: 'center' }}
+              >
+                <Text style={{ ...theme.typography.labelMd, color: '#000', fontWeight: '700' }}>Takip Et</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
