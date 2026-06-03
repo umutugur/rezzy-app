@@ -2,7 +2,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Image,
   Pressable,
@@ -281,6 +280,7 @@ export default function MarketCartScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [stripeBusy, setStripeBusy] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
+  const [error, setError] = useState<string | null>(null);
 
   const subtotal = computeSubtotal(items);
   const deliveryFee = computeDeliveryFee(
@@ -310,15 +310,13 @@ export default function MarketCartScreen() {
 
   const handleOrder = useCallback(async () => {
     if (!storeId) return;
+    setError(null);
     if (deliveryType === "delivery" && !selectedAddressId) {
-      Alert.alert("Adres gerekli", "Lütfen bir teslimat adresi seçin.");
+      setError("Lütfen bir teslimat adresi seçin.");
       return;
     }
     if (belowMin) {
-      Alert.alert(
-        "Minimum tutar",
-        `Bu markette minimum sipariş tutarı ₺${store!.minOrderAmount}.`,
-      );
+      setError(`Bu markette minimum sipariş tutarı ₺${store!.minOrderAmount}.`);
       return;
     }
     setSubmitting(true);
@@ -348,10 +346,7 @@ export default function MarketCartScreen() {
         });
 
         if (initError) {
-          Alert.alert(
-            "Ödeme başlatılamadı",
-            initError.message ?? "Ödeme ekranı açılamadı. Tekrar deneyin.",
-          );
+          setError(initError.message ?? "Ödeme ekranı açılamadı. Tekrar deneyin.");
           setStripeBusy(false);
           return;
         }
@@ -361,10 +356,7 @@ export default function MarketCartScreen() {
 
         if (presentError) {
           if (presentError.code !== "Canceled") {
-            Alert.alert(
-              "Ödeme başarısız",
-              presentError.message ?? "Ödeme tamamlanamadı. Tekrar deneyin.",
-            );
+            setError(presentError.message ?? "Ödeme tamamlanamadı. Tekrar deneyin.");
           }
           // Kullanıcı iptal etti veya hata aldı — siparişi silmiyoruz,
           // webhook veya sipariş detay ekranından tekrar deneyebilir
@@ -372,14 +364,8 @@ export default function MarketCartScreen() {
         }
 
         // Ödeme başarılı
-        Alert.alert(
-          "Ödeme alındı",
-          "Siparişiniz onaylandı. Market hazırlığa başlıyor.",
-          [{ text: "Tamam", onPress: () => {
-            navigation.replace(MarketRoutes.OrderDetail, { orderId: order._id });
-            clearCart();
-          }}],
-        );
+        navigation.replace(MarketRoutes.OrderDetail, { orderId: order._id });
+        clearCart();
         return;
       }
 
@@ -389,7 +375,7 @@ export default function MarketCartScreen() {
     } catch (err: any) {
       const msg =
         err?.response?.data?.message ?? "Sipariş oluşturulamadı. Tekrar dene.";
-      Alert.alert("Hata", msg);
+      setError(msg);
     } finally {
       setSubmitting(false);
       setStripeBusy(false);
@@ -728,6 +714,11 @@ export default function MarketCartScreen() {
           },
         ]}
       >
+        {error && (
+          <Text style={{ color: theme.colors.error, fontSize: 13, textAlign: 'center', marginTop: 8, marginHorizontal: 16, marginBottom: theme.space[2] }}>
+            {error}
+          </Text>
+        )}
         <Button
           fullWidth
           size="lg"
