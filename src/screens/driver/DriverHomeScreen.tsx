@@ -8,7 +8,6 @@ import {
   StyleSheet,
   Platform,
   Modal,
-  Alert,
   ScrollView,
 } from 'react-native';
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
@@ -53,6 +52,9 @@ export default function DriverHomeScreen() {
   const setIncomingRide = useTaxiStore((s) => s.setIncomingRide);
 
   const [toggling, setToggling] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
+  const [rideActionError, setRideActionError] = useState<string | null>(null);
+  const [locationDenied, setLocationDenied] = useState(false);
   const [driverActiveRide, setDriverActiveRide] = useState<NewRideRequestPayload | null>(null);
   const [activeRideStatus, setActiveRideStatus] = useState<'matched' | 'inProgress' | null>(null);
   const [rideActioning, setRideActioning] = useState(false);
@@ -117,7 +119,7 @@ export default function DriverHomeScreen() {
   const startLocationWatch = useCallback(async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Konum İzni', 'Konum izni olmadan online olamazsınız.');
+      setLocationDenied(true);
       return false;
     }
 
@@ -177,7 +179,7 @@ export default function DriverHomeScreen() {
       setActiveRideStatus('inProgress');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e: any) {
-      Alert.alert('Hata', e?.response?.data?.message ?? 'Yolculuk başlatılamadı.');
+      setRideActionError(e?.response?.data?.message ?? 'Yolculuk başlatılamadı.');
     } finally {
       setRideActioning(false);
     }
@@ -192,9 +194,8 @@ export default function DriverHomeScreen() {
       setActiveRideStatus(null);
       await getDriverEarnings().then(setDriverEarnings).catch(() => {});
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Tamamlandı', 'Yolculuk başarıyla tamamlandı! 🎉');
     } catch (e: any) {
-      Alert.alert('Hata', e?.response?.data?.message ?? 'Yolculuk tamamlanamadı.');
+      setRideActionError(e?.response?.data?.message ?? 'Yolculuk tamamlanamadı.');
     } finally {
       setRideActioning(false);
     }
@@ -264,7 +265,7 @@ export default function DriverHomeScreen() {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }
     } catch {
-      Alert.alert('Hata', 'Durum değiştirilemedi. Lütfen tekrar deneyin.');
+      setStatusError('Durum değiştirilemedi. Lütfen tekrar deneyin.');
     } finally {
       setToggling(false);
     }
@@ -433,6 +434,17 @@ export default function DriverHomeScreen() {
           </Button>
         </Animated.View>
 
+        {locationDenied && (
+          <Text style={{ color: theme.colors.error, fontSize: 13, textAlign: 'center', marginVertical: 4 }}>
+            Konum izni olmadan online olamazsınız.
+          </Text>
+        )}
+        {statusError && (
+          <Text style={{ color: theme.colors.error, fontSize: 13, textAlign: 'center', marginVertical: 4 }}>
+            {statusError}
+          </Text>
+        )}
+
         {/* ── Earnings card ── */}
         {earnings && (
           <View style={s.earningsCard}>
@@ -525,6 +537,11 @@ export default function DriverHomeScreen() {
               >
                 Yolculuğu Tamamla
               </Button>
+            )}
+            {rideActionError && (
+              <Text style={{ color: theme.colors.error, fontSize: 13, textAlign: 'center', marginTop: 4 }}>
+                {rideActionError}
+              </Text>
             )}
           </View>
         )}
