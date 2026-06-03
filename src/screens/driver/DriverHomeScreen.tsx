@@ -31,7 +31,7 @@ import * as Notifications from 'expo-notifications';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useTaxiStore } from '../../store/useTaxiStore';
 import { taxiSocket } from '../../services/taxiSocket.service';
-import { updateDriverStatus, updateDriverLocation, getDriverEarnings, startRide, completeRide, getDriverRides } from '../../api/taxi';
+import { updateDriverStatus, updateDriverLocation, getDriverEarnings, startRide, completeRide, getDriverRides, getDriverProfile } from '../../api/taxi';
 import type { TaxiRide } from '../../api/taxi';
 import { useAuth } from '../../store/useAuth';
 import type { NewRideRequestPayload } from '../../services/taxiSocket.service';
@@ -126,6 +126,33 @@ export default function DriverHomeScreen() {
       .then(setDriverEarnings)
       .catch(() => {});
   }, [setDriverEarnings]);
+
+  // Backend'den gerçek online durumunu sync et (uygulama yeniden açılınca)
+  useEffect(() => {
+    if (!token) return;
+    getDriverProfile()
+      .then((profile) => {
+        const online = profile?.isOnline ?? false;
+        setDriverOnline(online);
+        onlineProgress.value = withTiming(online ? 1 : 0, { duration: 300 });
+        if (online && token) {
+          // Socket'i yeniden bağla ve driver:online gönder
+          taxiSocket.connect(token, 'driver');
+          const onConnect = () => {
+            taxiSocket.emit('driver:online');
+            taxiSocket.off('connect', onConnect);
+          };
+          taxiSocket.on('connect', onConnect);
+          taxiSocket.on('ride:new_request', (payload: any) => {
+            setIncomingRide(payload);
+            playTaxiSound();
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          });
+        }
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   // ── Location helpers ─────────────────────────────────────────────────────
 

@@ -6,7 +6,9 @@ import {
   Pressable,
   ActivityIndicator,
 } from "react-native";
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer, useNavigationContainerRef } from "@react-navigation/native";
+import * as Notifications from 'expo-notifications';
+import { useTaxiStore } from '../store/useTaxiStore';
 import { createStackNavigator, type StackNavigationOptions } from "@react-navigation/stack";
 import {
   createBottomTabNavigator,
@@ -202,8 +204,60 @@ export default function RootNavigator() {
   const authHydrated = useAuth((s) => s.hydrated);
   const regionHydrated = useRegion((s) => s.hydrated);
   const regionResolved = useRegion((s) => s.resolved);
+  const setIncomingRide = useTaxiStore((s) => s.setIncomingRide);
 
   const navKey = token ? "auth" : "guest";
+  const navigationRef = useNavigationContainerRef();
+
+  // ── Bildirim: uygulama kapalıyken gelen ride:new_request ──────────────────
+  React.useEffect(() => {
+    if (!token) return;
+
+    // Soğuk başlatma: uygulama bildirimle açıldıysa
+    Notifications.getLastNotificationResponseAsync().then((response) => {
+      const data = response?.notification?.request?.content?.data as any;
+      if (data?.type === 'ride:new_request' && data?.rideId) {
+        setIncomingRide({
+          rideId: data.rideId,
+          pickup: data.pickup,
+          dropoff: data.dropoff,
+          vehicleType: data.vehicleType,
+          fare: data.fare,
+          distanceKm: data.distanceKm ?? 0,
+          durationMin: data.durationMin ?? 0,
+          requestedAt: new Date().toISOString(),
+        });
+        // Driver ekranına git
+        setTimeout(() => {
+          if (navigationRef.isReady()) {
+            (navigationRef as any).navigate('Driver');
+          }
+        }, 500);
+      }
+    });
+
+    // Arka plan: uygulama açıkken gelen bildirime tıklanırsa
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data as any;
+      if (data?.type === 'ride:new_request' && data?.rideId) {
+        setIncomingRide({
+          rideId: data.rideId,
+          pickup: data.pickup,
+          dropoff: data.dropoff,
+          vehicleType: data.vehicleType,
+          fare: data.fare,
+          distanceKm: data.distanceKm ?? 0,
+          durationMin: data.durationMin ?? 0,
+          requestedAt: new Date().toISOString(),
+        });
+        if (navigationRef.isReady()) {
+          (navigationRef as any).navigate('Driver');
+        }
+      }
+    });
+
+    return () => sub.remove();
+  }, [token, setIncomingRide, navigationRef]);
 
   const fetchUnreadCount = useNotifications((s) => s.fetchUnreadCount);
 
@@ -248,7 +302,7 @@ export default function RootNavigator() {
   }
 
   return (
-    <NavigationContainer key={navKey}>
+    <NavigationContainer key={navKey} ref={navigationRef}>
       <RootStack.Navigator screenOptions={stackOptions}>
         {token ? (
           <>
