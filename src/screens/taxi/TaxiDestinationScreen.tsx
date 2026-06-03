@@ -16,7 +16,7 @@ import {
   KeyboardAvoidingView,
   ScrollView,
 } from 'react-native';
-import MapView, { Marker, Polyline, UrlTile, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MapPin, Navigation, ChevronLeft, Banknote, CreditCard, Smartphone } from 'lucide-react-native';
 import { useStripe } from '@stripe/stripe-react-native';
@@ -297,19 +297,12 @@ export default function TaxiDestinationScreen({ navigation }: any) {
     >
       {/* Map — top half */}
       <MapView
-        provider={PROVIDER_GOOGLE}
-        mapType="none"
+        provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
         style={s.map}
         region={mapRegion}
         pitchEnabled={false}
         rotateEnabled={false}
       >
-        <UrlTile
-          urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-          maximumZ={19}
-          flipY={false}
-          tileSize={256}
-        />
         {pickupCoords && (
           <Marker
             coordinate={{ latitude: pickupCoords.lat, longitude: pickupCoords.lng }}

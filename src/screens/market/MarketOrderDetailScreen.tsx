@@ -2,8 +2,9 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Image,
+  Modal,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -170,6 +171,8 @@ export default function MarketOrderDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -190,28 +193,21 @@ export default function MarketOrderDetailScreen() {
 
   // useCallback MUST be before conditional returns — hooks rules
   const handleCancel = useCallback(() => {
-    Alert.alert(
-      'Siparişi İptal Et',
-      'Bu siparişi iptal etmek istediğinizden emin misiniz?',
-      [
-        { text: 'Vazgeç', style: 'cancel' },
-        {
-          text: 'İptal Et',
-          style: 'destructive',
-          onPress: async () => {
-            setCancelling(true);
-            try {
-              const updated = await cancelOrder(orderId);
-              setOrder(updated);
-            } catch {
-              Alert.alert('Hata', 'Sipariş iptal edilemedi. Lütfen tekrar deneyin.');
-            } finally {
-              setCancelling(false);
-            }
-          },
-        },
-      ],
-    );
+    setCancelError(null);
+    setShowCancelModal(true);
+  }, []);
+
+  const confirmCancel = useCallback(async () => {
+    setShowCancelModal(false);
+    setCancelling(true);
+    try {
+      const updated = await cancelOrder(orderId);
+      setOrder(updated);
+    } catch {
+      setCancelError('Sipariş iptal edilemedi. Lütfen tekrar deneyin.');
+    } finally {
+      setCancelling(false);
+    }
   }, [orderId]);
 
   if (loading) {
@@ -465,9 +461,59 @@ export default function MarketOrderDetailScreen() {
                 {cancelling ? 'İptal ediliyor…' : 'Siparişi İptal Et'}
               </Text>
             </TouchableOpacity>
+            {cancelError && (
+              <Text style={{ color: theme.semantic.error.main, fontSize: 13, textAlign: 'center', marginTop: 8 }}>
+                {cancelError}
+              </Text>
+            )}
           </View>
         )}
       </ScrollView>
+
+      {/* İptal onay modalı */}
+      <Modal
+        transparent
+        visible={showCancelModal}
+        animationType="fade"
+        onRequestClose={() => setShowCancelModal(false)}
+      >
+        <Pressable
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' }}
+          onPress={() => setShowCancelModal(false)}
+        >
+          <Pressable
+            style={{
+              backgroundColor: theme.colors.surface,
+              borderRadius: theme.radius.xl,
+              padding: theme.space[6],
+              margin: theme.space[5],
+              width: '85%',
+            }}
+            onPress={() => {}}
+          >
+            <Text style={{ ...theme.typography.headingMd, color: theme.colors.textPrimary, marginBottom: theme.space[2] }}>
+              Siparişi İptal Et
+            </Text>
+            <Text style={{ ...theme.typography.bodyMd, color: theme.colors.textSecondary, marginBottom: theme.space[5] }}>
+              Bu siparişi iptal etmek istediğinizden emin misiniz?
+            </Text>
+            <View style={{ flexDirection: 'row', gap: theme.space[3] }}>
+              <TouchableOpacity
+                onPress={() => setShowCancelModal(false)}
+                style={{ flex: 1, padding: theme.space[3], borderRadius: theme.radius.lg, borderWidth: 1, borderColor: theme.colors.borderDefault, alignItems: 'center' }}
+              >
+                <Text style={{ ...theme.typography.labelMd, color: theme.colors.textPrimary }}>Vazgeç</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={confirmCancel}
+                style={{ flex: 1, padding: theme.space[3], borderRadius: theme.radius.lg, backgroundColor: theme.semantic.error.main, alignItems: 'center' }}
+              >
+                <Text style={{ ...theme.typography.labelMd, color: '#fff' }}>İptal Et</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }

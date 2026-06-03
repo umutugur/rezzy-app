@@ -7,7 +7,6 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, MapPin, Navigation, Car, User, Star } from 'lucide-react-native';
@@ -80,24 +79,27 @@ export default function TaxiRideDetailScreen({ navigation, route }: any) {
 
   const [ride, setRide] = useState<TaxiRide | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [selectedStar, setSelectedStar] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [ratingError, setRatingError] = useState<string | null>(null);
 
   useEffect(() => {
     getRide(rideId)
       .then(setRide)
-      .catch(() => Alert.alert(t('common.error'), t('taxi.detail.fetchError')))
+      .catch(() => setFetchError(t('taxi.detail.fetchError')))
       .finally(() => setLoading(false));
   }, [rideId]);
 
   const handleSubmitRating = useCallback(async () => {
     if (!selectedStar || !ride) return;
     setSubmitting(true);
+    setRatingError(null);
     try {
       await rateRide(ride._id, selectedStar);
       setRide((prev) => prev ? { ...prev, passengerRating: selectedStar } : prev);
     } catch (e: any) {
-      Alert.alert(t('common.error'), e?.response?.data?.message ?? t('taxi.detail.ratingError'));
+      setRatingError(e?.response?.data?.message ?? t('taxi.detail.ratingError'));
     } finally {
       setSubmitting(false);
     }
@@ -113,7 +115,24 @@ export default function TaxiRideDetailScreen({ navigation, route }: any) {
     );
   }
 
-  if (!ride) return null;
+  if (fetchError || !ride) {
+    return (
+      <View style={s.root}>
+        <View style={[s.header, { paddingTop: insets.top + 8 }]}>
+          <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()} hitSlop={12}>
+            <ChevronLeft size={20} color={theme.colors.textPrimary} strokeWidth={2.5} />
+          </TouchableOpacity>
+          <Text style={s.headerTitle}>{t('taxi.detail.title')}</Text>
+          <View style={{ width: 34 }} />
+        </View>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+          <Text style={{ ...theme.typography.bodyMd, color: theme.colors.textSecondary, textAlign: 'center' }}>
+            {fetchError ?? t('taxi.detail.fetchError')}
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   const driver = ride.driver as TaxiDriverInfo | null | undefined;
   const hasDriver = Boolean(driver?._id);
@@ -233,6 +252,11 @@ export default function TaxiRideDetailScreen({ navigation, route }: any) {
                     : <Text style={s.submitBtnText}>{t('taxi.detail.submit')}</Text>
                   }
                 </TouchableOpacity>
+                {ratingError && (
+                  <Text style={{ ...theme.typography.bodySm, color: theme.colors.error, textAlign: 'center', marginTop: 8 }}>
+                    {ratingError}
+                  </Text>
+                )}
               </View>
             )}
           </View>
