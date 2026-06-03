@@ -2,7 +2,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Modal,
   Pressable,
@@ -81,9 +80,11 @@ const FILTERS: { key: FilterKey; label: string; statuses: MarketOrderStatus[] }[
 function OrderCard({
   order,
   onStatusUpdate,
+  onShowConfirm,
 }: {
   order: MarketOrder;
   onStatusUpdate: (orderId: string, status: MarketOrderStatus) => Promise<void>;
+  onShowConfirm: (modal: ConfirmModalState) => void;
 }) {
   const theme = useTheme();
   const [updating, setUpdating] = useState(false);
@@ -103,47 +104,37 @@ function OrderCard({
 
   const handleNext = async () => {
     if (!nextStatus) return;
-    Alert.alert(
-      "Durum Güncelle",
-      `Siparişi "${STATUS_CONFIG[nextStatus].label}" olarak işaretle?`,
-      [
-        { text: "Vazgeç", style: "cancel" },
-        {
-          text: nextLabel ?? "Güncelle",
-          onPress: async () => {
-            setUpdating(true);
-            try {
-              await onStatusUpdate(order._id, nextStatus);
-            } finally {
-              setUpdating(false);
-            }
-          },
-        },
-      ],
-    );
+    onShowConfirm({
+      title: "Durum Güncelle",
+      message: `Siparişi "${STATUS_CONFIG[nextStatus].label}" olarak işaretle?`,
+      confirmLabel: nextLabel ?? "Güncelle",
+      onConfirm: async () => {
+        setUpdating(true);
+        try {
+          await onStatusUpdate(order._id, nextStatus);
+        } finally {
+          setUpdating(false);
+        }
+      },
+    });
   };
 
   const handleCancel = () => {
     if (order.status === "delivered" || order.status === "cancelled") return;
-    Alert.alert(
-      "İptal Et",
-      "Bu siparişi iptal etmek istediğinizden emin misiniz?",
-      [
-        { text: "Vazgeç", style: "cancel" },
-        {
-          text: "İptal Et",
-          style: "destructive",
-          onPress: async () => {
-            setUpdating(true);
-            try {
-              await onStatusUpdate(order._id, "cancelled");
-            } finally {
-              setUpdating(false);
-            }
-          },
-        },
-      ],
-    );
+    onShowConfirm({
+      title: "İptal Et",
+      message: "Bu siparişi iptal etmek istediğinizden emin misiniz?",
+      confirmLabel: "İptal Et",
+      destructive: true,
+      onConfirm: async () => {
+        setUpdating(true);
+        try {
+          await onStatusUpdate(order._id, "cancelled");
+        } finally {
+          setUpdating(false);
+        }
+      },
+    });
   };
 
   return (
@@ -327,6 +318,16 @@ function OrderCardSkeleton() {
   );
 }
 
+// ─── Confirm modal state type ──────────────────────────────────────────────────
+
+type ConfirmModalState = {
+  title: string;
+  message: string;
+  confirmLabel: string;
+  destructive?: boolean;
+  onConfirm: () => void;
+};
+
 // ─── Ekran ─────────────────────────────────────────────────────────────────────
 
 export default function MarketOwnerDashboardScreen() {
@@ -350,6 +351,12 @@ export default function MarketOwnerDashboardScreen() {
   const [formStock, setFormStock] = useState('');
   const [formUnit, setFormUnit] = useState('adet');
   const [formSaving, setFormSaving] = useState(false);
+
+  // Confirm modal + inline error state
+  const [confirmModal, setConfirmModal] = useState<ConfirmModalState | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   const fetchOrders = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -393,6 +400,7 @@ export default function MarketOwnerDashboardScreen() {
     setFormPrice('');
     setFormStock('0');
     setFormUnit('adet');
+    setFormError(null);
     setProductModalVisible(true);
   }, []);
 
@@ -402,11 +410,13 @@ export default function MarketOwnerDashboardScreen() {
     setFormPrice(String(product.price));
     setFormStock(String(product.stock));
     setFormUnit(product.unit);
+    setFormError(null);
     setProductModalVisible(true);
   }, []);
 
   const handleSaveProduct = useCallback(async () => {
     if (!formTitle.trim() || !formPrice) return;
+    setFormError(null);
     setFormSaving(true);
     try {
       const payload = {
@@ -424,32 +434,27 @@ export default function MarketOwnerDashboardScreen() {
       }
       setProductModalVisible(false);
     } catch (e: any) {
-      Alert.alert('Hata', e?.response?.data?.message ?? 'Kaydedilemedi.');
+      setFormError(e?.response?.data?.message ?? 'Kaydedilemedi.');
     } finally {
       setFormSaving(false);
     }
   }, [editingProduct, formTitle, formPrice, formStock, formUnit]);
 
   const handleDeleteProduct = useCallback((product: PanelProduct) => {
-    Alert.alert(
-      'Ürünü Sil',
-      `"${product.title}" silinecek. Emin misiniz?`,
-      [
-        { text: 'Vazgeç', style: 'cancel' },
-        {
-          text: 'Sil',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deletePanelProduct(product._id);
-              setProducts((prev) => prev.filter((p) => p._id !== product._id));
-            } catch {
-              Alert.alert('Hata', 'Ürün silinemedi.');
-            }
-          },
-        },
-      ],
-    );
+    setConfirmModal({
+      title: 'Ürünü Sil',
+      message: `"${product.title}" silinecek. Emin misiniz?`,
+      confirmLabel: 'Sil',
+      destructive: true,
+      onConfirm: async () => {
+        try {
+          await deletePanelProduct(product._id);
+          setProducts((prev) => prev.filter((p) => p._id !== product._id));
+        } catch {
+          setDeleteError('Ürün silinemedi.');
+        }
+      },
+    });
   }, []);
 
   const handleStatusUpdate = useCallback(
@@ -461,7 +466,7 @@ export default function MarketOwnerDashboardScreen() {
         );
       } catch (err: any) {
         const msg = err?.response?.data?.message ?? "Durum güncellenemedi.";
-        Alert.alert("Hata", msg);
+        setStatusError(msg);
       }
     },
     [],
@@ -474,7 +479,7 @@ export default function MarketOwnerDashboardScreen() {
 
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<MarketOrder>) => (
-      <OrderCard order={item} onStatusUpdate={handleStatusUpdate} />
+      <OrderCard order={item} onStatusUpdate={handleStatusUpdate} onShowConfirm={setConfirmModal} />
     ),
     [handleStatusUpdate],
   );
@@ -551,6 +556,18 @@ export default function MarketOwnerDashboardScreen() {
             </ScrollView>
           </View>
 
+          {/* Status error */}
+          {statusError !== null && (
+            <Pressable
+              onPress={() => setStatusError(null)}
+              style={{ backgroundColor: theme.colors.errorSoft, paddingHorizontal: theme.space[4], paddingVertical: theme.space[2], flexDirection: 'row', alignItems: 'center', gap: theme.space[2] }}
+            >
+              <Ionicons name="alert-circle-outline" size={16} color={theme.colors.error} />
+              <Text style={{ ...theme.typography.bodySm, color: theme.colors.error, flex: 1 }}>{statusError}</Text>
+              <Ionicons name="close" size={14} color={theme.colors.error} />
+            </Pressable>
+          )}
+
           {/* Order list */}
           <FlatList
             data={loading ? [] : filtered}
@@ -609,6 +626,18 @@ export default function MarketOwnerDashboardScreen() {
             </TouchableOpacity>
           </View>
 
+          {/* Delete error */}
+          {deleteError !== null && (
+            <Pressable
+              onPress={() => setDeleteError(null)}
+              style={{ backgroundColor: theme.colors.errorSoft, paddingHorizontal: theme.space[4], paddingVertical: theme.space[2], flexDirection: 'row', alignItems: 'center', gap: theme.space[2] }}
+            >
+              <Ionicons name="alert-circle-outline" size={16} color={theme.colors.error} />
+              <Text style={{ ...theme.typography.bodySm, color: theme.colors.error, flex: 1 }}>{deleteError}</Text>
+              <Ionicons name="close" size={14} color={theme.colors.error} />
+            </Pressable>
+          )}
+
           <FlatList
             data={productsLoading ? [] : products}
             keyExtractor={(item) => item._id}
@@ -656,6 +685,47 @@ export default function MarketOwnerDashboardScreen() {
           />
         </View>
       )}
+
+      {/* ── Onay modal'ı ── */}
+      <Modal
+        transparent
+        visible={confirmModal !== null}
+        animationType="fade"
+        onRequestClose={() => setConfirmModal(null)}
+      >
+        <Pressable
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' }}
+          onPress={() => setConfirmModal(null)}
+        >
+          <Pressable
+            style={{ backgroundColor: theme.colors.surface, borderRadius: theme.radius.xl, padding: theme.space[6], margin: theme.space[5], width: '85%' }}
+            onPress={() => {}}
+          >
+            <Text style={{ ...theme.typography.headingMd, color: theme.colors.textPrimary, marginBottom: theme.space[2] }}>
+              {confirmModal?.title}
+            </Text>
+            <Text style={{ ...theme.typography.bodyMd, color: theme.colors.textSecondary, marginBottom: theme.space[5] }}>
+              {confirmModal?.message}
+            </Text>
+            <View style={{ flexDirection: 'row', gap: theme.space[3] }}>
+              <TouchableOpacity
+                onPress={() => setConfirmModal(null)}
+                style={{ flex: 1, padding: theme.space[3], borderRadius: theme.radius.lg, borderWidth: 1, borderColor: theme.colors.borderDefault, alignItems: 'center' }}
+              >
+                <Text style={{ ...theme.typography.labelMd, color: theme.colors.textPrimary }}>Vazgeç</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => { const fn = confirmModal!.onConfirm; setConfirmModal(null); fn(); }}
+                style={{ flex: 1, padding: theme.space[3], borderRadius: theme.radius.lg, backgroundColor: confirmModal?.destructive ? theme.colors.error : theme.market.main, alignItems: 'center' }}
+              >
+                <Text style={{ ...theme.typography.labelMd, color: '#fff', fontWeight: '700' }}>
+                  {confirmModal?.confirmLabel}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* ── Ürün ekleme / düzenleme modal'ı ── */}
       <Modal
@@ -722,6 +792,13 @@ export default function MarketOwnerDashboardScreen() {
               />
             </View>
           </View>
+
+          {formError !== null && (
+            <View style={{ backgroundColor: theme.colors.errorSoft, borderRadius: theme.radius.md, paddingHorizontal: theme.space[3], paddingVertical: theme.space[2], flexDirection: 'row', alignItems: 'center', gap: theme.space[2] }}>
+              <Ionicons name="alert-circle-outline" size={16} color={theme.colors.error} />
+              <Text style={{ ...theme.typography.bodySm, color: theme.colors.error, flex: 1 }}>{formError}</Text>
+            </View>
+          )}
 
           <TouchableOpacity
             onPress={handleSaveProduct}
