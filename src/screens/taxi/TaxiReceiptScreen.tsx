@@ -6,7 +6,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRoute, useNavigation, type RouteProp } from '@react-navigation/native';
@@ -50,17 +49,19 @@ export default function TaxiReceiptScreen() {
   const [rating, setRating] = useState(5);
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [ratingError, setRatingError] = useState<string | null>(null);
 
   const paymentLabel = paymentMethod === 'cash' ? 'Nakit' : paymentMethod === 'card' ? 'Kart' : 'Online';
 
   const handleSubmitRating = useCallback(async () => {
+    setRatingError(null);
     setSubmitting(true);
     try {
       await submitReview('taxi_driver', driverId, { rating });
       setRatingSubmitted(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch {
-      Alert.alert('Hata', 'Puanlama gönderilemedi.');
+      setRatingError('Puanlama gönderilemedi.');
     } finally {
       setSubmitting(false);
     }
@@ -138,6 +139,11 @@ export default function TaxiReceiptScreen() {
             >
               <Text style={s.ratingBtnText}>{submitting ? 'Gönderiliyor…' : 'Puanı Gönder'}</Text>
             </TouchableOpacity>
+            {ratingError && (
+              <Text style={{ color: theme.colors.error, fontSize: 13, textAlign: 'center', marginTop: 8 }}>
+                {ratingError}
+              </Text>
+            )}
             <TouchableOpacity onPress={handleDone} style={s.skipBtn}>
               <Text style={s.skipBtnText}>Geç</Text>
             </TouchableOpacity>
