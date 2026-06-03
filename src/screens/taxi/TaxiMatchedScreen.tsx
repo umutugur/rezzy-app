@@ -6,7 +6,8 @@ import {
   View,
   Text,
   StyleSheet,
-  Alert,
+  Modal,
+  Pressable,
   TouchableOpacity,
   Platform,
 } from 'react-native';
@@ -53,6 +54,8 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
   const [userRating, setUserRating] = useState(5);
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
   const [ratingDone, setRatingDone] = useState(false);
+  const [infoModal, setInfoModal] = useState<{ title: string; message: string; onOk: () => void } | null>(null);
+  const [cancelError, setCancelError] = useState<string | null>(null);
 
   const mapRef = useRef<MapView>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -92,9 +95,7 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
     const onStatusChange = (payload: any) => {
       if (payload.status === 'cancelled') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-        Alert.alert('Yolculuk İptal Edildi', 'Sürücü yolculuğu iptal etti.', [
-          { text: 'Tamam', onPress: () => navigation.goBack() },
-        ]);
+        setInfoModal({ title: 'Yolculuk İptal Edildi', message: 'Sürücü yolculuğu iptal etti.', onOk: () => navigation.goBack() });
       } else if (payload.status === 'inProgress') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } else if (payload.status === 'completed') {
@@ -165,11 +166,7 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
       .finally(() => {
         setActiveRide(null);
         setIsSearching(false);
-        Alert.alert(
-          'Sürücü Bulunamadı',
-          '120 saniye içinde uygun sürücü bulunamadı. Lütfen tekrar deneyin.',
-          [{ text: 'Tamam', onPress: () => navigation.replace('TaxiDestination') }],
-        );
+        setInfoModal({ title: 'Sürücü Bulunamadı', message: '120 saniye içinde uygun sürücü bulunamadı. Lütfen tekrar deneyin.', onOk: () => navigation.replace('TaxiDestination') });
       });
   // secondsLeft 0'a düştüğünde bir kez çalışması yeterli
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -183,7 +180,7 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
       setIsSearching(false);
       navigation.goBack();
     } catch {
-      Alert.alert('Hata', 'Yolculuk iptal edilemedi. Lütfen tekrar deneyin.');
+      setCancelError('Yolculuk iptal edilemedi. Lütfen tekrar deneyin.');
     } finally {
       setCancelling(false);
     }
@@ -379,7 +376,36 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
         >
           {canFreeCancel ? 'Iptal Et (Ucretsiz)' : 'Iptal Et'}
         </Button>
+        {cancelError && (
+          <Text style={{ color: theme.colors.error, fontSize: 13, textAlign: 'center', marginTop: 8 }}>
+            {cancelError}
+          </Text>
+        )}
       </View>
+
+      <Modal
+        transparent
+        visible={infoModal !== null}
+        animationType="fade"
+        onRequestClose={() => { infoModal?.onOk(); setInfoModal(null); }}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ backgroundColor: theme.colors.surface, borderRadius: theme.radius.xl, padding: theme.space[6], margin: theme.space[5], width: '85%' }}>
+            <Text style={{ ...theme.typography.headingMd, color: theme.colors.textPrimary, marginBottom: theme.space[2] }}>
+              {infoModal?.title}
+            </Text>
+            <Text style={{ ...theme.typography.bodyMd, color: theme.colors.textSecondary, marginBottom: theme.space[5] }}>
+              {infoModal?.message}
+            </Text>
+            <TouchableOpacity
+              onPress={() => { infoModal?.onOk(); setInfoModal(null); }}
+              style={{ padding: theme.space[3], borderRadius: theme.radius.lg, backgroundColor: theme.taxi.main, alignItems: 'center' }}
+            >
+              <Text style={{ ...theme.typography.labelMd, color: '#000', fontWeight: '700' }}>Tamam</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {false && ratingOpen && (
         <View
