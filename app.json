@@ -58,10 +58,10 @@
           ]
         }
       ],
-      "versionCode": 32,
+      "versionCode": 33,
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyDeUn7MQxnoy2bV2GtPNj2h4KKrpRl_p34"
+          "apiKey": "AIzaSyDeUn7MQxnoy2bV2GtPNj2h4KKrpRI_p34"
         }
       }
     },
