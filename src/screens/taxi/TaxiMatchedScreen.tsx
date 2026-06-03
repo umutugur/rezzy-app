@@ -117,6 +117,12 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
       if (payload.status === 'cancelled') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         setInfoModal({ title: 'Yolculuk İptal Edildi', message: 'Sürücü yolculuğu iptal etti.', onOk: () => navigation.goBack() });
+      } else if (payload.status === 'matched') {
+        // Sürücü kabul etti — sürücü bilgilerini (ad, plaka, araç) çek
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        getRide(rideId)
+          .then((r) => { setRide(r); setActiveRide(r); })
+          .catch(() => {});
       } else if (payload.status === 'inProgress') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } else if (payload.status === 'completed') {
@@ -232,7 +238,7 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
 
   const driver = ride?.driver;
   const driverUser = driver?.user ?? driver;
-  const driverName: string = driverUser?.name ?? 'Sürücü bekleniyor…';
+  const driverName: string = (driverUser as any)?.name ?? 'Sürücü bekleniyor…';
   const driverRating: number = driver?.rating ?? 5.0;
   const driverPlate: string = driver?.vehiclePlate ?? '';
   const driverVehicle: string = driver?.vehicleModel ?? '';
