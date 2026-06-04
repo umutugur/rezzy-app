@@ -16,6 +16,7 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  cancelAnimation,
   Easing,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -199,6 +200,18 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rideId, token]);
+
+  // Timer temizle — sürücü kabul edince (veya iptal/tamamlama) sayımı durdur
+  useEffect(() => {
+    if (!ride) return;
+    if (ride.status !== 'searching') {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      cancelAnimation(progress);
+    }
+  }, [ride?.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Countdown timer + auto-cancel when searching and time is up
   useEffect(() => {
