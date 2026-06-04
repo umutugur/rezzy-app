@@ -170,7 +170,7 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
           const r = prev ?? ride;
           if (r) {
             const driverId = typeof r.driver === 'object' && r.driver !== null
-              ? (r.driver as any).user?._id ?? (r.driver as any)._id ?? ''
+              ? String((r.driver as any)._id ?? (r.driver as any).user?._id ?? '')
               : String(r.driver ?? '');
             navigation.navigate('TaxiReceipt' as any, {
               rideId: r._id,
