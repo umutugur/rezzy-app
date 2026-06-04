@@ -69,6 +69,8 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
 
   const mapRef = useRef<MapView>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Ride status ref — stale closure'ı önler
+  const rideStatusRef = useRef<string | null>(activeRide?.status ?? null);
 
   // Countdown bar (0 → 1 over FREE_CANCEL_SECONDS)
   const progress = useSharedValue(1);
@@ -79,6 +81,11 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
       progress.value > 0.4 ? theme.brand[400] : theme.colors.error,
   }));
 
+  // rideStatusRef'i her ride değişiminde güncelle
+  useEffect(() => {
+    rideStatusRef.current = ride?.status ?? null;
+  }, [ride]);
+
   // Fetch ride details
   useEffect(() => {
     let cancelled = false;
@@ -87,6 +94,7 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
         if (!cancelled) {
           setRide(r);
           setActiveRide(r);
+          rideStatusRef.current = r.status ?? null;
           // Doğru kalan süreyi hesapla ve timer'ı düzelt
           const sLeft = calcSecondsLeft(r.requestedAt);
           setSecondsLeft(sLeft);
@@ -100,6 +108,23 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
       .catch(() => {});
     return () => { cancelled = true; };
   }, [rideId, setActiveRide]);
+
+  // REST polling — socket event gelmese bile her 3sn'de durumu kontrol et
+  useEffect(() => {
+    const poll = setInterval(async () => {
+      try {
+        const r = await getRide(rideId);
+        rideStatusRef.current = r.status ?? null;
+        if (r.status !== 'searching') {
+          setRide(r);
+          setActiveRide(r);
+          clearInterval(poll);
+        }
+      } catch { /* sessiz */ }
+    }, 3000);
+    return () => clearInterval(poll);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rideId]);
 
   // Socket — join ride room, listen for driver location & status changes
   useEffect(() => {
@@ -202,7 +227,8 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
   // Süre dolunca sürücü bulunamadıysa otomatik iptal et
   useEffect(() => {
     if (secondsLeft !== 0) return;
-    if (ride?.status !== 'searching') return; // matched/inProgress ise dokunma
+    // ref kullan — stale closure'ı önler
+    if (rideStatusRef.current !== 'searching') return;
 
     // Sürücü bulunamadı — otomatik iptal
     cancelRide(rideId, 'Sürücü bulunamadı (zaman aşımı)')
