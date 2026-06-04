@@ -432,37 +432,40 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
           </View>
         )}
 
-        {/* Free-cancel countdown bar */}
-        <View style={s.countdownWrap}>
-          <View style={s.countdownTrack}>
-            <Animated.View style={[s.countdownBar, barStyle]} />
-          </View>
-          <View style={s.countdownLabelRow}>
-            <AlertCircle size={12} color={theme.colors.textSecondary} />
-            <Text style={s.countdownLabel}>
-              {canFreeCancel
-                ? `Ücretsiz iptal: ${secondsLeft}s`
-                : 'Ücretsiz iptal süresi doldu'}
-            </Text>
-          </View>
-        </View>
+        {/* Free-cancel countdown bar + cancel button — sadece searching aşamasında göster */}
+        {ride?.status === 'searching' && (
+          <>
+            <View style={s.countdownWrap}>
+              <View style={s.countdownTrack}>
+                <Animated.View style={[s.countdownBar, barStyle]} />
+              </View>
+              <View style={s.countdownLabelRow}>
+                <AlertCircle size={12} color={theme.colors.textSecondary} />
+                <Text style={s.countdownLabel}>
+                  {canFreeCancel
+                    ? `Ücretsiz iptal: ${secondsLeft}s`
+                    : 'Ücretsiz iptal süresi doldu'}
+                </Text>
+              </View>
+            </View>
 
-        {/* Cancel button */}
-        <Button
-          variant="ghost"
-          size="md"
-          fullWidth
-          loading={cancelling}
-          onPress={handleCancel}
-          haptic="medium"
-          style={s.cancelBtn}
-        >
-          {canFreeCancel ? 'Iptal Et (Ucretsiz)' : 'Iptal Et'}
-        </Button>
-        {cancelError && (
-          <Text style={{ color: theme.colors.error, fontSize: 13, textAlign: 'center', marginTop: 8 }}>
-            {cancelError}
-          </Text>
+            <Button
+              variant="ghost"
+              size="md"
+              fullWidth
+              loading={cancelling}
+              onPress={handleCancel}
+              haptic="medium"
+              style={s.cancelBtn}
+            >
+              {canFreeCancel ? 'Iptal Et (Ucretsiz)' : 'Iptal Et'}
+            </Button>
+            {cancelError && (
+              <Text style={{ color: theme.colors.error, fontSize: 13, textAlign: 'center', marginTop: 8 }}>
+                {cancelError}
+              </Text>
+            )}
+          </>
         )}
       </View>
 
