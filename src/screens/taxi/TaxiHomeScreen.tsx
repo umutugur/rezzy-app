@@ -52,6 +52,7 @@ export default function TaxiHomeScreen({ navigation, route }: any) {
   const setIsSearching = useTaxiStore((s) => s.setIsSearching);
   const nearbyDrivers = useTaxiStore((s) => s.nearbyDrivers);
   const updateNearbyDriver = useTaxiStore((s) => s.updateNearbyDriver);
+  const removeNearbyDriver = useTaxiStore((s) => s.removeNearbyDriver);
   const setPickup = useTaxiStore((s) => s.setPickup);
 
   const [userRegion, setUserRegion] = React.useState({
@@ -101,21 +102,32 @@ export default function TaxiHomeScreen({ navigation, route }: any) {
       }
     })();
 
-    // Connect socket to receive nearby driver location updates
+    // Connect socket + join passengers:map room for live driver locations
     if (token) {
       taxiSocket.connect(token, 'passenger');
-      taxiSocket.on('driver:location:update', (payload: any) => {
-        updateNearbyDriver({
-          driverId: payload.driverId,
-          lat: payload.lat,
-          lng: payload.lng,
-        });
-      });
+
+      const joinMapRoom = () => taxiSocket.emit('passenger:join_map');
+      taxiSocket.on('connect', joinMapRoom);
+      if (taxiSocket.connected) joinMapRoom();
+
+      const onLocation = (payload: any) => {
+        updateNearbyDriver({ driverId: String(payload.driverId), lat: payload.lat, lng: payload.lng });
+      };
+      const onWentOffline = (payload: any) => {
+        removeNearbyDriver(String(payload.driverId));
+      };
+
+      taxiSocket.on('driver:location:update', onLocation);
+      taxiSocket.on('driver:went_offline', onWentOffline);
+
+      return () => {
+        taxiSocket.off('connect', joinMapRoom);
+        taxiSocket.off('driver:location:update', onLocation);
+        taxiSocket.off('driver:went_offline', onWentOffline);
+      };
     }
 
-    return () => {
-      taxiSocket.off('driver:location:update', updateNearbyDriver as any);
-    };
+    return () => {};
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
