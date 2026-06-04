@@ -172,6 +172,9 @@ export default function DriverHomeScreen() {
         setDriverOnline(online);
         onlineProgress.value = withTiming(online ? 1 : 0, { duration: 300 });
         if (online) {
+          // Write fresh location to DB BEFORE socket connects and emits driver:online.
+          // Backend's $near query uses this location to find nearby rides.
+          await startLocationWatch();
           connectSocket();
           attachRideListener();
         }
