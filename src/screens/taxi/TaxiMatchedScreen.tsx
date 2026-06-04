@@ -136,10 +136,11 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
 
     const joinRoom = () => taxiSocket.emit('ride:join', { rideId });
 
+    // Her zaman connect listener ekle (reconnect'te oda yeniden katılmak için)
+    taxiSocket.on('connect', joinRoom);
+    // Şu an bağlıysa hemen katıl
     if (taxiSocket.connected) {
       joinRoom();
-    } else {
-      taxiSocket.on('connect', joinRoom);
     }
 
     const onLocation = (payload: any) => {
