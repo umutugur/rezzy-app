@@ -24,6 +24,7 @@ import { Clock, CreditCard, AlertCircle, Navigation, MapPin } from 'lucide-react
 
 import { useTheme } from '../../contexts/ThemeContext';
 import { useTaxiStore } from '../../store/useTaxiStore';
+import { useAuth } from '../../store/useAuth';
 import { taxiSocket } from '../../services/taxiSocket.service';
 import { cancelRide, getRide, type TaxiRide } from '../../api/taxi';
 import { submitReview } from '../../api/reviews';
@@ -51,6 +52,7 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
   const setActiveRide = useTaxiStore((s) => s.setActiveRide);
   const setIsSearching = useTaxiStore((s) => s.setIsSearching);
   const updateNearbyDriver = useTaxiStore((s) => s.updateNearbyDriver);
+  const token = useAuth((s) => s.token);
 
   const [ride, setRide] = useState<TaxiRide | null>(activeRide);
   const [driverLoc, setDriverLoc] = useState<{ lat: number; lng: number } | null>(null);
@@ -101,7 +103,18 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
 
   // Socket — join ride room, listen for driver location & status changes
   useEffect(() => {
-    taxiSocket.emit('ride:join', { rideId });
+    // Bağlı değilse önce bağlan (cold start / navigate back senaryosu)
+    if (!taxiSocket.connected && token) {
+      taxiSocket.connect(token, 'passenger');
+    }
+
+    const joinRoom = () => taxiSocket.emit('ride:join', { rideId });
+
+    if (taxiSocket.connected) {
+      joinRoom();
+    } else {
+      taxiSocket.on('connect', joinRoom);
+    }
 
     const onLocation = (payload: any) => {
       const { lat, lng } = payload;
@@ -127,7 +140,6 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } else if (payload.status === 'completed') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        // Navigate to receipt screen — pass ride data via params
         setRide((prev) => {
           const r = prev ?? ride;
           if (r) {
@@ -155,12 +167,13 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
     taxiSocket.on('ride:status_change', onStatusChange);
 
     return () => {
+      taxiSocket.off('connect', joinRoom);
       taxiSocket.off('driver:location:update', onLocation);
       taxiSocket.off('ride:status_change', onStatusChange);
       taxiSocket.emit('ride:leave', { rideId });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rideId]);
+  }, [rideId, token]);
 
   // Countdown timer + auto-cancel when searching and time is up
   useEffect(() => {
