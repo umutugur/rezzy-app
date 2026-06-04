@@ -9,6 +9,7 @@ import {
   Platform,
   Modal,
   ScrollView,
+  Linking,
 } from 'react-native';
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import Animated, {
@@ -240,6 +241,22 @@ export default function DriverHomeScreen() {
       setRideActioning(false);
     }
   }, [driverActiveRide, rideActioning, setDriverEarnings]);
+
+  const openNavigation = useCallback((lat: number, lng: number) => {
+    const androidUrl = `google.navigation:q=${lat},${lng}`;
+    const iosUrl = `maps://?daddr=${lat},${lng}`;
+    const fallbackUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+
+    if (Platform.OS === 'android') {
+      Linking.canOpenURL(androidUrl)
+        .then((ok) => Linking.openURL(ok ? androidUrl : fallbackUrl))
+        .catch(() => Linking.openURL(fallbackUrl));
+    } else {
+      Linking.canOpenURL(iosUrl)
+        .then((ok) => Linking.openURL(ok ? iosUrl : fallbackUrl))
+        .catch(() => Linking.openURL(fallbackUrl));
+    }
+  }, []);
 
   // ── Ride history ─────────────────────────────────────────────────────────
 
@@ -602,6 +619,25 @@ export default function DriverHomeScreen() {
                 </Text>
               </View>
             </View>
+
+            {/* Navigation button — pickup when matched, dropoff when inProgress */}
+            {(activeRideStatus === 'matched' || activeRideStatus === 'inProgress') && driverActiveRide && (
+              <Button
+                variant="outline"
+                size="md"
+                onPress={() => {
+                  const coords = activeRideStatus === 'matched'
+                    ? driverActiveRide.pickup.coordinates   // [lng, lat]
+                    : driverActiveRide.dropoff.coordinates; // [lng, lat]
+                  // GeoJSON format: [longitude, latitude]
+                  openNavigation(coords[1], coords[0]);
+                }}
+                style={{ borderColor: theme.driver.main, marginBottom: theme.space[2] }}
+              >
+                <Navigation size={15} color={theme.driver.main} strokeWidth={2} />
+                {'  '}{activeRideStatus === 'matched' ? 'Yolcuya Git' : 'Hedefe Git'}
+              </Button>
+            )}
 
             {/* Action button */}
             {activeRideStatus === 'matched' && (
