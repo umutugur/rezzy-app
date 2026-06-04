@@ -10,6 +10,7 @@ import {
   Modal,
   ScrollView,
   Linking,
+  AppState,
 } from 'react-native';
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import Animated, {
@@ -86,6 +87,8 @@ export default function DriverHomeScreen() {
 
   const mapRef = useRef<MapView>(null);
   const locationWatcherRef = useRef<Location.LocationSubscription | null>(null);
+  const rideRequestListenerRef = useRef<((p: any) => void) | null>(null);
+  const isDriverOnlineRef = useRef(isDriverOnline);
 
   // Animated value: 0 = offline, 1 = online
   const onlineProgress = useSharedValue(isDriverOnline ? 1 : 0);
@@ -121,6 +124,11 @@ export default function DriverHomeScreen() {
     opacity: pulseOpacity.value,
   }));
 
+  // isDriverOnlineRef'i her state değişiminde güncelle
+  useEffect(() => {
+    isDriverOnlineRef.current = isDriverOnline;
+  }, [isDriverOnline]);
+
   // Load earnings on mount
   useEffect(() => {
     getDriverEarnings()
@@ -128,30 +136,59 @@ export default function DriverHomeScreen() {
       .catch(() => {});
   }, [setDriverEarnings]);
 
-  // Backend'den gerçek online durumunu sync et (uygulama yeniden açılınca)
+  // Backend durumunu sync et + AppState ile reconnect
   useEffect(() => {
     if (!token) return;
-    getDriverProfile()
-      .then((profile) => {
+
+    const connectSocket = () => {
+      if (!taxiSocket.connected) {
+        taxiSocket.connect(token, 'driver');
+        const onConn = () => {
+          taxiSocket.emit('driver:online');
+          taxiSocket.off('connect', onConn);
+        };
+        taxiSocket.on('connect', onConn);
+      } else {
+        taxiSocket.emit('driver:online');
+      }
+    };
+
+    const attachRideListener = () => {
+      if (rideRequestListenerRef.current) {
+        taxiSocket.off('ride:new_request', rideRequestListenerRef.current);
+      }
+      rideRequestListenerRef.current = (payload: any) => {
+        setIncomingRide(payload);
+        playTaxiSound();
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      };
+      taxiSocket.on('ride:new_request', rideRequestListenerRef.current);
+    };
+
+    const syncStatus = async () => {
+      try {
+        const profile = await getDriverProfile();
         const online = profile?.isOnline ?? false;
         setDriverOnline(online);
         onlineProgress.value = withTiming(online ? 1 : 0, { duration: 300 });
-        if (online && token) {
-          // Socket'i yeniden bağla ve driver:online gönder
-          taxiSocket.connect(token, 'driver');
-          const onConnect = () => {
-            taxiSocket.emit('driver:online');
-            taxiSocket.off('connect', onConnect);
-          };
-          taxiSocket.on('connect', onConnect);
-          taxiSocket.on('ride:new_request', (payload: any) => {
-            setIncomingRide(payload);
-            playTaxiSound();
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-          });
+        if (online) {
+          connectSocket();
+          attachRideListener();
         }
-      })
-      .catch(() => {});
+      } catch { /* sessiz */ }
+    };
+
+    syncStatus();
+
+    // Uygulama ön plana gelince reconnect
+    const appStateSub = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active' && isDriverOnlineRef.current && token) {
+        connectSocket();
+        syncStatus();
+      }
+    });
+
+    return () => appStateSub.remove();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
@@ -172,6 +209,8 @@ export default function DriverHomeScreen() {
     setMapRegion(region);
     setDriverLocation({ lat: latitude, lng: longitude });
     mapRef.current?.animateToRegion(region, 600);
+    // İlk konumu hemen DB'ye yaz (createRide $near sorgusu için kritik)
+    await updateDriverLocation(latitude, longitude).catch(() => {});
 
     locationWatcherRef.current = await Location.watchPositionAsync(
       { accuracy: Location.Accuracy.High, distanceInterval: 20, timeInterval: 5000 },
@@ -328,12 +367,16 @@ export default function DriverHomeScreen() {
           };
           taxiSocket.on('connect', onConnect);
 
-          // Gelen çağrıları dinle
-          taxiSocket.on('ride:new_request', (payload: any) => {
+          // Gelen çağrıları dinle — ref ile yönet
+          if (rideRequestListenerRef.current) {
+            taxiSocket.off('ride:new_request', rideRequestListenerRef.current);
+          }
+          rideRequestListenerRef.current = (payload: any) => {
             setIncomingRide(payload);
             playTaxiSound();
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-          });
+          };
+          taxiSocket.on('ride:new_request', rideRequestListenerRef.current);
         }
 
         onlineProgress.value = withTiming(1, { duration: 300 });
@@ -342,7 +385,10 @@ export default function DriverHomeScreen() {
       } else {
         stopLocationWatch();
         await updateDriverStatus(false);
-        taxiSocket.off('ride:new_request', setIncomingRide as any);
+        if (rideRequestListenerRef.current) {
+          taxiSocket.off('ride:new_request', rideRequestListenerRef.current);
+          rideRequestListenerRef.current = null;
+        }
         taxiSocket.disconnect();
         onlineProgress.value = withTiming(0, { duration: 300 });
         setDriverOnline(false);
