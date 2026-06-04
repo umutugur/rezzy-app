@@ -6,7 +6,6 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   TouchableOpacity,
   Pressable,
   ActivityIndicator,
@@ -335,7 +334,7 @@ export default function TaxiDestinationScreen({ navigation }: any) {
       {/* Bottom form panel */}
       <View style={[s.panel, { paddingBottom: insets.bottom + 8 }]}>
         <ScrollView
-          keyboardShouldPersistTaps="handled"
+          keyboardShouldPersistTaps="always"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 8 }}
         >
@@ -371,11 +370,9 @@ export default function TaxiDestinationScreen({ navigation }: any) {
         {/* Suggestions dropdown */}
         {suggestions.length > 0 && (
           <View style={s.suggestions}>
-            <FlatList
-              data={suggestions}
-              keyExtractor={(item, i) => item.placeId ?? `${i}`}
-              keyboardShouldPersistTaps="always"
-              renderItem={({ item }) => (
+            {suggestions.map((item, i) => (
+              <View key={item.placeId ?? `${i}`}>
+                {i > 0 && <View style={s.separator} />}
                 <TouchableOpacity
                   style={s.suggestionRow}
                   onPress={() =>
@@ -387,9 +384,8 @@ export default function TaxiDestinationScreen({ navigation }: any) {
                     {item.address}
                   </Text>
                 </TouchableOpacity>
-              )}
-              ItemSeparatorComponent={() => <View style={s.separator} />}
-            />
+              </View>
+            ))}
           </View>
         )}
 
