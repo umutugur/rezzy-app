@@ -489,7 +489,7 @@ export default function ProfileScreen() {
 
   const isRestaurant = user?.role === "restaurant" || hasRestaurantMembership;
   const isAdmin = user?.role === "admin";
-  const isDriver = (user as any)?.role === "driver" || (user as any)?.role === "taxi_driver";
+  const isDriver = !!(user as any)?.isDriver || (user as any)?.role === "driver";
 
   /** durum → {label,color} */
   const statusMeta = (s: string) => {
