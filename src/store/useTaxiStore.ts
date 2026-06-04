@@ -43,6 +43,7 @@ export interface TaxiState {
   setDropoff: (address: string, coords: Coordinates | null) => void;
   setNearbyDrivers: (drivers: NearbyDriverLocation[]) => void;
   updateNearbyDriver: (driver: NearbyDriverLocation) => void;
+  removeNearbyDriver: (driverId: string) => void;
 
   setDriverLocation: (loc: Coordinates) => void;
   setDriverOnline: (v: boolean) => void;
@@ -100,6 +101,11 @@ export const useTaxiStore = create<TaxiState>((set) => ({
       next[existing] = driver;
       return { nearbyDrivers: next };
     }),
+
+  removeNearbyDriver: (driverId) =>
+    set((s) => ({
+      nearbyDrivers: s.nearbyDrivers.filter((d) => d.driverId !== driverId),
+    })),
 
   setDriverLocation: (loc) => set({ driverLocation: loc }),
   setDriverOnline: (v) => set({ isDriverOnline: v }),
