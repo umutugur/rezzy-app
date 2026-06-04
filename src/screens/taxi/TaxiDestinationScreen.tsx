@@ -6,6 +6,7 @@ import {
   View,
   Text,
   StyleSheet,
+  FlatList,
   TouchableOpacity,
   Pressable,
   ActivityIndicator,
@@ -367,11 +368,14 @@ export default function TaxiDestinationScreen({ navigation }: any) {
           </View>
         </View>
 
-        {/* Suggestions dropdown — FlatList kullanmıyoruz (ScrollView içinde yasak) */}
+        {/* Suggestions dropdown */}
         {suggestions.length > 0 && (
           <View style={s.suggestions}>
-            {suggestions.map((item, i) => (
-              <React.Fragment key={item.placeId ?? String(i)}>
+            <FlatList
+              data={suggestions}
+              keyExtractor={(item, i) => item.placeId ?? `${i}`}
+              keyboardShouldPersistTaps="always"
+              renderItem={({ item }) => (
                 <TouchableOpacity
                   style={s.suggestionRow}
                   onPress={() =>
@@ -383,9 +387,9 @@ export default function TaxiDestinationScreen({ navigation }: any) {
                     {item.address}
                   </Text>
                 </TouchableOpacity>
-                {i < suggestions.length - 1 && <View style={s.separator} />}
-              </React.Fragment>
-            ))}
+              )}
+              ItemSeparatorComponent={() => <View style={s.separator} />}
+            />
           </View>
         )}
 
@@ -562,6 +566,25 @@ function styles(theme: ReturnType<typeof useTheme>, insets: ReturnType<typeof us
     inputWrap: { flex: 1 },
     input: { marginBottom: 0 },
 
+    inputsContainer: {
+      paddingHorizontal: theme.space[4],
+      paddingTop: theme.space[3],
+      zIndex: 10,
+    },
+    suggestionsOverlay: {
+      position: 'absolute',
+      left: theme.space[4],
+      right: theme.space[4],
+      top: 88, // input alanlarının altı
+      zIndex: 999,
+      backgroundColor: theme.colors.surfaceRaised,
+      borderRadius: theme.radius.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.borderDefault,
+      maxHeight: 220,
+      overflow: 'hidden',
+      ...theme.getElevation(4),
+    },
     suggestions: {
       backgroundColor: theme.colors.surfaceRaised,
       borderRadius: theme.radius.lg,
