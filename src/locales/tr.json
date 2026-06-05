@@ -289,6 +289,48 @@
   "search": {
     "placeholder": "Restoran ara..."
   },
+  "reservationDetail": {
+    "loading": "Yükleniyor…",
+    "errorTitle": "Bir hata oluştu",
+    "notFound": "Rezervasyon bulunamadı.",
+    "summaryTitle": "Rezervasyon Özeti",
+    "personLabel": "Misafirler",
+    "personShort": "kişi",
+    "menuFallback": "Menü",
+    "noMenu": "Menü seçimi bulunamadı.",
+    "subtotal": "Ara Toplam",
+    "deposit": "Depozit",
+    "grandTotal": "Toplam",
+    "receiptSectionTitle": "Makbuz",
+    "directionsSectionTitle": "Yol Tarifi",
+    "directionsButton": "Yol Tarifi Al",
+    "qrSectionTitle": "Giriş QR Kodu",
+    "qrButton": "QR kodumu göster",
+    "qrLocked": "QR kodunuz rezervasyon onaylandıktan sonra burada görünecek.",
+    "cancelButton": "Rezervasyonu İptal Et",
+    "cannotCancel": "Bu rezervasyon iptal edilemez.",
+    "qrModalTitle": "Giriş QR Kodu",
+    "qrHelper": "Bu kodu restoran girişinde gösterin.",
+    "uploadSuccessTitle": "Başarılı",
+    "uploadSuccessBody": "Makbuz yüklendi.",
+    "uploadError": "Yükleme başarısız.",
+    "cancelConfirmTitle": "Rezervasyonu iptal et",
+    "cancelConfirmMessage": "Bu rezervasyonu iptal etmek istediğinizden emin misiniz?",
+    "cancelConfirmOk": "Evet, iptal et",
+    "cancelSuccessTitle": "Rezervasyon iptal edildi",
+    "cancelSuccessBody": "Rezervasyonunuz iptal edildi.",
+    "cancelError": "Rezervasyon iptal edilemedi.",
+    "qrError": "QR kodu alınamadı.",
+    "locationErrorTitle": "Konum bulunamadı",
+    "locationErrorBody": "Restoranın konumu mevcut değil.",
+    "directionsErrorTitle": "Yol tarifi açılamadı",
+    "directionsErrorBody": "Bu cihazda harita uygulaması açılamadı.",
+    "helper": {
+      "pending": "Rezervasyonunuzu aldık. Onaylandığında bildirim alacaksınız.",
+      "confirmed": "Rezervasyonunuz onaylandı. İyi eğlenceler!",
+      "arrived": "Mekâna giriş yaptınız. İyi vakit geçirin!"
+    }
+  },
   "restaurantDetail": {
     "loading": "Yükleniyor…",
     "notFoundTitle": "Restoran Bulunamadı",
@@ -696,6 +738,8 @@
     "noRestaurant": "Restoran bulunamadı",
     "noResultsQuery": "\"{{query}}\" için eşleşen restoran yok.",
     "noRestaurantSub": "Seçili adrese teslimat yapan restoran yok.",
+    "noRestaurantGpsSub": "Konumunuza teslimat yapan restoran bulunamadı. Kayıtlı adres ekleyerek daha geniş alanda arayabilirsiniz.",
+    "addAddress": "Adres Ekle",
     "cartItems": "{{count}} ürün",
     "goToCart": "Sepete Git",
     "errorGeneric": "Bir hata oluştu",
@@ -811,7 +855,17 @@
     "cartItems": "{{count}} ürün",
     "goToCart": "Sepete Git",
     "freeDelivery": "Ücretsiz Teslimat",
-    "freeThreshold": "₺{{amount}} üzeri ücretsiz",
+    "freeThreshold": "{{amount}} üzeri ücretsiz",
+    "free": "Ücretsiz",
+    "orders": "sipariş",
+    "priceLabel": "Fiyat *",
+    "cart": {
+      "placeAndPay":   "Öde ve Siparişi Ver",
+      "placeOrder":    "Siparişi Ver",
+      "minOrderError": "Bu markette minimum sipariş tutarı {{amount}}.",
+      "minOrderLabel": "Min sipariş {{min}} — {{remaining}} daha ekleyin",
+      "selectAddress": "Lütfen bir teslimat adresi seçin."
+    },
     "pickupAvailable": "Gel-al",
     "cat": {
       "all": "Tümü",
@@ -825,6 +879,50 @@
     }
   },
   "taxi": {
+    "home": {
+      "title": "Rezvix Taksi",
+      "whereTo": "Nereye?",
+      "vehicleType": "Araç tipi",
+      "ride": { "label": "Ride", "sub": "1-4 kişi" },
+      "xl":   { "label": "XL",   "sub": "1-6 kişi" },
+      "lux":  { "label": "Lüks", "sub": "Premium" },
+      "pet":  { "label": "Pet",  "sub": "Evcil dost" }
+    },
+    "matched": {
+      "onTheWay":            "Yolda",
+      "searching":           "Aranıyor",
+      "pickup":              "Kalkış",
+      "freeCancelCountdown": "Ücretsiz iptal: {{seconds}}s",
+      "freeCancelExpired":   "Ücretsiz iptal süresi doldu",
+      "cancelFree":          "İptal Et (Ücretsiz)",
+      "cancel":              "İptal Et",
+      "thanks":              "✓ Teşekkürler!",
+      "rideCompleted":       "Yolculuğunuz tamamlandı",
+      "rateDriver":          "Sürücünüzü değerlendirin",
+      "submitRating":        "Puanı Gönder",
+      "skip":                "Atla"
+    },
+    "receipt": {
+      "title":           "Yolculuk Tamamlandı",
+      "paidWith":        "{{method}} ile ödendi",
+      "distance":        "Mesafe",
+      "duration":        "Süre",
+      "payment":         "Ödeme",
+      "pickup":          "Kalkış",
+      "dropoff":         "Varış",
+      "rateDriver":      "Sürücüyü Değerlendir",
+      "howWasRide":      "Yolculuğunuz nasıldı?",
+      "submitting":      "Gönderiliyor…",
+      "submitRating":    "Puanı Gönder",
+      "ratingError":     "Puanlama gönderilemedi.",
+      "skip":            "Geç",
+      "thanks":          "Teşekkürler!",
+      "ratingSubmitted": "Puanınız gönderildi.",
+      "backToHome":      "Ana Sayfaya Dön",
+      "cash":            "Nakit",
+      "card":            "Kart",
+      "online":          "Online"
+    },
     "history": {
       "title": "Geçmiş Yolculuklar",
       "empty": "Henüz yolculuğunuz yok",
@@ -855,5 +953,20 @@
       "submit": "Gönder",
       "ratingError": "Puanlama kaydedilemedi."
     }
+  },
+  "driver": {
+    "newRequest":    "Yeni Yolcu Talebi",
+    "pickup":        "Kalkış",
+    "dropoff":       "Varış",
+    "accept":        "KABUL ET",
+    "reject":        "REDDET",
+    "acceptError":   "Kabul edilemedi.",
+    "rideActive":    "Yolculuk Sürüyor",
+    "rideMatched":   "Yolcu Eşleşildi",
+    "todayRides":    "Yolculuk",
+    "startError":    "Yolculuk başlatılamadı.",
+    "completeError": "Yolculuk tamamlanamadı.",
+    "completed":     "Tamamlandı",
+    "cancelled":     "İptal"
   }
 }

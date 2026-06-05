@@ -777,7 +777,9 @@
     "noResults": "No results found",
     "noRestaurant": "No restaurants found",
     "noResultsQuery": "No restaurants match \"{{query}}\".",
-    "noRestaurantSub": "No restaurants deliver to the selected address.",
+    "noRestaurantSub": "No restaurant delivers to the selected address.",
+    "noRestaurantGpsSub": "No restaurant delivers to your current location. Try adding a saved address to search a wider area.",
+    "addAddress": "Add Address",
     "cartItems": "{{count}} items",
     "goToCart": "Go to Cart",
     "errorGeneric": "Something went wrong",
@@ -893,7 +895,17 @@
     "cartItems": "{{count}} items",
     "goToCart": "Go to Cart",
     "freeDelivery": "Free Delivery",
-    "freeThreshold": "Free over ₺{{amount}}",
+    "freeThreshold": "Free over {{amount}}",
+    "free": "Free",
+    "orders": "orders",
+    "priceLabel": "Price *",
+    "cart": {
+      "placeAndPay":   "Pay & Place Order",
+      "placeOrder":    "Place Order",
+      "minOrderError": "Minimum order amount for this store is {{amount}}.",
+      "minOrderLabel": "Min order {{min}} — add {{remaining}} more",
+      "selectAddress": "Please select a delivery address."
+    },
     "pickupAvailable": "Pickup",
     "cat": {
       "all": "All",
@@ -907,6 +919,50 @@
     }
   },
   "taxi": {
+    "home": {
+      "title": "Rezvix Taxi",
+      "whereTo": "Where to?",
+      "vehicleType": "Vehicle type",
+      "ride": { "label": "Ride",   "sub": "1-4 passengers" },
+      "xl":   { "label": "XL",     "sub": "1-6 passengers" },
+      "lux":  { "label": "Luxury", "sub": "Premium" },
+      "pet":  { "label": "Pet",    "sub": "Pet friendly" }
+    },
+    "matched": {
+      "onTheWay":            "On the way",
+      "searching":           "Searching",
+      "pickup":              "Pickup",
+      "freeCancelCountdown": "Free cancel: {{seconds}}s",
+      "freeCancelExpired":   "Free cancel window closed",
+      "cancelFree":          "Cancel (Free)",
+      "cancel":              "Cancel",
+      "thanks":              "✓ Thank you!",
+      "rideCompleted":       "Ride completed",
+      "rateDriver":          "Rate your driver",
+      "submitRating":        "Submit Rating",
+      "skip":                "Skip"
+    },
+    "receipt": {
+      "title":           "Ride Completed",
+      "paidWith":        "Paid with {{method}}",
+      "distance":        "Distance",
+      "duration":        "Duration",
+      "payment":         "Payment",
+      "pickup":          "Pickup",
+      "dropoff":         "Dropoff",
+      "rateDriver":      "Rate your driver",
+      "howWasRide":      "How was your ride?",
+      "submitting":      "Submitting…",
+      "submitRating":    "Submit Rating",
+      "ratingError":     "Could not submit rating.",
+      "skip":            "Skip",
+      "thanks":          "Thanks!",
+      "ratingSubmitted": "Your rating has been submitted.",
+      "backToHome":      "Back to Home",
+      "cash":            "Cash",
+      "card":            "Card",
+      "online":          "Online"
+    },
     "history": {
       "title": "Ride History",
       "empty": "No rides yet",
@@ -937,5 +993,20 @@
       "submit": "Submit",
       "ratingError": "Could not save rating."
     }
+  },
+  "driver": {
+    "newRequest":    "New Passenger Request",
+    "pickup":        "Pickup",
+    "dropoff":       "Dropoff",
+    "accept":        "ACCEPT",
+    "reject":        "REJECT",
+    "acceptError":   "Could not accept ride.",
+    "rideActive":    "Ride in Progress",
+    "rideMatched":   "Passenger Matched",
+    "todayRides":    "Rides",
+    "startError":    "Could not start ride.",
+    "completeError": "Could not complete ride.",
+    "completed":     "Completed",
+    "cancelled":     "Cancelled"
   }
 }
