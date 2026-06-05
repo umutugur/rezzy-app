@@ -14,6 +14,9 @@ import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../contexts/ThemeContext';
 import { submitReview } from '../../api/reviews';
+import { useI18n } from '../../i18n';
+import { useRegion } from '../../store/useRegion';
+import { formatCurrency } from '../../utils/format';
 
 // StarRating component (inline — no separate import needed)
 function StarRating({ value, onChange, size = 32 }: { value: number; onChange: (v: number) => void; size?: number }) {
@@ -43,6 +46,8 @@ export default function TaxiReceiptScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
+  const { t, language } = useI18n();
+  const region = useRegion((s) => s.region);
   const route = useRoute<RouteProp<{ TaxiReceipt: TaxiReceiptParams }, 'TaxiReceipt'>>();
   const { rideId, fare, distanceKm, durationMin, pickupAddress, dropoffAddress, paymentMethod, driverId } = route.params;
 
@@ -51,7 +56,10 @@ export default function TaxiReceiptScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [ratingError, setRatingError] = useState<string | null>(null);
 
-  const paymentLabel = paymentMethod === 'cash' ? 'Nakit' : paymentMethod === 'card' ? 'Kart' : 'Online';
+  const paymentLabel =
+    paymentMethod === 'cash' ? t('taxi.receipt.cash') :
+    paymentMethod === 'card' ? t('taxi.receipt.card') :
+    t('taxi.receipt.online');
 
   const handleSubmitRating = useCallback(async () => {
     setRatingError(null);
@@ -61,7 +69,7 @@ export default function TaxiReceiptScreen() {
       setRatingSubmitted(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch {
-      setRatingError('Puanlama gönderilemedi.');
+      setRatingError(t('taxi.receipt.ratingError'));
     } finally {
       setSubmitting(false);
     }
@@ -83,26 +91,26 @@ export default function TaxiReceiptScreen() {
           <View style={s.checkCircle}>
             <CheckCircle size={48} color={theme.taxi.main} strokeWidth={1.5} />
           </View>
-          <Text style={s.heroTitle}>Yolculuk Tamamlandı</Text>
-          <Text style={s.heroFare}>₺{fare.toFixed(2)}</Text>
-          <Text style={s.heroSub}>{paymentLabel} ile ödendi</Text>
+          <Text style={s.heroTitle}>{t('taxi.receipt.title')}</Text>
+          <Text style={s.heroFare}>{formatCurrency(fare, region, language)}</Text>
+          <Text style={s.heroSub}>{t('taxi.receipt.paidWith', { method: paymentLabel })}</Text>
         </View>
 
         {/* ── Trip info ── */}
         <View style={s.card}>
           <View style={s.infoRow}>
             <Ruler size={16} color={theme.colors.textSecondary} strokeWidth={2} />
-            <Text style={s.infoLabel}>Mesafe</Text>
+            <Text style={s.infoLabel}>{t('taxi.receipt.distance')}</Text>
             <Text style={s.infoValue}>{distanceKm.toFixed(1)} km</Text>
           </View>
           <View style={[s.infoRow, s.infoRowBorder]}>
             <Clock size={16} color={theme.colors.textSecondary} strokeWidth={2} />
-            <Text style={s.infoLabel}>Süre</Text>
+            <Text style={s.infoLabel}>{t('taxi.receipt.duration')}</Text>
             <Text style={s.infoValue}>{durationMin} dk</Text>
           </View>
           <View style={[s.infoRow, s.infoRowBorder]}>
             <CreditCard size={16} color={theme.colors.textSecondary} strokeWidth={2} />
-            <Text style={s.infoLabel}>Ödeme</Text>
+            <Text style={s.infoLabel}>{t('taxi.receipt.payment')}</Text>
             <Text style={s.infoValue}>{paymentLabel}</Text>
           </View>
         </View>
@@ -112,7 +120,7 @@ export default function TaxiReceiptScreen() {
           <View style={s.routeRow}>
             <View style={[s.routeDot, { backgroundColor: theme.colors.success }]} />
             <View style={s.routeTextWrap}>
-              <Text style={s.routeLabel}>Kalkış</Text>
+              <Text style={s.routeLabel}>{t('taxi.receipt.pickup')}</Text>
               <Text style={s.routeAddr} numberOfLines={2}>{pickupAddress}</Text>
             </View>
           </View>
@@ -120,7 +128,7 @@ export default function TaxiReceiptScreen() {
           <View style={s.routeRow}>
             <View style={[s.routeDot, { backgroundColor: theme.colors.error }]} />
             <View style={s.routeTextWrap}>
-              <Text style={s.routeLabel}>Varış</Text>
+              <Text style={s.routeLabel}>{t('taxi.receipt.dropoff')}</Text>
               <Text style={s.routeAddr} numberOfLines={2}>{dropoffAddress}</Text>
             </View>
           </View>
@@ -129,15 +137,15 @@ export default function TaxiReceiptScreen() {
         {/* ── Rating ── */}
         {!ratingSubmitted ? (
           <View style={s.ratingCard}>
-            <Text style={s.ratingTitle}>Sürücüyü Değerlendir</Text>
-            <Text style={s.ratingSubtitle}>Yolculuğunuz nasıldı?</Text>
+            <Text style={s.ratingTitle}>{t('taxi.receipt.rateDriver')}</Text>
+            <Text style={s.ratingSubtitle}>{t('taxi.receipt.howWasRide')}</Text>
             <StarRating value={rating} onChange={setRating} size={36} />
             <TouchableOpacity
               onPress={handleSubmitRating}
               disabled={submitting}
               style={[s.ratingBtn, { opacity: submitting ? 0.6 : 1 }]}
             >
-              <Text style={s.ratingBtnText}>{submitting ? 'Gönderiliyor…' : 'Puanı Gönder'}</Text>
+              <Text style={s.ratingBtnText}>{submitting ? t('taxi.receipt.submitting') : t('taxi.receipt.submitRating')}</Text>
             </TouchableOpacity>
             {ratingError && (
               <Text style={{ color: theme.colors.error, fontSize: 13, textAlign: 'center', marginTop: 8 }}>
@@ -145,14 +153,14 @@ export default function TaxiReceiptScreen() {
               </Text>
             )}
             <TouchableOpacity onPress={handleDone} style={s.skipBtn}>
-              <Text style={s.skipBtnText}>Geç</Text>
+              <Text style={s.skipBtnText}>{t('taxi.receipt.skip')}</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <View style={s.ratingCard}>
             <Text style={{ fontSize: 40, textAlign: 'center' }}>⭐</Text>
-            <Text style={[s.ratingTitle, { color: theme.colors.success }]}>Teşekkürler!</Text>
-            <Text style={s.ratingSubtitle}>Puanınız gönderildi.</Text>
+            <Text style={[s.ratingTitle, { color: theme.colors.success }]}>{t('taxi.receipt.thanks')}</Text>
+            <Text style={s.ratingSubtitle}>{t('taxi.receipt.ratingSubmitted')}</Text>
           </View>
         )}
 
@@ -162,7 +170,7 @@ export default function TaxiReceiptScreen() {
       {ratingSubmitted && (
         <View style={[s.footer, { paddingBottom: insets.bottom + 12 }]}>
           <TouchableOpacity onPress={handleDone} style={s.doneBtn}>
-            <Text style={s.doneBtnText}>Ana Sayfaya Dön</Text>
+            <Text style={s.doneBtnText}>{t('taxi.receipt.backToHome')}</Text>
           </TouchableOpacity>
         </View>
       )}
