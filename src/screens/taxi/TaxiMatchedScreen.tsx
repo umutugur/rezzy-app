@@ -26,6 +26,9 @@ import { Clock, CreditCard, AlertCircle, Navigation, MapPin } from 'lucide-react
 import { useTheme } from '../../contexts/ThemeContext';
 import { useTaxiStore } from '../../store/useTaxiStore';
 import { useAuth } from '../../store/useAuth';
+import { useI18n } from '../../i18n';
+import { useRegion } from '../../store/useRegion';
+import { formatCurrency } from '../../utils/format';
 import { taxiSocket } from '../../services/taxiSocket.service';
 import { cancelRide, getRide, type TaxiRide } from '../../api/taxi';
 import { submitReview } from '../../api/reviews';
@@ -54,6 +57,8 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
   const setIsSearching = useTaxiStore((s) => s.setIsSearching);
   const updateNearbyDriver = useTaxiStore((s) => s.updateNearbyDriver);
   const token = useAuth((s) => s.token);
+  const { t, language } = useI18n();
+  const region = useRegion((s) => s.region);
 
   const [ride, setRide] = useState<TaxiRide | null>(activeRide);
   const [driverLoc, setDriverLoc] = useState<{ lat: number; lng: number } | null>(null);
@@ -396,9 +401,9 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
             ) : null}
           </View>
           {driverLoc ? (
-            <Badge variant="success" label="Yolda" />
+            <Badge variant="success" label={t('taxi.matched.onTheWay')} />
           ) : (
-            <Badge variant="warning" label="Aranıyor" />
+            <Badge variant="warning" label={t('taxi.matched.searching')} />
           )}
         </View>
 
@@ -417,7 +422,7 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
           <View style={s.fareRow}>
             <View style={s.fareLeft}>
               <Text style={s.fareAmount}>
-                ₺{ride.fare.toFixed(0)}
+                {formatCurrency(ride.fare, region, language, 0)}
               </Text>
               <View style={s.paymentChip}>
                 <CreditCard size={12} color={theme.colors.textSecondary} />
@@ -425,7 +430,7 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
               </View>
             </View>
             <View style={s.fareRight}>
-              <Text style={s.fareLabel}>Kalkış</Text>
+              <Text style={s.fareLabel}>{t('taxi.matched.pickup')}</Text>
               <Text style={s.fareAddress} numberOfLines={1}>
                 {ride.pickup.address}
               </Text>
@@ -444,8 +449,8 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
                 <AlertCircle size={12} color={theme.colors.textSecondary} />
                 <Text style={s.countdownLabel}>
                   {canFreeCancel
-                    ? `Ücretsiz iptal: ${secondsLeft}s`
-                    : 'Ücretsiz iptal süresi doldu'}
+                    ? t('taxi.matched.freeCancelCountdown', { seconds: secondsLeft })
+                    : t('taxi.matched.freeCancelExpired')}
                 </Text>
               </View>
             </View>
@@ -459,7 +464,7 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
               haptic="medium"
               style={s.cancelBtn}
             >
-              {canFreeCancel ? 'Iptal Et (Ucretsiz)' : 'Iptal Et'}
+              {canFreeCancel ? t('taxi.matched.cancelFree') : t('taxi.matched.cancel')}
             </Button>
             {cancelError && (
               <Text style={{ color: theme.colors.error, fontSize: 13, textAlign: 'center', marginTop: 8 }}>
@@ -488,7 +493,7 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
               onPress={() => { infoModal?.onOk(); setInfoModal(null); }}
               style={{ padding: theme.space[3], borderRadius: theme.radius.lg, backgroundColor: theme.taxi.main, alignItems: 'center' }}
             >
-              <Text style={{ ...theme.typography.labelMd, color: '#000', fontWeight: '700' }}>Tamam</Text>
+              <Text style={{ ...theme.typography.labelMd, color: '#000', fontWeight: '700' }}>{t('common.ok')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -517,15 +522,15 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
           >
             {ratingDone ? (
               <Text style={{ ...theme.typography.headingMd, color: theme.colors.success }}>
-                ✓ Teşekkürler!
+                {t('taxi.matched.thanks')}
               </Text>
             ) : (
               <>
                 <Text style={{ ...theme.typography.headingMd, color: theme.colors.textPrimary, textAlign: 'center' }}>
-                  Yolculuğunuz tamamlandı
+                  {t('taxi.matched.rideCompleted')}
                 </Text>
                 <Text style={{ ...theme.typography.bodyMd, color: theme.colors.textSecondary, textAlign: 'center' }}>
-                  Sürücünüzü değerlendirin
+                  {t('taxi.matched.rateDriver')}
                 </Text>
                 <StarRating value={userRating} onChange={setUserRating} size="lg" />
                 <Button
@@ -536,11 +541,11 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
                   onPress={handleRatingSubmit}
                   style={{ backgroundColor: theme.taxi.main }}
                 >
-                  Puanı Gönder
+                  {t('taxi.matched.submitRating')}
                 </Button>
                 <TouchableOpacity onPress={() => { setRatingOpen(false); navigation.goBack(); }}>
                   <Text style={{ ...theme.typography.bodyMd, color: theme.colors.textSecondary }}>
-                    Atla
+                    {t('taxi.matched.skip')}
                   </Text>
                 </TouchableOpacity>
               </>
