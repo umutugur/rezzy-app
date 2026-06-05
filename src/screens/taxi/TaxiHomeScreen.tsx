@@ -21,6 +21,8 @@ import { taxiSocket } from '../../services/taxiSocket.service';
 import { useAuth } from '../../store/useAuth';
 import { getActiveRide } from '../../api/taxi';
 import type { VehicleType } from '../../api/taxi';
+import { useI18n } from '../../i18n';
+import { useRegion } from '../../store/useRegion';
 
 // ─── Vehicle type config ──────────────────────────────────────────────────────
 
@@ -31,12 +33,14 @@ interface VehicleOption {
   Icon: React.FC<{ size: number; color: string; strokeWidth?: number }>;
 }
 
-const VEHICLE_OPTIONS: VehicleOption[] = [
-  { type: 'ride', label: 'Ride', sublabel: '1-4 kişi', Icon: Car as any },
-  { type: 'xl', label: 'XL', sublabel: '1-6 kişi', Icon: Users as any },
-  { type: 'lux', label: 'Lüks', sublabel: 'Premium', Icon: Crown as any },
-  { type: 'pet', label: 'Pet', sublabel: 'Evcil dost', Icon: PawPrint as any },
-];
+function getVehicleOptions(t: (k: string) => string): VehicleOption[] {
+  return [
+    { type: 'ride', label: t('taxi.home.ride.label'), sublabel: t('taxi.home.ride.sub'), Icon: Car as any },
+    { type: 'xl',   label: t('taxi.home.xl.label'),   sublabel: t('taxi.home.xl.sub'),   Icon: Users as any },
+    { type: 'lux',  label: t('taxi.home.lux.label'),  sublabel: t('taxi.home.lux.sub'),  Icon: Crown as any },
+    { type: 'pet',  label: t('taxi.home.pet.label'),  sublabel: t('taxi.home.pet.sub'),  Icon: PawPrint as any },
+  ];
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -44,6 +48,9 @@ export default function TaxiHomeScreen({ navigation, route }: any) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const token = useAuth((s) => s.token);
+  const { t } = useI18n();
+  const region = useRegion((s) => s.region);
+  const VEHICLE_OPTIONS = getVehicleOptions(t);
   const mapRef = useRef<MapView>(null);
 
   const selectedVehicleType = useTaxiStore((s) => s.selectedVehicleType);
@@ -177,7 +184,7 @@ export default function TaxiHomeScreen({ navigation, route }: any) {
         >
           <ChevronLeft size={20} color="#111" strokeWidth={2.5} />
         </TouchableOpacity>
-        <Text style={s.topTitle}>Rezvix Taksi</Text>
+        <Text style={s.topTitle}>{t('taxi.home.title')}</Text>
         <TouchableOpacity
           onPress={() => navigation.navigate('TaxiHistory')}
           hitSlop={12}
@@ -192,11 +199,11 @@ export default function TaxiHomeScreen({ navigation, route }: any) {
         {/* "Where to?" input trigger */}
         <Pressable style={s.searchBar} onPress={handleSearchPress}>
           <MapPin size={18} color={theme.taxi.main} strokeWidth={2.5} />
-          <Text style={s.searchPlaceholder}>Nereye?</Text>
+          <Text style={s.searchPlaceholder}>{t('taxi.home.whereTo')}</Text>
         </Pressable>
 
         {/* Vehicle type — ekrana tam oturan 4 eşit kart */}
-        <Text style={s.carouselLabel}>Araç tipi</Text>
+        <Text style={s.carouselLabel}>{t('taxi.home.vehicleType')}</Text>
         <View style={s.carouselRow}>
           {VEHICLE_OPTIONS.map((opt) => {
             const active = selectedVehicleType === opt.type;
