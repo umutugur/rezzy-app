@@ -1,5 +1,4 @@
 // src/i18n/index.ts
-import React from "react";
 import i18n, { setLocale } from "./config";
 import { useRegion } from "../store/useRegion";
 
@@ -19,9 +18,8 @@ export function t(key: string, options?: any): string {
 export function useI18n() {
   const language = useRegion((s) => s.language || "tr");
 
-  React.useEffect(() => {
-    setLocale(language);
-  }, [language]);
+  // Synchronous update: locale must be current BEFORE the t() calls in render
+  setLocale(language);
 
   return {
     t: (key: string, options?: any) => i18n.t(key, options),
