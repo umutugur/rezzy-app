@@ -13,6 +13,8 @@ import { ChevronLeft, MapPin, Navigation, Car, User, Star } from 'lucide-react-n
 import { useTheme } from '../../contexts/ThemeContext';
 import { useI18n } from '../../i18n';
 import { getRide, rateRide, type TaxiRide, type TaxiDriverInfo } from '../../api/taxi';
+import { formatCurrency, langToLocale } from '../../utils/format';
+import { useRegion } from '../../store/useRegion';
 
 // ─── Star Rating Component ─────────────────────────────────────────────────────
 
@@ -52,9 +54,9 @@ function StarRating({
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatDate(dateStr?: string): string {
+function formatDate(dateStr?: string, locale = 'tr-TR'): string {
   if (!dateStr) return '—';
-  return new Date(dateStr).toLocaleDateString('tr-TR', {
+  return new Date(dateStr).toLocaleDateString(locale, {
     day: 'numeric', month: 'long', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   });
@@ -75,7 +77,9 @@ export default function TaxiRideDetailScreen({ navigation, route }: any) {
   const { rideId } = route.params as { rideId: string };
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { t } = useI18n();
+  const { t, language } = useI18n();
+  const region = useRegion((s) => s.region);
+  const intlLocale = langToLocale(language);
 
   const [ride, setRide] = useState<TaxiRide | null>(null);
   const [loading, setLoading] = useState(true);
@@ -169,13 +173,13 @@ export default function TaxiRideDetailScreen({ navigation, route }: any) {
         {/* Trip Info */}
         <View style={s.section}>
           <Text style={s.sectionTitle}>{t('taxi.detail.tripInfo')}</Text>
-          <InfoRow label={t('taxi.detail.date')} value={formatDate(ride.completedAt ?? ride.requestedAt)} theme={theme} />
+          <InfoRow label={t('taxi.detail.date')} value={formatDate(ride.completedAt ?? ride.requestedAt, intlLocale)} theme={theme} />
           <View style={s.divider} />
           <InfoRow label={t('taxi.detail.distance')} value={ride.distanceKm ? `${ride.distanceKm.toFixed(1)} km` : '—'} theme={theme} />
           <View style={s.divider} />
           <InfoRow label={t('taxi.detail.duration')} value={ride.durationMin ? `${ride.durationMin} dk` : '—'} theme={theme} />
           <View style={s.divider} />
-          <InfoRow label={t('taxi.detail.fare')} value={ride.fare ? `₺${ride.fare.toFixed(2)}` : '—'} theme={theme} />
+          <InfoRow label={t('taxi.detail.fare')} value={ride.fare != null ? formatCurrency(ride.fare, region, language) : '—'} theme={theme} />
           <View style={s.divider} />
           <InfoRow label={t('taxi.detail.payment')} value={
             ride.paymentMethod === 'cash' ? t('taxi.detail.cash') :

@@ -13,13 +13,15 @@ import { ChevronLeft, History, Star } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useI18n } from '../../i18n';
 import { getMyRides, type TaxiRide } from '../../api/taxi';
+import { formatCurrency, langToLocale } from '../../utils/format';
+import { useRegion } from '../../store/useRegion';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatDate(dateStr?: string): string {
+function formatDate(dateStr?: string, locale = 'tr-TR'): string {
   if (!dateStr) return '—';
   const d = new Date(dateStr);
-  return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleDateString(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
 function StatusBadge({ status, theme, t }: { status: string; theme: ReturnType<typeof useTheme>; t: (k: string) => string }) {
@@ -39,7 +41,9 @@ function StatusBadge({ status, theme, t }: { status: string; theme: ReturnType<t
 export default function TaxiHistoryScreen({ navigation }: any) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { t } = useI18n();
+  const { t, language } = useI18n();
+  const region = useRegion((s) => s.region);
+  const intlLocale = langToLocale(language);
 
   const [rides, setRides] = useState<TaxiRide[]>([]);
   const [page, setPage] = useState(1);
@@ -124,8 +128,8 @@ export default function TaxiHistoryScreen({ navigation }: any) {
               {/* Meta row */}
               <View style={s.metaRow}>
                 <StatusBadge status={item.status} theme={theme} t={t} />
-                <Text style={s.dateText}>{formatDate(item.completedAt ?? item.requestedAt)}</Text>
-                <Text style={s.fareText}>₺{item.fare?.toFixed(2) ?? '—'}</Text>
+                <Text style={s.dateText}>{formatDate(item.completedAt ?? item.requestedAt, intlLocale)}</Text>
+                <Text style={s.fareText}>{item.fare != null ? formatCurrency(item.fare, region, language) : '—'}</Text>
                 {item.status === 'completed' && (
                   item.passengerRating
                     ? <View style={s.ratingBadge}>
