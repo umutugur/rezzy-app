@@ -33,9 +33,12 @@ import * as Notifications from 'expo-notifications';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useTaxiStore } from '../../store/useTaxiStore';
 import { taxiSocket } from '../../services/taxiSocket.service';
-import { updateDriverStatus, updateDriverLocation, getDriverEarnings, startRide, completeRide, getDriverRides, getDriverProfile } from '../../api/taxi';
+import { updateDriverStatus, updateDriverLocation, getDriverEarnings, startRide, completeRide, getDriverRides, getDriverProfile, getRide } from '../../api/taxi';
 import type { TaxiRide } from '../../api/taxi';
 import { useAuth } from '../../store/useAuth';
+import { useI18n } from '../../i18n';
+import { useRegion } from '../../store/useRegion';
+import { formatCurrency, langToLocale } from '../../utils/format';
 import type { NewRideRequestPayload } from '../../services/taxiSocket.service';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui';
@@ -57,6 +60,9 @@ export default function DriverHomeScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const token = useAuth((s) => s.token);
+  const { t, language } = useI18n();
+  const region = useRegion((s) => s.region);
+  const intlLocale = langToLocale(language);
 
   const isDriverOnline = useTaxiStore((s) => s.isDriverOnline);
   const setDriverOnline = useTaxiStore((s) => s.setDriverOnline);
@@ -89,6 +95,8 @@ export default function DriverHomeScreen() {
   const locationWatcherRef = useRef<Location.LocationSubscription | null>(null);
   const rideRequestListenerRef = useRef<((p: any) => void) | null>(null);
   const isDriverOnlineRef = useRef(isDriverOnline);
+  // Son bilinen konum — socket bağlanır bağlanmaz anlık gönderim için
+  const lastLocationRef = useRef<{ lat: number; lng: number } | null>(null);
 
   // Animated value: 0 = offline, 1 = online
   const onlineProgress = useSharedValue(isDriverOnline ? 1 : 0);
@@ -145,11 +153,18 @@ export default function DriverHomeScreen() {
         taxiSocket.connect(token, 'driver');
         const onConn = () => {
           taxiSocket.emit('driver:online');
+          // Socket bağlanır bağlanmaz anlık konum gönder — yolcunun haritası beklemeden güncellenir
+          if (lastLocationRef.current) {
+            taxiSocket.emit('driver:location', lastLocationRef.current);
+          }
           taxiSocket.off('connect', onConn);
         };
         taxiSocket.on('connect', onConn);
       } else {
         taxiSocket.emit('driver:online');
+        if (lastLocationRef.current) {
+          taxiSocket.emit('driver:location', lastLocationRef.current);
+        }
       }
     };
 
@@ -172,11 +187,32 @@ export default function DriverHomeScreen() {
         setDriverOnline(online);
         onlineProgress.value = withTiming(online ? 1 : 0, { duration: 300 });
         if (online) {
-          // Write fresh location to DB BEFORE socket connects and emits driver:online.
-          // Backend's $near query uses this location to find nearby rides.
+          // Taze konumu DB'ye yaz (socket:driver:online'dan önce — $near sorgusu için)
           await startLocationWatch();
           connectSocket();
           attachRideListener();
+
+          // Aktif yolculuğu geri yükle (app kapanınca React state sıfırlanır)
+          if (profile.activeRide) {
+            try {
+              const ride = await getRide(String(profile.activeRide));
+              if (ride && (ride.status === 'matched' || ride.status === 'inProgress')) {
+                setDriverActiveRide({
+                  rideId: String(ride._id),
+                  pickup: ride.pickup,
+                  dropoff: ride.dropoff,
+                  vehicleType: ride.vehicleType,
+                  fare: ride.fare,
+                  distanceKm: ride.distanceKm,
+                  durationMin: ride.durationMin,
+                  requestedAt: ride.requestedAt ?? new Date().toISOString(),
+                });
+                setActiveRideStatus(ride.status === 'inProgress' ? 'inProgress' : 'matched');
+                // Ride odasına yeniden katıl (konum event'ları için)
+                taxiSocket.emit('ride:join', { rideId: String(ride._id) });
+              }
+            } catch { /* sessiz */ }
+          }
         }
       } catch { /* sessiz */ }
     };
@@ -211,6 +247,7 @@ export default function DriverHomeScreen() {
     const region = { latitude, longitude, latitudeDelta: 0.04, longitudeDelta: 0.04 };
     setMapRegion(region);
     setDriverLocation({ lat: latitude, lng: longitude });
+    lastLocationRef.current = { lat: latitude, lng: longitude };
     mapRef.current?.animateToRegion(region, 600);
     // İlk konumu hemen DB'ye yaz (createRide $near sorgusu için kritik)
     await updateDriverLocation(latitude, longitude).catch(() => {});
@@ -220,6 +257,7 @@ export default function DriverHomeScreen() {
       (loc) => {
         const { latitude: lat, longitude: lng } = loc.coords;
         setDriverLocation({ lat, lng });
+        lastLocationRef.current = { lat, lng };
         updateDriverLocation(lat, lng).catch(() => {});
         taxiSocket.emit('driver:location', { lat, lng });
       },
@@ -262,7 +300,7 @@ export default function DriverHomeScreen() {
       setActiveRideStatus('inProgress');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e: any) {
-      setRideActionError(e?.response?.data?.message ?? 'Yolculuk başlatılamadı.');
+      setRideActionError(e?.response?.data?.message ?? t('driver.startError'));
     } finally {
       setRideActioning(false);
     }
@@ -278,7 +316,7 @@ export default function DriverHomeScreen() {
       await getDriverEarnings().then(setDriverEarnings).catch(() => {});
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e: any) {
-      setRideActionError(e?.response?.data?.message ?? 'Yolculuk tamamlanamadı.');
+      setRideActionError(e?.response?.data?.message ?? t('driver.completeError'));
     } finally {
       setRideActioning(false);
     }
@@ -508,7 +546,7 @@ export default function DriverHomeScreen() {
               {historyRides.map((ride) => {
                 const passengerName = typeof ride.passenger === 'object' ? (ride.passenger as any).name : 'Yolcu';
                 const date = ride.completedAt
-                  ? new Date(ride.completedAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+                  ? new Date(ride.completedAt).toLocaleDateString(intlLocale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
                   : '—';
                 return (
                   <View key={ride._id} style={s.historyCard}>
@@ -517,13 +555,13 @@ export default function DriverHomeScreen() {
                       <Badge
                         variant={ride.status === 'completed' ? 'success' : 'error'}
                         size="sm"
-                        label={ride.status === 'completed' ? 'Tamamlandı' : 'İptal'}
+                        label={ride.status === 'completed' ? t('driver.completed') : t('driver.cancelled')}
                       />
                     </View>
                     <View style={s.historyMeta}>
                       <View style={s.historyMetaItem}>
                         <CircleDollarSign size={13} color={theme.driver.main} strokeWidth={2} />
-                        <Text style={s.historyMetaText}>₺{ride.fare?.toFixed(0) ?? '—'}</Text>
+                        <Text style={s.historyMetaText}>{ride.fare != null ? formatCurrency(ride.fare, region, language, 0) : '—'}</Text>
                       </View>
                       <View style={s.historyMetaItem}>
                         <Ruler size={13} color={theme.colors.textTertiary} strokeWidth={2} />
@@ -607,14 +645,14 @@ export default function DriverHomeScreen() {
               <Text style={s.earningsLabel}>Günlük Kazanç</Text>
             </View>
             <Text style={s.earningsAmount}>
-              ₺{(earnings.todayEarnings ?? earnings.totalEarnings).toFixed(0)}
+              {formatCurrency(earnings.todayEarnings ?? earnings.totalEarnings, region, language, 0)}
             </Text>
             <View style={s.earningsMeta}>
               <View style={s.earningsMetaItem}>
                 <Text style={s.earningsMetaValue}>
                   {earnings.todayRideCount ?? earnings.todayRides ?? earnings.totalRides}
                 </Text>
-                <Text style={s.earningsMetaLabel}>Yolculuk</Text>
+                <Text style={s.earningsMetaLabel}>{t('driver.todayRides')}</Text>
               </View>
               {earnings.averageRating != null && (
                 <View style={s.earningsMetaItem}>
@@ -648,7 +686,7 @@ export default function DriverHomeScreen() {
                 backgroundColor: activeRideStatus === 'inProgress' ? theme.driver.main : theme.semantic.warning.main,
               }]} />
               <Text style={s.activeRideStatusText}>
-                {activeRideStatus === 'inProgress' ? 'Yolculuk Sürüyor' : 'Yolcu Eşleşildi'}
+                {activeRideStatus === 'inProgress' ? t('driver.rideActive') : t('driver.rideMatched')}
               </Text>
             </View>
 
