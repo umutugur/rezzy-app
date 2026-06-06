@@ -23,9 +23,11 @@ import * as Linking from 'expo-linking';
 
 import { useTheme } from '../../contexts/ThemeContext';
 import { useTaxiStore, type TaxiPaymentMethod } from '../../store/useTaxiStore';
+import { useRegion } from '../../store/useRegion';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import { PriceTag } from '../../components/ui/PriceTag';
+import { PriceTag, type PriceCurrency } from '../../components/ui/PriceTag';
+import { currencyFromRegion } from '../../utils/format';
 import {
   searchPlaces,
   estimateFare,
@@ -48,6 +50,8 @@ function toRideLocation(place: PlaceResult): RideLocation {
 export default function TaxiDestinationScreen({ navigation }: any) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const region = useRegion((s) => s.region);
+  const currency = currencyFromRegion(region);
 
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
 
@@ -410,7 +414,7 @@ export default function TaxiDestinationScreen({ navigation }: any) {
             </View>
             <PriceTag
               amount={fareEstimate.fare}
-              currency="TRY"
+              currency={currency as PriceCurrency}
               size="lg"
               style={{ color: theme.taxi.main } as any}
             />
