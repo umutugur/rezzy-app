@@ -32,6 +32,9 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { taxiSocket } from '../../services/taxiSocket.service';
 import { respondToRide } from '../../api/taxi';
 import type { NewRideRequestPayload } from '../../services/taxiSocket.service';
+import { useI18n } from '../../i18n';
+import { useRegion } from '../../store/useRegion';
+import { formatCurrency } from '../../utils/format';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -48,6 +51,8 @@ const COUNTDOWN_SECONDS = 30;
 export default function DriverIncomingRideScreen({ payload, onClose, onAccepted }: Props) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const { t, language } = useI18n();
+  const region = useRegion((s) => s.region);
 
   const [secondsLeft, setSecondsLeft] = useState(COUNTDOWN_SECONDS);
   const [responding, setResponding] = useState(false);
@@ -117,7 +122,7 @@ export default function DriverIncomingRideScreen({ payload, onClose, onAccepted 
       onAccepted?.(payload);
       onClose();
     } catch (e: any) {
-      setAcceptError(e?.response?.data?.message ?? 'Kabul edilemedi.');
+      setAcceptError(e?.response?.data?.message ?? t('driver.acceptError'));
       setResponding(false);
     }
   }, [responding, payload.rideId, onClose]);
@@ -142,7 +147,7 @@ export default function DriverIncomingRideScreen({ payload, onClose, onAccepted 
 
       {/* ── Header ── */}
       <View style={[s.header, { paddingTop: insets.top + 16 }]}>
-        <Text style={s.headerTitle}>Yeni Yolcu Talebi</Text>
+        <Text style={s.headerTitle}>{t('driver.newRequest')}</Text>
 
         {/* Countdown bar track */}
         <View style={s.barTrack}>
@@ -164,7 +169,7 @@ export default function DriverIncomingRideScreen({ payload, onClose, onAccepted 
         {/* Fare — hero number */}
         <View style={s.fareBlock}>
           <CircleDollarSign size={22} color={theme.taxi.main} strokeWidth={2} />
-          <Text style={s.fareAmount}>₺{payload.fare.toFixed(0)}</Text>
+          <Text style={s.fareAmount}>{formatCurrency(payload.fare, region, language, 0)}</Text>
         </View>
 
         {/* Meta row */}
@@ -185,7 +190,7 @@ export default function DriverIncomingRideScreen({ payload, onClose, onAccepted 
           <View style={s.addressRow}>
             <View style={[s.addressDot, { backgroundColor: theme.colors.success }]} />
             <View style={s.addressTextWrap}>
-              <Text style={s.addressLabel}>Kalkış</Text>
+              <Text style={s.addressLabel}>{t('driver.pickup')}</Text>
               <Text style={s.addressValue} numberOfLines={2}>
                 {payload.pickup.address}
               </Text>
@@ -197,7 +202,7 @@ export default function DriverIncomingRideScreen({ payload, onClose, onAccepted 
           <View style={s.addressRow}>
             <View style={[s.addressDot, { backgroundColor: theme.colors.error }]} />
             <View style={s.addressTextWrap}>
-              <Text style={s.addressLabel}>Varış</Text>
+              <Text style={s.addressLabel}>{t('driver.dropoff')}</Text>
               <Text style={s.addressValue} numberOfLines={2}>
                 {payload.dropoff.address}
               </Text>
@@ -215,10 +220,10 @@ export default function DriverIncomingRideScreen({ payload, onClose, onAccepted 
           onPress={handleReject}
           disabled={responding}
           accessibilityRole="button"
-          accessibilityLabel="Reddet"
+          accessibilityLabel={t('driver.reject')}
         >
           <X size={24} color={theme.colors.error} strokeWidth={2.5} />
-          <Text style={s.rejectText}>REDDET</Text>
+          <Text style={s.rejectText}>{t('driver.reject')}</Text>
         </Pressable>
 
         {/* ACCEPT */}
@@ -227,10 +232,10 @@ export default function DriverIncomingRideScreen({ payload, onClose, onAccepted 
           onPress={handleAccept}
           disabled={responding}
           accessibilityRole="button"
-          accessibilityLabel="Kabul Et"
+          accessibilityLabel={t('driver.accept')}
         >
           <Check size={26} color="#FFFFFF" strokeWidth={3} />
-          <Text style={s.acceptText}>KABUL ET</Text>
+          <Text style={s.acceptText}>{t('driver.accept')}</Text>
         </Pressable>
       </View>
       {acceptError && (
