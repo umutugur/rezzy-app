@@ -22,6 +22,8 @@ import * as Location from "expo-location";
 
 import { useTheme } from "../../contexts/ThemeContext";
 import { useI18n } from "../../i18n";
+import { formatCurrency } from "../../utils/format";
+import { useRegion } from "../../store/useRegion";
 import { EmptyState, Skeleton } from "../../components/ui";
 import {
   getStores,
@@ -263,7 +265,8 @@ function StoreCardSkeleton() {
 
 function StoreCard({ store, onPress }: { store: MarketStore; onPress: () => void }) {
   const theme = useTheme();
-  const { t } = useI18n();
+  const { t, language } = useI18n();
+  const region = useRegion((s) => s.region);
   const logoUri = store.photos[0] ?? null;
   const letter = store.name.trim()[0]?.toUpperCase() ?? "M";
   const isFree = store.deliveryFee === 0;
@@ -304,7 +307,7 @@ function StoreCard({ store, onPress }: { store: MarketStore; onPress: () => void
             {store.workingHours
               ? `${store.workingHours.open} - ${store.workingHours.close}  ·  `
               : ""}
-            Min. ₺{store.minOrderAmount}
+            Min. {formatCurrency(store.minOrderAmount, region, language, 0)}
           </Text>
           <View style={sc.badgeRow}>
             {isFree ? (
@@ -315,14 +318,14 @@ function StoreCard({ store, onPress }: { store: MarketStore; onPress: () => void
             ) : (
               <View style={[sc.badge, { borderColor: "#E5E7EB" }]}>
                 <Text style={[sc.badgeText, { color: theme.colors.textSecondary }]}>
-                  ₺{store.deliveryFee} {t("delivery.deliveryChip")}
+                  {formatCurrency(store.deliveryFee, region, language, 0)} {t("delivery.deliveryChip")}
                 </Text>
               </View>
             )}
             {hasFreeThreshold && !isFree && (
               <View style={[sc.badge, sc.badgeFree]}>
                 <Text style={[sc.badgeText, { color: "#15803D" }]}>
-                  {t("market.freeThreshold", { amount: store.freeDeliveryThreshold })}
+                  {t("market.freeThreshold", { amount: formatCurrency(store.freeDeliveryThreshold!, region, language, 0) })}
                 </Text>
               </View>
             )}
@@ -345,7 +348,8 @@ function StoreCard({ store, onPress }: { store: MarketStore; onPress: () => void
 
 export default function MarketHomeScreen() {
   const theme = useTheme();
-  const { t } = useI18n();
+  const { t, language } = useI18n();
+  const region = useRegion((s) => s.region);
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
 
@@ -664,7 +668,7 @@ export default function MarketHomeScreen() {
               <Text style={fl.countText}>{t("market.cartItems", { count: cartItems.length })}</Text>
             </View>
             <Text style={fl.label}>{t("market.goToCart")}</Text>
-            <Text style={fl.total}>₺{cartTotal.toFixed(2)}</Text>
+            <Text style={fl.total}>{formatCurrency(cartTotal, region, language)}</Text>
           </LinearGradient>
         </Pressable>
       )}

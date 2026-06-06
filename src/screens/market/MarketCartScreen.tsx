@@ -18,6 +18,9 @@ import { useStripe } from "@stripe/stripe-react-native";
 import * as Linking from "expo-linking";
 
 import { useTheme } from "../../contexts/ThemeContext";
+import { useI18n } from "../../i18n";
+import { useRegion } from "../../store/useRegion";
+import { formatCurrency } from "../../utils/format";
 import { Badge, Button, EmptyState, PriceTag } from "../../components/ui";
 import { createOrder, getStoreDetail, type MarketStore, type PaymentMethod } from "../../api/market.api";
 import { listMyAddresses, type UserAddress } from "../../api/addresses";
@@ -259,6 +262,8 @@ function PaymentMethodCard({
 
 export default function MarketCartScreen() {
   const theme = useTheme();
+  const { t, language } = useI18n();
+  const region = useRegion((s) => s.region);
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
 
@@ -312,11 +317,11 @@ export default function MarketCartScreen() {
     if (!storeId) return;
     setError(null);
     if (deliveryType === "delivery" && !selectedAddressId) {
-      setError("Lütfen bir teslimat adresi seçin.");
+      setError(t('market.cart.selectAddress'));
       return;
     }
     if (belowMin) {
-      setError(`Bu markette minimum sipariş tutarı ₺${store!.minOrderAmount}.`);
+      setError(t('market.cart.minOrderError', { amount: formatCurrency(store!.minOrderAmount, region, language, 0) }));
       return;
     }
     setSubmitting(true);
@@ -477,7 +482,7 @@ export default function MarketCartScreen() {
               selected={deliveryType === "delivery"}
               title="Eve Teslimat"
               subtitle={
-                deliveryFee === 0 ? "Ücretsiz" : `+₺${store?.deliveryFee ?? 0}`
+                deliveryFee === 0 ? t('market.free') : `+${formatCurrency(store?.deliveryFee ?? 0, region, language, 0)}`
               }
               icon="bicycle-outline"
               onPress={() => setDeliveryType("delivery")}
@@ -635,7 +640,7 @@ export default function MarketCartScreen() {
           >
             <Badge
               variant="warning"
-              label={`Min sipariş ₺${store!.minOrderAmount} — ₺${(store!.minOrderAmount - subtotal).toFixed(2)} daha ekleyin`}
+              label={t('market.cart.minOrderLabel', { min: formatCurrency(store!.minOrderAmount, region, language, 0), remaining: formatCurrency(store!.minOrderAmount - subtotal, region, language) })}
               dot
             />
           </View>
@@ -675,7 +680,7 @@ export default function MarketCartScreen() {
               Teslimat ücreti
             </Text>
             {deliveryFee === 0 ? (
-              <Badge variant="market" size="sm" label="Ücretsiz" />
+              <Badge variant="market" size="sm" label={t('market.free')} />
             ) : (
               <PriceTag amount={deliveryFee} size="sm" />
             )}
@@ -729,7 +734,7 @@ export default function MarketCartScreen() {
           {submitting || stripeBusy ? (
             <ActivityIndicator color={theme.colors.textInverse} />
           ) : (
-            `${paymentMethod === "online" ? "Öde ve Siparişi Ver" : "Siparişi Ver"} · ₺${total.toFixed(2)}`
+            `${t(paymentMethod === "online" ? "market.cart.placeAndPay" : "market.cart.placeOrder")} · ${formatCurrency(total, region, language)}`
           )}
         </Button>
       </View>

@@ -16,6 +16,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useTheme } from "../../contexts/ThemeContext";
+import { useI18n } from "../../i18n";
+import { useRegion } from "../../store/useRegion";
+import { formatCurrency, langToLocale } from "../../utils/format";
 import { Badge, EmptyState, PriceTag } from "../../components/ui";
 import {
   cancelOrder,
@@ -163,6 +166,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export default function MarketOrderDetailScreen() {
   const theme = useTheme();
+  const { language } = useI18n();
+  const region = useRegion((s) => s.region);
+  const intlLocale = langToLocale(language);
   const insets = useSafeAreaInsets();
   const route = useRoute<RouteT>();
   const { orderId } = route.params;
@@ -233,7 +239,7 @@ export default function MarketOrderDetailScreen() {
   const cfg = STATUS_CONFIG[order.status];
   const storeName =
     typeof order.store === "object" ? order.store.name : "Market";
-  const createdDate = new Date(order.createdAt).toLocaleDateString("tr-TR", {
+  const createdDate = new Date(order.createdAt).toLocaleDateString(intlLocale, {
     day: "2-digit",
     month: "long",
     year: "numeric",
@@ -420,7 +426,7 @@ export default function MarketOrderDetailScreen() {
                 İndirim
               </Text>
               <Text style={{ ...theme.typography.labelMd, color: theme.colors.success }}>
-                -₺{order.discount.toFixed(2)}
+                -{formatCurrency(order.discount, region, language)}
               </Text>
             </View>
           )}

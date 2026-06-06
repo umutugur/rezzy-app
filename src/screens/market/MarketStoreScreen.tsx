@@ -15,6 +15,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useTheme } from "../../contexts/ThemeContext";
+import { useI18n } from "../../i18n";
+import { useRegion } from "../../store/useRegion";
+import { formatCurrency } from "../../utils/format";
 import { Badge, EmptyState, PriceTag, ReviewSection, Skeleton, StarRating } from "../../components/ui";
 import { getProducts, getStoreDetail, type MarketProduct, type MarketStore } from "../../api/market.api";
 import {
@@ -187,6 +190,8 @@ function ProductRowSkeleton() {
 
 export default function MarketStoreScreen() {
   const theme = useTheme();
+  const { t, language } = useI18n();
+  const region = useRegion((s) => s.region);
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const route = useRoute<RouteT>();
@@ -316,7 +321,7 @@ export default function MarketStoreScreen() {
             </Text>
             <View style={[styles.row, { marginTop: theme.space[1], gap: theme.space[3] }]}>
               <StarRating value={store.rating} size="sm" showValue />
-              <Badge variant="market" size="sm" label={`${store.totalOrders} sipariş`} dot />
+              <Badge variant="market" size="sm" label={`${store.totalOrders} ${t('market.orders')}`} dot />
             </View>
             {store.description ? (
               <Text
@@ -333,14 +338,14 @@ export default function MarketStoreScreen() {
               <View style={styles.row}>
                 <Ionicons name="bicycle-outline" size={14} color={theme.colors.textSecondary} />
                 <Text style={{ ...theme.typography.bodySm, color: theme.colors.textSecondary, marginLeft: 4 }}>
-                  {store.deliveryFee === 0 ? "Ücretsiz" : `₺${store.deliveryFee}`}
+                  {store.deliveryFee === 0 ? t('market.free') : formatCurrency(store.deliveryFee, region, language, 0)}
                 </Text>
               </View>
               {store.minOrderAmount > 0 && (
                 <View style={styles.row}>
                   <Ionicons name="receipt-outline" size={14} color={theme.colors.textSecondary} />
                   <Text style={{ ...theme.typography.bodySm, color: theme.colors.textSecondary, marginLeft: 4 }}>
-                    Min ₺{store.minOrderAmount}
+                    Min {formatCurrency(store.minOrderAmount, region, language, 0)}
                   </Text>
                 </View>
               )}
@@ -491,7 +496,7 @@ export default function MarketStoreScreen() {
             Sepete Git
           </Text>
           <Text style={{ ...theme.typography.headingSm, color: theme.colors.textInverse }}>
-            ₺{cartSubtotal.toFixed(2)}
+            {formatCurrency(cartSubtotal, region, language)}
           </Text>
         </Pressable>
       )}

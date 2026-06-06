@@ -18,6 +18,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useTheme } from "../../contexts/ThemeContext";
+import { useI18n } from "../../i18n";
+import { useRegion } from "../../store/useRegion";
+import { formatCurrency, langToLocale } from "../../utils/format";
 import { Badge, EmptyState, Skeleton } from "../../components/ui";
 import {
   getPanelOrders,
@@ -87,17 +90,20 @@ function OrderCard({
   onShowConfirm: (modal: ConfirmModalState) => void;
 }) {
   const theme = useTheme();
+  const { language } = useI18n();
+  const region = useRegion((s) => s.region);
+  const intlLocale = langToLocale(language);
   const [updating, setUpdating] = useState(false);
 
   const cfg = STATUS_CONFIG[order.status];
   const nextStatus = NEXT_STATUS[order.status];
   const nextLabel = NEXT_STATUS_LABEL[order.status];
 
-  const createdDate = new Date(order.createdAt).toLocaleTimeString("tr-TR", {
+  const createdDate = new Date(order.createdAt).toLocaleTimeString(intlLocale, {
     hour: "2-digit",
     minute: "2-digit",
   });
-  const createdDay = new Date(order.createdAt).toLocaleDateString("tr-TR", {
+  const createdDay = new Date(order.createdAt).toLocaleDateString(intlLocale, {
     day: "2-digit",
     month: "short",
   });
@@ -221,7 +227,7 @@ function OrderCard({
               marginLeft: "auto",
             }}
           >
-            ₺{order.total.toFixed(2)}
+            {formatCurrency(order.total, region, language)}
           </Text>
         </View>
 
@@ -332,6 +338,8 @@ type ConfirmModalState = {
 
 export default function MarketOwnerDashboardScreen() {
   const theme = useTheme();
+  const { t, language } = useI18n();
+  const region = useRegion((s) => s.region);
   const insets = useSafeAreaInsets();
 
   const [mainTab, setMainTab] = useState<'orders' | 'products'>('orders');
@@ -660,7 +668,7 @@ export default function MarketOwnerDashboardScreen() {
                     </Text>
                   </View>
                   <Text style={{ ...theme.typography.headingSm, color: theme.market.main }}>
-                    ₺{item.price.toFixed(2)}
+                    {formatCurrency(item.price, region, language)}
                   </Text>
                 </View>
                 <View style={[styles.cardFooter, { paddingHorizontal: theme.space[4], paddingVertical: theme.space[3], borderTopColor: theme.colors.borderDefault }]}>
@@ -758,7 +766,7 @@ export default function MarketOwnerDashboardScreen() {
 
             <View style={{ flexDirection: 'row', gap: theme.space[3] }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ ...theme.typography.labelSm, color: theme.colors.textSecondary, marginBottom: 4 }}>Fiyat (₺) *</Text>
+                <Text style={{ ...theme.typography.labelSm, color: theme.colors.textSecondary, marginBottom: 4 }}>{t('market.priceLabel')}</Text>
                 <TextInput
                   value={formPrice}
                   onChangeText={setFormPrice}
