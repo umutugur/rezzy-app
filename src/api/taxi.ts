@@ -2,6 +2,7 @@
 // Wraps all AJAN-5 taxi/driver REST endpoints.
 
 import api from './client';
+import { useRegion } from '../store/useRegion';
 
 // ─── Shared types ─────────────────────────────────────────────────────────────
 
@@ -86,7 +87,8 @@ export async function estimateFare(
   dropoff: RideLocation,
   vehicleType: VehicleType = 'ride',
 ): Promise<FareEstimate> {
-  const { data } = await api.post('/taxi/estimate', { pickup, dropoff, vehicleType });
+  const region = useRegion.getState().region;
+  const { data } = await api.post('/taxi/estimate', { pickup, dropoff, vehicleType, region });
   return data;
 }
 
@@ -104,7 +106,8 @@ export async function createRide(payload: {
   vehicleType: VehicleType;
   paymentMethod?: string;
 }): Promise<{ ride: TaxiRide; nearbyDriverCount: number; payment: TaxiPaymentInfo | null }> {
-  const { data } = await api.post('/taxi/rides', payload);
+  const region = useRegion.getState().region;
+  const { data } = await api.post('/taxi/rides', { ...payload, region });
   return data;
 }
 
