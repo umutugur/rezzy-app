@@ -9,6 +9,7 @@ const TRANSLATIONS = {
   en: {
     NSCameraUsageDescription: "We need camera access to scan QR codes.",
     NSLocationWhenInUseUsageDescription: "We use your location to show nearby restaurants.",
+    NSLocationAlwaysAndWhenInUseUsageDescription: "We access your location even when the app is closed so you can receive ride calls while online.",
     NSUserNotificationsUsageDescription: "Notifications are required for reservation updates.",
     NSPhotoLibraryUsageDescription: "We need access to choose your profile photo.",
     NSPhotoLibraryAddUsageDescription: "We need permission to save your profile photo."
@@ -16,6 +17,7 @@ const TRANSLATIONS = {
   tr: {
     NSCameraUsageDescription: "QR kodlarını taramak için kamera erişimine ihtiyacımız var.",
     NSLocationWhenInUseUsageDescription: "Yakındaki restoranları gösterebilmek için konum bilginize ihtiyacımız var.",
+    NSLocationAlwaysAndWhenInUseUsageDescription: "Çevrimiçiyken çağrı alabilmeniz için konumunuza uygulama kapalıyken de erişiriz.",
     NSUserNotificationsUsageDescription: "Bildirimler, rezervasyon güncellemeleri için gereklidir.",
     NSPhotoLibraryUsageDescription: "Profil fotoğrafını seçebilmek için fotoğraf arşivine erişmemiz gerekiyor.",
     NSPhotoLibraryAddUsageDescription: "Profil fotoğrafını kaydedebilmek için izin gerekir."
@@ -23,6 +25,7 @@ const TRANSLATIONS = {
   ru: {
     NSCameraUsageDescription: "Нам нужен доступ к камере для сканирования QR-кодов.",
     NSLocationWhenInUseUsageDescription: "Мы используем вашу геолокацию для показа ближайших ресторанов.",
+    NSLocationAlwaysAndWhenInUseUsageDescription: "Мы получаем доступ к вашей геолокации даже при закрытом приложении, чтобы вы могли получать вызовы.",
     NSUserNotificationsUsageDescription: "Уведомления необходимы для обновлений бронирования.",
     NSPhotoLibraryUsageDescription: "Нам нужен доступ к фотоархиву для выбора аватара.",
     NSPhotoLibraryAddUsageDescription: "Нам нужно разрешение для сохранения фотографии."
@@ -30,6 +33,7 @@ const TRANSLATIONS = {
   el: {
     NSCameraUsageDescription: "Χρειαζόμαστε πρόσβαση στην κάμερα για σάρωση QR κωδίκων.",
     NSLocationWhenInUseUsageDescription: "Χρησιμοποιούμε την τοποθεσία σας για να δείξουμε κοντινά εστιατόρια.",
+    NSLocationAlwaysAndWhenInUseUsageDescription: "Έχουμε πρόσβαση στην τοποθεσία σας ακόμη και όταν η εφαρμογή είναι κλειστή, ώστε να λαμβάνετε κλήσεις.",
     NSUserNotificationsUsageDescription: "Οι ειδοποιήσεις απαιτούνται για ενημερώσεις κρατήσεων.",
     NSPhotoLibraryUsageDescription: "Χρειαζόμαστε πρόσβαση για επιλογή φωτογραφίας προφίλ.",
     NSPhotoLibraryAddUsageDescription: "Χρειαζόμαστε άδεια για αποθήκευση της φωτογραφίας."

@@ -25,7 +25,11 @@
         "NSUserNotificationsUsageDescription": "See localized strings",
         "NSPhotoLibraryUsageDescription": "See localized strings",
         "NSPhotoLibraryAddUsageDescription": "See localized strings",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": [
+          "location"
+        ],
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "See localized strings"
       },
       "buildNumber": "24"
     },
@@ -37,7 +41,10 @@
         "NOTIFICATIONS",
         "CAMERA",
         "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/adaptive-icon.png",
@@ -58,7 +65,7 @@
           ]
         }
       ],
-      "versionCode": 41,
+      "versionCode": 42,
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyDeUn7MQxnoy2bV2GtPNj2h4KKrpRI_p34"
@@ -75,7 +82,14 @@
       "expo-font",
       "expo-web-browser",
       "./plugins/localized-infoplist.js",
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-location",
+        {
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ]
     ],
     "extra": {
       "EXPO_PUBLIC_STRIPE_PK": "pk_live_51SVWgyGwmM7e2NWE4qENGfGpXCQCfFTng1csChRVGe9toXDsrEONRi66Xg98XJrzlZWkfkl3n5TeaBMkICF0SI7f00yEFrQcRE",
