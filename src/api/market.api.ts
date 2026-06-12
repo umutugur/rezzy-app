@@ -88,6 +88,8 @@ export type MarketOrder = {
   note: string;
   estimatedReadyAt?: string | null;
   deliveredAt?: string | null;
+  cancelReason?: string | null;
+  cancelledBy?: string | null;
   createdAt: string;
   updatedAt: string;
 };

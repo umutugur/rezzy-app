@@ -79,6 +79,15 @@ const STATUS_CONFIG: Record<MarketOrderStatus, StatusConfig> = {
   },
 };
 
+const CANCEL_REASON_LABELS: Record<string, string> = {
+  out_of_stock: "Neden: Ürün stokta yok",
+  closed: "Neden: İşletme şu an kapalı",
+  out_of_zone: "Neden: Adres teslimat bölgesi dışında",
+  cannot_fulfill: "Neden: Sipariş karşılanamıyor",
+  customer_request: "Müşteri talebiyle iptal edildi",
+  other: "Neden: Diğer",
+};
+
 // ─── Status progress bar ───────────────────────────────────────────────────────
 
 const STATUS_STEPS: MarketOrderStatus[] = [
@@ -295,6 +304,20 @@ export default function MarketOrderDetailScreen() {
           >
             {cfg.description}
           </Text>
+
+          {order.status === "cancelled" && order.cancelReason && (
+            <Text
+              style={{
+                ...theme.typography.bodySm,
+                color: theme.colors.error,
+                marginTop: theme.space[1],
+                textAlign: "center",
+                paddingHorizontal: theme.space[6],
+              }}
+            >
+              {CANCEL_REASON_LABELS[order.cancelReason] ?? order.cancelReason}
+            </Text>
+          )}
 
           {/* Progress stepper */}
           <StatusStepper status={order.status} />
