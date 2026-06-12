@@ -849,6 +849,12 @@
     "startError":    "Could not start ride.",
     "completeError": "Could not complete ride.",
     "completed":     "Completed",
-    "cancelled":     "Cancelled"
+    "cancelled":     "Cancelled",
+    "bgPermTitle": "Background Location Required",
+    "bgPermBody": "To receive ride calls while the app is closed, we need access to your location at all times.",
+    "bgPermBodySettings": "Please set location access to \"Allow all the time\" in your phone Settings.",
+    "bgPermAllow": "Allow",
+    "bgPermOpenSettings": "Open Settings",
+    "bgPermLater": "Not Now"
   }
 }

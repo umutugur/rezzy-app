@@ -967,6 +967,12 @@
     "startError":    "Yolculuk başlatılamadı.",
     "completeError": "Yolculuk tamamlanamadı.",
     "completed":     "Tamamlandı",
-    "cancelled":     "İptal"
+    "cancelled":     "İptal",
+    "bgPermTitle": "Arka Plan Konumu Gerekli",
+    "bgPermBody": "Uygulama kapalıyken de çağrı alabilmeniz için konumunuza her zaman erişmemiz gerekiyor.",
+    "bgPermBodySettings": "İzni telefon Ayarları'ndan \"Her zaman izin ver\" olarak güncellemeniz gerekiyor.",
+    "bgPermAllow": "İzin Ver",
+    "bgPermOpenSettings": "Ayarları Aç",
+    "bgPermLater": "Şimdi Değil"
   }
 }

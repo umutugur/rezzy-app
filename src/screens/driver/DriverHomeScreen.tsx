@@ -11,6 +11,7 @@ import {
   ScrollView,
   Linking,
   AppState,
+  TouchableOpacity,
 } from 'react-native';
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import Animated, {
@@ -34,6 +35,8 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useTaxiStore } from '../../store/useTaxiStore';
 import { taxiSocket } from '../../services/taxiSocket.service';
 import { updateDriverStatus, updateDriverLocation, getDriverEarnings, startRide, completeRide, getDriverRides, getDriverProfile, getRide } from '../../api/taxi';
+import { useDriverLocationPermission } from '../../hooks/useDriverLocationPermission';
+import { startDriverLocationUpdates, stopDriverLocationUpdates } from '../../services/driverBackgroundLocation';
 import type { TaxiRide } from '../../api/taxi';
 import { useAuth } from '../../store/useAuth';
 import { useI18n } from '../../i18n';
@@ -71,6 +74,8 @@ export default function DriverHomeScreen() {
   const setDriverEarnings = useTaxiStore((s) => s.setDriverEarnings);
   const incomingRide = useTaxiStore((s) => s.incomingRide);
   const setIncomingRide = useTaxiStore((s) => s.setIncomingRide);
+
+  const bgPerm = useDriverLocationPermission();
 
   const [toggling, setToggling] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
@@ -136,6 +141,12 @@ export default function DriverHomeScreen() {
   useEffect(() => {
     isDriverOnlineRef.current = isDriverOnline;
   }, [isDriverOnline]);
+
+  // Sürücü moduna her girişte arka plan izni iste (kabul edilene kadar)
+  useEffect(() => {
+    bgPerm.check();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Load earnings on mount
   useEffect(() => {
@@ -394,6 +405,7 @@ export default function DriverHomeScreen() {
 
     try {
       if (goingOnline) {
+        await bgPerm.check(); // izin yoksa modal açılır; degrade modda yine devam
         const locationGranted = await startLocationWatch();
         if (!locationGranted) { setToggling(false); return; }
 
@@ -423,6 +435,7 @@ export default function DriverHomeScreen() {
         onlineProgress.value = withTiming(1, { duration: 300 });
         setDriverOnline(true);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        startDriverLocationUpdates().catch(() => {});
       } else {
         stopLocationWatch();
         await updateDriverStatus(false);
@@ -434,6 +447,7 @@ export default function DriverHomeScreen() {
         onlineProgress.value = withTiming(0, { duration: 300 });
         setDriverOnline(false);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        stopDriverLocationUpdates().catch(() => {});
       }
     } catch {
       setStatusError('Durum değiştirilemedi. Lütfen tekrar deneyin.');
@@ -776,6 +790,31 @@ export default function DriverHomeScreen() {
             onClose={() => setIncomingRide(null)}
           />
         )}
+      </Modal>
+
+      {/* ── Background location permission modal ── */}
+      <Modal transparent visible={bgPerm.modalVisible} animationType="fade" onRequestClose={bgPerm.dismiss}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ backgroundColor: theme.colors.surface, borderRadius: theme.radius.xl, padding: theme.space[6], margin: theme.space[5], width: '86%' }}>
+            <Text style={{ ...theme.typography.headingMd, color: theme.colors.textPrimary, marginBottom: theme.space[2] }}>
+              {t('driver.bgPermTitle')}
+            </Text>
+            <Text style={{ ...theme.typography.bodyMd, color: theme.colors.textSecondary, marginBottom: theme.space[5] }}>
+              {bgPerm.canAskAgain ? t('driver.bgPermBody') : t('driver.bgPermBodySettings')}
+            </Text>
+            <TouchableOpacity
+              onPress={() => bgPerm.request()}
+              style={{ padding: theme.space[3], borderRadius: theme.radius.lg, backgroundColor: theme.driver.main, alignItems: 'center', marginBottom: theme.space[2] }}
+            >
+              <Text style={{ ...theme.typography.labelMd, color: '#000', fontWeight: '700' }}>
+                {bgPerm.canAskAgain ? t('driver.bgPermAllow') : t('driver.bgPermOpenSettings')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={bgPerm.dismiss} style={{ padding: theme.space[2], alignItems: 'center' }}>
+              <Text style={{ ...theme.typography.bodyMd, color: theme.colors.textSecondary }}>{t('driver.bgPermLater')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
     </View>
   );
