@@ -3,6 +3,7 @@ import React from "react";
 import { StatusBar } from "expo-status-bar";
 import RootNavigator from "./src/navigation/RootNavigator";
 import { SafeAreaProvider, initialWindowMetrics } from "react-native-safe-area-context";
+import './src/services/driverBackgroundLocation';
 import { View, ActivityIndicator, Text, TextInput, Platform, AppState } from "react-native";
 import * as Notifications from "expo-notifications";
 import * as Location from "expo-location";
@@ -14,6 +15,13 @@ import GetStartedModal from "./src/components/GetStartedModal";
 import { StripeProvider } from "@stripe/stripe-react-native";
 import Constants from "expo-constants";
 import { useGetStarted } from "./src/store/useGetStarted";
+import { useFonts } from '@expo-google-fonts/plus-jakarta-sans/useFonts';
+import { PlusJakartaSans_400Regular } from '@expo-google-fonts/plus-jakarta-sans/400Regular';
+import { PlusJakartaSans_500Medium } from '@expo-google-fonts/plus-jakarta-sans/500Medium';
+import { PlusJakartaSans_600SemiBold } from '@expo-google-fonts/plus-jakarta-sans/600SemiBold';
+import { PlusJakartaSans_700Bold } from '@expo-google-fonts/plus-jakarta-sans/700Bold';
+import { PlusJakartaSans_800ExtraBold } from '@expo-google-fonts/plus-jakarta-sans/800ExtraBold';
+import { ThemeProvider } from "./src/contexts/ThemeContext";
 
 // Global font scale
 if ((Text as any).defaultProps == null) (Text as any).defaultProps = {};
@@ -71,6 +79,14 @@ const publishableKey =
   "";
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
+  });
+
   const hydrateAuth = useAuth((s: any) => s.hydrate);
   const fetchMe = useAuth((s: any) => s.fetchMe);
   const token = useAuth((s: any) => s.token);
@@ -286,8 +302,8 @@ export default function App() {
     markRegionResolved,
   ]);
 
-  // Hem auth hem region hazır değilse (ve region auto-detect bitmediyse)
-  if (!authBootstrapped || !regionHydrated || !regionResolved || (token && !meBootstrapped)) {
+  // Fontlar veya auth/region hazır değilse splash/loading göster
+  if (!fontsLoaded || !authBootstrapped || !regionHydrated || !regionResolved || (token && !meBootstrapped)) {
     return (
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
@@ -298,17 +314,19 @@ export default function App() {
   }
 
   return (
-    <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-      <StripeProvider
-        publishableKey={publishableKey}
-        merchantIdentifier="com.umutugur.rezzy" // Apple Pay için
-        urlScheme="com.rezzy.app"              // expo scheme ile aynı
-      >
-        <StatusBar style="dark" />
-        <RootNavigator />
-        <GetStartedModal />
-        <InAppToast />
-      </StripeProvider>
-    </SafeAreaProvider>
+    <ThemeProvider>
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+        <StripeProvider
+          publishableKey={publishableKey}
+          merchantIdentifier="com.umutugur.rezzy" // Apple Pay için
+          urlScheme="com.rezzy.app"              // expo scheme ile aynı
+        >
+          <StatusBar style="dark" />
+          <RootNavigator />
+          <GetStartedModal />
+          <InAppToast />
+        </StripeProvider>
+      </SafeAreaProvider>
+    </ThemeProvider>
   );
 }

@@ -46,6 +46,7 @@
     "expo-random": "^14.0.1",
     "expo-secure-store": "~15.0.8",
     "expo-status-bar": "~3.0.9",
+    "expo-task-manager": "~14.0.9",
     "expo-web-browser": "~15.0.11",
     "i18n-js": "^4.5.1",
     "localization": "^1.0.2",
