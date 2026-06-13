@@ -78,3 +78,12 @@ export async function stopDriverLocationUpdates(): Promise<void> {
     await Location.stopLocationUpdatesAsync(DRIVER_LOCATION_TASK).catch(() => {});
   }
 }
+
+/**
+ * Sürücü çevrimiçi konum servisi (foreground service) çalışıyor mu?
+ * "Çevrimiçisiniz" bildirimine tıklanıp uygulama açıldığında DriverHome'a
+ * yönlendirmek için yerel sinyal — network gerektirmez.
+ */
+export async function isDriverLocationActive(): Promise<boolean> {
+  return Location.hasStartedLocationUpdatesAsync(DRIVER_LOCATION_TASK).catch(() => false);
+}

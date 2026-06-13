@@ -251,6 +251,15 @@ export default function DriverHomeScreen() {
       return false;
     }
 
+    // Zaten aktif bir izleyici varsa yeniden başlatma — izleyici sızıntısını önler
+    // (syncStatus + AppState 'active' + toggle aynı anda çağırabilir).
+    if (locationWatcherRef.current) {
+      if (lastLocationRef.current) {
+        await updateDriverLocation(lastLocationRef.current.lat, lastLocationRef.current.lng).catch(() => {});
+      }
+      return true;
+    }
+
     const current = await Location.getCurrentPositionAsync({
       accuracy: Location.Accuracy.High,
     });
@@ -437,17 +446,29 @@ export default function DriverHomeScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         startDriverLocationUpdates().catch(() => {});
       } else {
+        // Önce arka plan/ön plan konum takibini kesin durdur — emit sızıntısını ve
+        // otomatik reconnect ile tekrar çevrimiçi olmayı önler
         stopLocationWatch();
+        await stopDriverLocationUpdates().catch(() => {});
+
+        // Socket'e açıkça çevrimdışı ol — backend isOnline/isAvailable=false yapar
+        // ve passengers:map'e driver:went_offline yayınlar (müşteri haritasından kaldırır)
+        if (taxiSocket.connected) {
+          taxiSocket.emit('driver:offline');
+        }
+
         await updateDriverStatus(false);
+
         if (rideRequestListenerRef.current) {
           taxiSocket.off('ride:new_request', rideRequestListenerRef.current);
           rideRequestListenerRef.current = null;
         }
+        // Olası bekleyen connect dinleyicilerini temizle (reconnect'te driver:online yeniden yaymasın)
+        taxiSocket.off('connect');
         taxiSocket.disconnect();
         onlineProgress.value = withTiming(0, { duration: 300 });
         setDriverOnline(false);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        stopDriverLocationUpdates().catch(() => {});
       }
     } catch {
       setStatusError('Durum değiştirilemedi. Lütfen tekrar deneyin.');

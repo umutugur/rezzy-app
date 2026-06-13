@@ -8,7 +8,9 @@ import {
 } from "react-native";
 import { NavigationContainer, useNavigationContainerRef } from "@react-navigation/native";
 import * as Notifications from 'expo-notifications';
+import { AppState } from 'react-native';
 import { useTaxiStore } from '../store/useTaxiStore';
+import { isDriverLocationActive } from '../services/driverBackgroundLocation';
 import { createStackNavigator, type StackNavigationOptions } from "@react-navigation/stack";
 import {
   createBottomTabNavigator,
@@ -258,6 +260,32 @@ export default function RootNavigator() {
 
     return () => sub.remove();
   }, [token, setIncomingRide, navigationRef]);
+
+  // ── "Çevrimiçisiniz" foreground-service bildirimine tıklayınca / uygulama
+  //    çevrimiçi sürücü modundayken öne gelince → DriverHome'a yönlendir ──────
+  React.useEffect(() => {
+    if (!token) return;
+
+    const goDriverIfActive = async () => {
+      const active = await isDriverLocationActive();
+      if (active && navigationRef.isReady()) {
+        const route = navigationRef.getCurrentRoute?.();
+        if (route?.name !== 'Driver') {
+          (navigationRef as any).navigate('Driver');
+        }
+      }
+    };
+
+    // Soğuk başlatma
+    setTimeout(goDriverIfActive, 600);
+
+    // Uygulama öne geldiğinde (foreground-service bildirimine tıklanma dahil)
+    const appSub = AppState.addEventListener('change', (next) => {
+      if (next === 'active') goDriverIfActive();
+    });
+
+    return () => appSub.remove();
+  }, [token, navigationRef]);
 
   const fetchUnreadCount = useNotifications((s) => s.fetchUnreadCount);
 

@@ -92,8 +92,10 @@ class TaxiSocketService {
     this.socket?.on(event, handler as any);
   }
 
-  off<T = unknown>(event: TaxiSocketEvent | string, handler: (data: T) => void): void {
-    this.socket?.off(event, handler as any);
+  off<T = unknown>(event: TaxiSocketEvent | string, handler?: (data: T) => void): void {
+    // handler verilmezse o event'in tüm dinleyicilerini kaldırır
+    if (handler) this.socket?.off(event, handler as any);
+    else this.socket?.off(event);
   }
 
   emit(event: string, data?: unknown): void {
