@@ -184,6 +184,11 @@ export default function DriverHomeScreen() {
         taxiSocket.off('ride:new_request', rideRequestListenerRef.current);
       }
       rideRequestListenerRef.current = (payload: any) => {
+        // Zaten bir çağrı gösteriliyorsa yinelenen ride:new_request'i yok say
+        // (backend driver:online'da bekleyen çağrıları tekrar gönderebiliyor) —
+        // modal sıfırlanmasını ve onayla/iptal'in basılamamasını önler
+        const current = useTaxiStore.getState().incomingRide;
+        if (current) return;
         setIncomingRide(payload);
         playTaxiSound();
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -434,6 +439,9 @@ export default function DriverHomeScreen() {
             taxiSocket.off('ride:new_request', rideRequestListenerRef.current);
           }
           rideRequestListenerRef.current = (payload: any) => {
+            // Zaten bir çağrı gösteriliyorsa yinelenenleri yok say (bkz. yukarıdaki açıklama)
+            const current = useTaxiStore.getState().incomingRide;
+            if (current) return;
             setIncomingRide(payload);
             playTaxiSound();
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
