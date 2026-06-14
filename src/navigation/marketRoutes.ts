@@ -1,0 +1,21 @@
+// src/navigation/marketRoutes.ts
+
+export const MarketRoutes = {
+  Home:           "MarketHome",
+  StoreDetail:    "MarketStoreDetail",
+  ProductDetail:  "MarketProductDetail",
+  Cart:           "MarketCart",
+  OrderDetail:    "MarketOrderDetail",
+  OwnerDashboard: "MarketOwnerDashboard",
+} as const;
+
+export type MarketRouteName = (typeof MarketRoutes)[keyof typeof MarketRoutes];
+
+export type MarketStackParams = {
+  [MarketRoutes.Home]:           undefined;
+  [MarketRoutes.StoreDetail]:    { storeId: string; storeName?: string };
+  [MarketRoutes.ProductDetail]:  { productId: string };
+  [MarketRoutes.Cart]:           undefined;
+  [MarketRoutes.OrderDetail]:    { orderId: string };
+  [MarketRoutes.OwnerDashboard]: undefined;
+};

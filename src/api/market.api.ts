@@ -49,6 +49,11 @@ export type MarketProduct = {
   store: string;
   isActive: boolean;
   barcode?: string | null;
+  brand?: string;
+  attributes?: { label: string; value: string }[];
+  netQuantity?: number | null;
+  netUnit?: "L" | "ml" | "kg" | "g" | "piece" | null;
+  unitPrice?: { unitPrice: number; unitPriceUnit: string } | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -130,6 +135,16 @@ export async function getStores(
 
   const res = await api.get("/market/stores", { params });
   return res.data as PaginatedResponse<MarketStore>;
+}
+
+export interface ProductDetailResponse {
+  product: MarketProduct;
+  related: MarketProduct[];
+}
+
+export async function getProduct(id: string): Promise<ProductDetailResponse> {
+  const { data } = await api.get(`/market/products/${id}`);
+  return data as ProductDetailResponse;
 }
 
 /**
