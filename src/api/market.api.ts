@@ -318,6 +318,10 @@ export interface PanelProduct {
   photos: string[];
   isActive: boolean;
   barcode?: string | null;
+  brand?: string;
+  attributes?: { label: string; value: string }[];
+  netQuantity?: number | null;
+  netUnit?: "L" | "ml" | "kg" | "g" | "piece" | null;
   store: string;
   createdAt: string;
   updatedAt: string;
@@ -332,7 +336,7 @@ export async function getPanelProducts(
 }
 
 export async function createPanelProduct(
-  payload: Pick<PanelProduct, 'title' | 'price' | 'unit' | 'stock'> & Partial<Pick<PanelProduct, 'description' | 'barcode'>>,
+  payload: Pick<PanelProduct, 'title' | 'price' | 'unit' | 'stock'> & Partial<Pick<PanelProduct, 'description' | 'barcode' | 'brand' | 'attributes' | 'netQuantity' | 'netUnit'>>,
 ): Promise<PanelProduct> {
   const { data } = await api.post('/market/panel/products', payload);
   return data;
@@ -340,7 +344,7 @@ export async function createPanelProduct(
 
 export async function updatePanelProduct(
   id: string,
-  payload: Partial<Pick<PanelProduct, 'title' | 'price' | 'unit' | 'stock' | 'description' | 'isActive' | 'barcode'>>,
+  payload: Partial<Pick<PanelProduct, 'title' | 'price' | 'unit' | 'stock' | 'description' | 'isActive' | 'barcode' | 'brand' | 'attributes' | 'netQuantity' | 'netUnit'>>,
 ): Promise<PanelProduct> {
   const { data } = await api.patch(`/market/panel/products/${id}`, payload);
   return data;

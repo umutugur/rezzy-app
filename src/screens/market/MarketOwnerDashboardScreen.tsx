@@ -358,6 +358,10 @@ export default function MarketOwnerDashboardScreen() {
   const [formPrice, setFormPrice] = useState('');
   const [formStock, setFormStock] = useState('');
   const [formUnit, setFormUnit] = useState('adet');
+  const [formBrand, setFormBrand] = useState('');
+  const [formNetQuantity, setFormNetQuantity] = useState('');
+  const [formNetUnit, setFormNetUnit] = useState<'L' | 'ml' | 'kg' | 'g' | 'piece' | null>(null);
+  const [formAttributes, setFormAttributes] = useState<{ label: string; value: string }[]>([]);
   const [formSaving, setFormSaving] = useState(false);
 
   // Confirm modal + inline error state
@@ -408,6 +412,10 @@ export default function MarketOwnerDashboardScreen() {
     setFormPrice('');
     setFormStock('0');
     setFormUnit('adet');
+    setFormBrand('');
+    setFormNetQuantity('');
+    setFormNetUnit(null);
+    setFormAttributes([]);
     setFormError(null);
     setProductModalVisible(true);
   }, []);
@@ -418,6 +426,10 @@ export default function MarketOwnerDashboardScreen() {
     setFormPrice(String(product.price));
     setFormStock(String(product.stock));
     setFormUnit(product.unit);
+    setFormBrand(product.brand ?? '');
+    setFormNetQuantity(product.netQuantity != null ? String(product.netQuantity) : '');
+    setFormNetUnit(product.netUnit ?? null);
+    setFormAttributes(product.attributes ? product.attributes.map(a => ({ ...a })) : []);
     setFormError(null);
     setProductModalVisible(true);
   }, []);
@@ -432,6 +444,10 @@ export default function MarketOwnerDashboardScreen() {
         price: Number(formPrice),
         stock: Number(formStock),
         unit: formUnit,
+        ...(formBrand.trim() ? { brand: formBrand.trim() } : {}),
+        netQuantity: formNetQuantity !== '' ? Number(formNetQuantity) : null,
+        netUnit: formNetUnit,
+        attributes: formAttributes.filter(a => a.label.trim() && a.value.trim()),
       };
       if (editingProduct) {
         const updated = await updatePanelProduct(editingProduct._id, payload);
@@ -446,7 +462,7 @@ export default function MarketOwnerDashboardScreen() {
     } finally {
       setFormSaving(false);
     }
-  }, [editingProduct, formTitle, formPrice, formStock, formUnit]);
+  }, [editingProduct, formTitle, formPrice, formStock, formUnit, formBrand, formNetQuantity, formNetUnit, formAttributes]);
 
   const handleDeleteProduct = useCallback((product: PanelProduct) => {
     setConfirmModal({
@@ -798,6 +814,91 @@ export default function MarketOwnerDashboardScreen() {
                 placeholderTextColor={theme.colors.textTertiary}
                 style={{ backgroundColor: theme.colors.surfaceAlt, borderRadius: theme.radius.lg, paddingHorizontal: theme.space[4], paddingVertical: theme.space[3], ...theme.typography.bodyMd, color: theme.colors.textPrimary, borderWidth: 1, borderColor: theme.colors.borderDefault }}
               />
+            </View>
+
+            <View>
+              <Text style={{ ...theme.typography.labelSm, color: theme.colors.textSecondary, marginBottom: 4 }}>Marka</Text>
+              <TextInput
+                value={formBrand}
+                onChangeText={setFormBrand}
+                placeholder="ör. Ülker"
+                placeholderTextColor={theme.colors.textTertiary}
+                style={{ backgroundColor: theme.colors.surfaceAlt, borderRadius: theme.radius.lg, paddingHorizontal: theme.space[4], paddingVertical: theme.space[3], ...theme.typography.bodyMd, color: theme.colors.textPrimary, borderWidth: 1, borderColor: theme.colors.borderDefault }}
+              />
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: theme.space[3] }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ ...theme.typography.labelSm, color: theme.colors.textSecondary, marginBottom: 4 }}>Net Miktar</Text>
+                <TextInput
+                  value={formNetQuantity}
+                  onChangeText={setFormNetQuantity}
+                  placeholder="ör. 500"
+                  keyboardType="decimal-pad"
+                  placeholderTextColor={theme.colors.textTertiary}
+                  style={{ backgroundColor: theme.colors.surfaceAlt, borderRadius: theme.radius.lg, paddingHorizontal: theme.space[4], paddingVertical: theme.space[3], ...theme.typography.bodyMd, color: theme.colors.textPrimary, borderWidth: 1, borderColor: theme.colors.borderDefault }}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ ...theme.typography.labelSm, color: theme.colors.textSecondary, marginBottom: 4 }}>Net Birim</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 2 }}>
+                  {(['L', 'ml', 'kg', 'g', 'piece'] as const).map(u => (
+                    <Pressable
+                      key={u}
+                      onPress={() => setFormNetUnit(prev => prev === u ? null : u)}
+                      style={{
+                        paddingHorizontal: theme.space[3],
+                        paddingVertical: theme.space[2],
+                        borderRadius: theme.radius.md,
+                        borderWidth: 1,
+                        borderColor: formNetUnit === u ? theme.market.main : theme.colors.borderDefault,
+                        backgroundColor: formNetUnit === u ? theme.market.light : theme.colors.surfaceAlt,
+                      }}
+                    >
+                      <Text style={{ ...theme.typography.labelSm, color: formNetUnit === u ? theme.market.main : theme.colors.textSecondary }}>
+                        {u}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            </View>
+
+            <View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <Text style={{ ...theme.typography.labelSm, color: theme.colors.textSecondary }}>Özellikler</Text>
+                <TouchableOpacity
+                  onPress={() => setFormAttributes(prev => [...prev, { label: '', value: '' }])}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                >
+                  <Ionicons name="add-circle-outline" size={16} color={theme.market.main} />
+                  <Text style={{ ...theme.typography.labelSm, color: theme.market.main }}>Özellik Ekle</Text>
+                </TouchableOpacity>
+              </View>
+              {formAttributes.map((attr, idx) => (
+                <View key={idx} style={{ flexDirection: 'row', gap: theme.space[2], marginBottom: theme.space[2], alignItems: 'center' }}>
+                  <TextInput
+                    value={attr.label}
+                    onChangeText={text => setFormAttributes(prev => prev.map((a, i) => i === idx ? { ...a, label: text } : a))}
+                    placeholder="ör. Renk"
+                    placeholderTextColor={theme.colors.textTertiary}
+                    style={{ flex: 1, backgroundColor: theme.colors.surfaceAlt, borderRadius: theme.radius.lg, paddingHorizontal: theme.space[3], paddingVertical: theme.space[2], ...theme.typography.bodyMd, color: theme.colors.textPrimary, borderWidth: 1, borderColor: theme.colors.borderDefault }}
+                  />
+                  <TextInput
+                    value={attr.value}
+                    onChangeText={text => setFormAttributes(prev => prev.map((a, i) => i === idx ? { ...a, value: text } : a))}
+                    placeholder="ör. Kırmızı"
+                    placeholderTextColor={theme.colors.textTertiary}
+                    style={{ flex: 1, backgroundColor: theme.colors.surfaceAlt, borderRadius: theme.radius.lg, paddingHorizontal: theme.space[3], paddingVertical: theme.space[2], ...theme.typography.bodyMd, color: theme.colors.textPrimary, borderWidth: 1, borderColor: theme.colors.borderDefault }}
+                  />
+                  <Pressable
+                    onPress={() => setFormAttributes(prev => prev.filter((_, i) => i !== idx))}
+                    style={{ padding: theme.space[2] }}
+                  >
+                    <Ionicons name="close-circle" size={20} color={theme.colors.error} />
+                  </Pressable>
+                </View>
+              ))}
             </View>
           </View>
 
