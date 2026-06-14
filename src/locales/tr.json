@@ -876,6 +876,18 @@
       "water": "Su & Damacana",
       "tup": "Tüp",
       "pharmacy": "Eczane"
+    },
+    "productDetail": {
+      "properties": "Ürün Özellikleri",
+      "related": "Bunlar İlginizi Çekebilir",
+      "addToCart": "Sepete Ekle",
+      "outOfStock": "Tükendi",
+      "inCart": "Sepette"
+    },
+    "unit": {
+      "litre": "Litre",
+      "kg": "Kg",
+      "adet": "Adet"
     }
   },
   "taxi": {

@@ -36,11 +36,13 @@ function ProductRow({
   qty,
   onAdd,
   onRemove,
+  onPress,
 }: {
   product: MarketProduct;
   qty: number;
   onAdd: () => void;
   onRemove: () => void;
+  onPress: () => void;
 }) {
   const theme = useTheme();
   const photoUri = product.photos[0] ?? null;
@@ -60,56 +62,62 @@ function ProductRow({
         },
       ]}
     >
-      {/* Fotoğraf */}
-      <View
-        style={[
-          styles.productPhoto,
-          {
-            borderRadius: theme.radius.md,
-            backgroundColor: theme.market.light,
-          },
-        ]}
+      {/* Tappable: photo + info */}
+      <Pressable
+        onPress={onPress}
+        style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: theme.space[3] }}
       >
-        {photoUri ? (
-          <Image source={{ uri: photoUri }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
-        ) : (
-          <Ionicons name="cube-outline" size={24} color={theme.market.main} />
-        )}
-        {outOfStock && (
-          <View
-            style={{
-              ...StyleSheet.absoluteFillObject,
-              backgroundColor: 'rgba(0,0,0,0.55)',
+        {/* Fotoğraf */}
+        <View
+          style={[
+            styles.productPhoto,
+            {
               borderRadius: theme.radius.md,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Text style={{ color: '#fff', fontSize: 9, fontWeight: '700', textAlign: 'center' }}>
-              Tükendi
-            </Text>
-          </View>
-        )}
-      </View>
-
-      {/* Bilgi */}
-      <View style={{ flex: 1, gap: theme.space[1] }}>
-        <Text
-          style={{ ...theme.typography.labelLg, color: theme.colors.textPrimary }}
-          numberOfLines={2}
+              backgroundColor: theme.market.light,
+            },
+          ]}
         >
-          {product.title}
-        </Text>
-        {product.description ? (
+          {photoUri ? (
+            <Image source={{ uri: photoUri }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+          ) : (
+            <Ionicons name="cube-outline" size={24} color={theme.market.main} />
+          )}
+          {outOfStock && (
+            <View
+              style={{
+                ...StyleSheet.absoluteFillObject,
+                backgroundColor: 'rgba(0,0,0,0.55)',
+                borderRadius: theme.radius.md,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Text style={{ color: '#fff', fontSize: 9, fontWeight: '700', textAlign: 'center' }}>
+                Tükendi
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Bilgi */}
+        <View style={{ flex: 1, gap: theme.space[1] }}>
           <Text
-            style={{ ...theme.typography.bodySm, color: theme.colors.textSecondary }}
-            numberOfLines={1}
+            style={{ ...theme.typography.labelLg, color: theme.colors.textPrimary }}
+            numberOfLines={2}
           >
-            {product.description}
+            {product.title}
           </Text>
-        ) : null}
-        <PriceTag amount={product.price} size="sm" />
-      </View>
+          {product.description ? (
+            <Text
+              style={{ ...theme.typography.bodySm, color: theme.colors.textSecondary }}
+              numberOfLines={1}
+            >
+              {product.description}
+            </Text>
+          ) : null}
+          <PriceTag amount={product.price} size="sm" />
+        </View>
+      </Pressable>
 
       {/* Adet seçici */}
       <View style={[styles.qtyRow, { gap: theme.space[2] }]}>
@@ -277,10 +285,11 @@ export default function MarketStoreScreen() {
             if (qty === 1) removeItem(item._id);
             else updateQty(item._id, qty - 1);
           }}
+          onPress={() => navigation.navigate(MarketRoutes.ProductDetail, { productId: item._id })}
         />
       );
     },
-    [qtyForProduct, addItem, removeItem, updateQty],
+    [qtyForProduct, addItem, removeItem, updateQty, navigation],
   );
 
   return (

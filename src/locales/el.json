@@ -797,6 +797,18 @@
       "water": "Water",
       "tup": "Gas",
       "pharmacy": "Pharmacy"
+    },
+    "productDetail": {
+      "properties": "Product Details",
+      "related": "You Might Also Like",
+      "addToCart": "Add to Cart",
+      "outOfStock": "Out of Stock",
+      "inCart": "In Cart"
+    },
+    "unit": {
+      "litre": "Litre",
+      "kg": "Kg",
+      "adet": "Item"
     }
   },
   "myOrders": {
