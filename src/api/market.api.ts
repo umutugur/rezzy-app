@@ -160,17 +160,58 @@ export async function getStoreDetail(id: string): Promise<MarketStore> {
 }
 
 /**
- * Market ürünleri — opsiyonel kategori filtresi.
+ * Market ürünleri — opsiyonel kategori + arama filtresi.
  */
 export async function getProducts(
   storeId: string,
   category?: string | null,
+  q?: string,
 ): Promise<PaginatedResponse<MarketProduct>> {
   const params: Record<string, any> = { limit: 100 };
   if (category) params.category = category;
+  if (q && q.trim().length >= 2) params.q = q.trim();
 
   const res = await api.get(`/market/stores/${storeId}/products`, { params });
   return res.data as PaginatedResponse<MarketProduct>;
+}
+
+// ─── Global Ürün Arama ───────────────────────────────────────────────────────
+
+export interface MarketSearchResult {
+  items: (MarketProduct & { store?: { _id: string; name: string } })[];
+  total: number;
+  page: number;
+  limit: number;
+  brands: string[];
+}
+
+export async function searchMarketProducts(params: {
+  q: string;
+  lat?: number;
+  lng?: number;
+  radius?: number;
+  category?: string | null;
+  brand?: string | null;
+  discounted?: boolean;
+  sort?: "relevance" | "price_asc" | "price_desc";
+  page?: number;
+  limit?: number;
+}): Promise<MarketSearchResult> {
+  const { data } = await api.get("/market/search", {
+    params: {
+      q: params.q,
+      lat: params.lat,
+      lng: params.lng,
+      radius: params.radius,
+      category: params.category || undefined,
+      brand: params.brand || undefined,
+      discounted: params.discounted ? 1 : undefined,
+      sort: params.sort || undefined,
+      page: params.page || undefined,
+      limit: params.limit || undefined,
+    },
+  });
+  return data as MarketSearchResult;
 }
 
 export type CreateOrderResult = {
