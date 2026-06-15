@@ -7,6 +7,7 @@ export const MarketRoutes = {
   Cart:           "MarketCart",
   OrderDetail:    "MarketOrderDetail",
   OwnerDashboard: "MarketOwnerDashboard",
+  Search:         "MarketSearch",
 } as const;
 
 export type MarketRouteName = (typeof MarketRoutes)[keyof typeof MarketRoutes];
@@ -18,4 +19,5 @@ export type MarketStackParams = {
   [MarketRoutes.Cart]:           undefined;
   [MarketRoutes.OrderDetail]:    { orderId: string };
   [MarketRoutes.OwnerDashboard]: undefined;
+  [MarketRoutes.Search]:         { initialQuery?: string; lat?: number; lng?: number };
 };

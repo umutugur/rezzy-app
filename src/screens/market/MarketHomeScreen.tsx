@@ -559,6 +559,16 @@ export default function MarketHomeScreen() {
             placeholder={t("market.searchPlaceholder")}
             placeholderTextColor="#9CA3AF"
             style={hdr.searchInput}
+            returnKeyType="search"
+            onSubmitEditing={() => {
+              if (searchText.trim().length >= 2) {
+                navigation.navigate(MarketRoutes.Search, {
+                  initialQuery: searchText.trim(),
+                  lat: gpsCoords?.lat,
+                  lng: gpsCoords?.lng,
+                });
+              }
+            }}
           />
           {searchText.length > 0 && (
             <Pressable onPress={() => setSearchText("")}>

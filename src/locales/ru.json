@@ -794,6 +794,20 @@
       "lowest30": "Lowest Price (30 Days)",
       "label": "Discount",
       "discountedPrice": "Discounted Price"
+    },
+    "search": {
+      "resultsCount": "{{count}} products",
+      "category": "Category",
+      "brand": "Brand",
+      "discountedOnly": "Discounted",
+      "sortRelevance": "Relevance",
+      "sortPriceAsc": "Price ↑",
+      "sortPriceDesc": "Price ↓",
+      "placeholder": "Search products",
+      "inStorePlaceholder": "Search in this store",
+      "minChars": "Enter at least 2 characters",
+      "empty": "No results",
+      "all": "All"
     }
   },
   "myOrders": {

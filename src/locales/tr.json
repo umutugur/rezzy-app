@@ -893,6 +893,20 @@
       "lowest30": "En Düşük Fiyat (30 Gün)",
       "label": "İndirim",
       "discountedPrice": "İndirimli Fiyat"
+    },
+    "search": {
+      "resultsCount": "{{count}} ürün",
+      "category": "Kategori",
+      "brand": "Marka",
+      "discountedOnly": "İndirimli",
+      "sortRelevance": "İlgililik",
+      "sortPriceAsc": "Fiyat ↑",
+      "sortPriceDesc": "Fiyat ↓",
+      "placeholder": "Ürün ara",
+      "inStorePlaceholder": "Bu markette ara",
+      "minChars": "En az 2 karakter girin",
+      "empty": "Sonuç bulunamadı",
+      "all": "Tümü"
     }
   },
   "taxi": {
