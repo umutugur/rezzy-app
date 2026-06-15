@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
   type ListRenderItemInfo,
 } from "react-native";
@@ -230,6 +231,7 @@ export default function MarketStoreScreen() {
   const [products, setProducts] = useState<MarketProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [searchQ, setSearchQ] = useState("");
 
   const cartItems = useMarketCart((s) => s.items);
   const addItem = useMarketCart((s) => s.addItem);
@@ -267,11 +269,19 @@ export default function MarketStoreScreen() {
 
   // Filtreli ürünler
   const filtered = useMemo(
-    () =>
-      selectedCategory
+    () => {
+      const byCat = selectedCategory
         ? products.filter((p) => p.category?._id === selectedCategory)
-        : products,
-    [products, selectedCategory],
+        : products;
+      const term = searchQ.trim().toLowerCase();
+      if (term.length < 2) return byCat;
+      return byCat.filter(
+        (p) =>
+          p.title.toLowerCase().includes(term) ||
+          (p.brand ? p.brand.toLowerCase().includes(term) : false),
+      );
+    },
+    [products, selectedCategory, searchQ],
   );
 
   useEffect(() => {
@@ -382,6 +392,36 @@ export default function MarketStoreScreen() {
                 </View>
               )}
             </View>
+          </View>
+
+          {/* Mağaza-içi ürün arama */}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+              marginHorizontal: theme.space[4],
+              marginBottom: theme.space[3],
+              backgroundColor: theme.colors.surfaceAlt,
+              borderRadius: 12,
+              paddingHorizontal: 12,
+              height: 42,
+            }}
+          >
+            <Ionicons name="search-outline" size={18} color={theme.colors.textTertiary} />
+            <TextInput
+              value={searchQ}
+              onChangeText={setSearchQ}
+              placeholder={t("market.search.inStorePlaceholder")}
+              placeholderTextColor={theme.colors.textTertiary}
+              style={{ flex: 1, ...theme.typography.bodyMd, color: theme.colors.textPrimary }}
+              returnKeyType="search"
+            />
+            {searchQ.length > 0 && (
+              <Pressable onPress={() => setSearchQ("")} hitSlop={8}>
+                <Ionicons name="close-circle" size={16} color={theme.colors.textTertiary} />
+              </Pressable>
+            )}
           </View>
 
           {/* Kategori tab'ları */}
