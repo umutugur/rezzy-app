@@ -357,7 +357,7 @@ export default function MarketOwnerDashboardScreen() {
   const [formTitle, setFormTitle] = useState('');
   const [formPrice, setFormPrice] = useState('');
   const [formStock, setFormStock] = useState('');
-  const [formUnit, setFormUnit] = useState('adet');
+  const [formUnit, setFormUnit] = useState('piece');
   const [formBrand, setFormBrand] = useState('');
   const [formNetQuantity, setFormNetQuantity] = useState('');
   const [formNetUnit, setFormNetUnit] = useState<'L' | 'ml' | 'kg' | 'g' | 'piece' | null>(null);
@@ -412,7 +412,7 @@ export default function MarketOwnerDashboardScreen() {
     setFormTitle('');
     setFormPrice('');
     setFormStock('0');
-    setFormUnit('adet');
+    setFormUnit('piece');
     setFormBrand('');
     setFormNetQuantity('');
     setFormNetUnit(null);
