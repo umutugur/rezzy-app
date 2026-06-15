@@ -18,6 +18,7 @@ import { useTheme } from "../../contexts/ThemeContext";
 import { useI18n } from "../../i18n";
 import { useRegion } from "../../store/useRegion";
 import { formatCurrency } from "../../utils/format";
+import { effectivePrice, discountPercent } from "../../utils/marketPrice";
 import { Badge, EmptyState, PriceTag, ReviewSection, Skeleton, StarRating } from "../../components/ui";
 import { getProducts, getStoreDetail, type MarketProduct, type MarketStore } from "../../api/market.api";
 import {
@@ -37,16 +38,22 @@ function ProductRow({
   onAdd,
   onRemove,
   onPress,
+  region,
+  language,
 }: {
   product: MarketProduct;
   qty: number;
   onAdd: () => void;
   onRemove: () => void;
   onPress: () => void;
+  region: string;
+  language: string;
 }) {
   const theme = useTheme();
   const photoUri = product.photos[0] ?? null;
   const outOfStock = product.stock === 0;
+  const pct = discountPercent(product);
+  const eff = effectivePrice(product);
 
   return (
     <View
@@ -115,7 +122,21 @@ function ProductRow({
               {product.description}
             </Text>
           ) : null}
-          <PriceTag amount={product.price} size="sm" />
+          {pct > 0 ? (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
+              <View style={{ backgroundColor: theme.colors.error, borderRadius: 6, paddingHorizontal: 5, paddingVertical: 1 }}>
+                <Text style={{ ...theme.typography.caption, color: "#fff" }}>%{pct}</Text>
+              </View>
+              <Text style={{ ...theme.typography.bodySm, color: theme.colors.textSecondary, textDecorationLine: "line-through" }}>
+                {formatCurrency(product.price, region, language)}
+              </Text>
+              <Text style={{ ...theme.typography.labelMd, color: theme.colors.error }}>
+                {formatCurrency(eff, region, language)}
+              </Text>
+            </View>
+          ) : (
+            <PriceTag amount={product.price} size="sm" />
+          )}
         </View>
       </Pressable>
 
@@ -286,10 +307,12 @@ export default function MarketStoreScreen() {
             else updateQty(item._id, qty - 1);
           }}
           onPress={() => navigation.navigate(MarketRoutes.ProductDetail, { productId: item._id })}
+          region={region}
+          language={language}
         />
       );
     },
-    [qtyForProduct, addItem, removeItem, updateQty, navigation],
+    [qtyForProduct, addItem, removeItem, updateQty, navigation, region, language],
   );
 
   return (

@@ -888,6 +888,11 @@
       "litre": "Litre",
       "kg": "Kg",
       "adet": "Adet"
+    },
+    "discount": {
+      "lowest30": "En Düşük Fiyat (30 Gün)",
+      "label": "İndirim",
+      "discountedPrice": "İndirimli Fiyat"
     }
   },
   "taxi": {

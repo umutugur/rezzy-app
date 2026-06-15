@@ -789,6 +789,11 @@
       "litre": "Litre",
       "kg": "Kg",
       "adet": "Item"
+    },
+    "discount": {
+      "lowest30": "Lowest Price (30 Days)",
+      "label": "Discount",
+      "discountedPrice": "Discounted Price"
     }
   },
   "myOrders": {

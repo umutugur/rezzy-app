@@ -18,6 +18,7 @@ import { useI18n } from "../../i18n";
 import { useRegion } from "../../store/useRegion";
 import { formatCurrency } from "../../utils/format";
 import { getProduct, type MarketProduct } from "../../api/market.api";
+import { effectivePrice, discountPercent } from "../../utils/marketPrice";
 import { useMarketCart } from "../../store/useMarketStore";
 import { MarketRoutes, type MarketStackParams } from "../../navigation/marketRoutes";
 
@@ -136,11 +137,34 @@ export default function ProductDetailScreen() {
           <Text style={{ ...theme.typography.headingMd, color: theme.colors.textPrimary }}>
             {product.title}
           </Text>
-          <Text
-            style={{ ...theme.typography.headingLg, color: theme.colors.textPrimary, marginTop: 10 }}
-          >
-            {formatCurrency(product.price, region, language)}
-          </Text>
+          {(() => {
+            const eff = effectivePrice(product);
+            const pct = discountPercent(product);
+            return pct > 0 ? (
+              <View>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 10 }}>
+                  <View style={{ backgroundColor: theme.colors.error, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2 }}>
+                    <Text style={{ ...theme.typography.labelSm, color: "#fff" }}>%{pct}</Text>
+                  </View>
+                  <Text style={{ ...theme.typography.bodyMd, color: theme.colors.textSecondary, textDecorationLine: "line-through" }}>
+                    {formatCurrency(product.price, region, language)}
+                  </Text>
+                </View>
+                <Text style={{ ...theme.typography.headingLg, color: theme.colors.error, marginTop: 4 }}>
+                  {formatCurrency(eff, region, language)}
+                </Text>
+                {typeof product.lowest30 === "number" ? (
+                  <Text style={{ ...theme.typography.caption, color: theme.colors.textSecondary, marginTop: 2 }}>
+                    {t("market.discount.lowest30")}: {formatCurrency(product.lowest30, region, language)}
+                  </Text>
+                ) : null}
+              </View>
+            ) : (
+              <Text style={{ ...theme.typography.headingLg, color: theme.colors.textPrimary, marginTop: 10 }}>
+                {formatCurrency(product.price, region, language)}
+              </Text>
+            );
+          })()}
           {up ? (
             <Text
               style={{ ...theme.typography.bodySm, color: theme.colors.textSecondary, marginTop: 2 }}
@@ -255,11 +279,22 @@ export default function ProductDetailScreen() {
                   >
                     {r.title}
                   </Text>
-                  <Text
-                    style={{ ...theme.typography.labelMd, color: theme.colors.textPrimary, marginTop: 4 }}
-                  >
-                    {formatCurrency(r.price, region, language)}
-                  </Text>
+                  {discountPercent(r) > 0 ? (
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 }}>
+                      <View style={{ backgroundColor: theme.colors.error, borderRadius: 6, paddingHorizontal: 5, paddingVertical: 1 }}>
+                        <Text style={{ ...theme.typography.caption, color: "#fff" }}>%{discountPercent(r)}</Text>
+                      </View>
+                      <Text style={{ ...theme.typography.labelMd, color: theme.colors.error }}>
+                        {formatCurrency(effectivePrice(r), region, language)}
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text
+                      style={{ ...theme.typography.labelMd, color: theme.colors.textPrimary, marginTop: 4 }}
+                    >
+                      {formatCurrency(r.price, region, language)}
+                    </Text>
+                  )}
                 </Pressable>
               ))}
             </ScrollView>
