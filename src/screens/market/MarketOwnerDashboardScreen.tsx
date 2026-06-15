@@ -362,6 +362,7 @@ export default function MarketOwnerDashboardScreen() {
   const [formNetQuantity, setFormNetQuantity] = useState('');
   const [formNetUnit, setFormNetUnit] = useState<'L' | 'ml' | 'kg' | 'g' | 'piece' | null>(null);
   const [formAttributes, setFormAttributes] = useState<{ label: string; value: string }[]>([]);
+  const [formDiscountPrice, setFormDiscountPrice] = useState('');
   const [formSaving, setFormSaving] = useState(false);
 
   // Confirm modal + inline error state
@@ -416,6 +417,7 @@ export default function MarketOwnerDashboardScreen() {
     setFormNetQuantity('');
     setFormNetUnit(null);
     setFormAttributes([]);
+    setFormDiscountPrice('');
     setFormError(null);
     setProductModalVisible(true);
   }, []);
@@ -430,6 +432,7 @@ export default function MarketOwnerDashboardScreen() {
     setFormNetQuantity(product.netQuantity != null ? String(product.netQuantity) : '');
     setFormNetUnit(product.netUnit ?? null);
     setFormAttributes(product.attributes ? product.attributes.map(a => ({ ...a })) : []);
+    setFormDiscountPrice(product.discountPrice != null ? String(product.discountPrice) : '');
     setFormError(null);
     setProductModalVisible(true);
   }, []);
@@ -439,15 +442,19 @@ export default function MarketOwnerDashboardScreen() {
     setFormError(null);
     setFormSaving(true);
     try {
+      const priceNum = Number(formPrice);
+      const dpNum = formDiscountPrice !== '' ? Number(formDiscountPrice) : NaN;
+      const validDiscount = !isNaN(dpNum) && dpNum >= 0 && dpNum < priceNum ? dpNum : null;
       const payload = {
         title: formTitle.trim(),
-        price: Number(formPrice),
+        price: priceNum,
         stock: Number(formStock),
         unit: formUnit,
         ...(formBrand.trim() ? { brand: formBrand.trim() } : {}),
         netQuantity: formNetQuantity !== '' ? Number(formNetQuantity) : null,
         netUnit: formNetUnit,
         attributes: formAttributes.filter(a => a.label.trim() && a.value.trim()),
+        discountPrice: validDiscount,
       };
       if (editingProduct) {
         const updated = await updatePanelProduct(editingProduct._id, payload);
@@ -462,7 +469,7 @@ export default function MarketOwnerDashboardScreen() {
     } finally {
       setFormSaving(false);
     }
-  }, [editingProduct, formTitle, formPrice, formStock, formUnit, formBrand, formNetQuantity, formNetUnit, formAttributes]);
+  }, [editingProduct, formTitle, formPrice, formStock, formUnit, formBrand, formNetQuantity, formNetUnit, formAttributes, formDiscountPrice]);
 
   const handleDeleteProduct = useCallback((product: PanelProduct) => {
     setConfirmModal({
@@ -803,6 +810,31 @@ export default function MarketOwnerDashboardScreen() {
                   style={{ backgroundColor: theme.colors.surfaceAlt, borderRadius: theme.radius.lg, paddingHorizontal: theme.space[4], paddingVertical: theme.space[3], ...theme.typography.bodyMd, color: theme.colors.textPrimary, borderWidth: 1, borderColor: theme.colors.borderDefault }}
                 />
               </View>
+            </View>
+
+            <View>
+              <Text style={{ ...theme.typography.labelSm, color: theme.colors.textSecondary, marginBottom: 4 }}>İndirimli Fiyat</Text>
+              <TextInput
+                value={formDiscountPrice}
+                onChangeText={setFormDiscountPrice}
+                placeholder="ör. 8.99 (isteğe bağlı)"
+                keyboardType="decimal-pad"
+                placeholderTextColor={theme.colors.textTertiary}
+                style={{ backgroundColor: theme.colors.surfaceAlt, borderRadius: theme.radius.lg, paddingHorizontal: theme.space[4], paddingVertical: theme.space[3], ...theme.typography.bodyMd, color: theme.colors.textPrimary, borderWidth: 1, borderColor: theme.colors.borderDefault }}
+              />
+              {(() => {
+                const dp = Number(formDiscountPrice);
+                const pr = Number(formPrice);
+                if (formDiscountPrice !== '' && !isNaN(dp) && dp >= 0 && pr > 0 && dp < pr) {
+                  const pct = Math.round((1 - dp / pr) * 100);
+                  return (
+                    <Text style={{ ...theme.typography.caption, color: theme.market.main, marginTop: 4 }}>
+                      %{pct} indirim
+                    </Text>
+                  );
+                }
+                return null;
+              })()}
             </View>
 
             <View>

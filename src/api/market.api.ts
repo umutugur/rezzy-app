@@ -326,6 +326,7 @@ export interface PanelProduct {
   attributes?: { label: string; value: string }[];
   netQuantity?: number | null;
   netUnit?: "L" | "ml" | "kg" | "g" | "piece" | null;
+  discountPrice?: number | null;
   store: string;
   createdAt: string;
   updatedAt: string;
