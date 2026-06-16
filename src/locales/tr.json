@@ -880,6 +880,7 @@
       "selectAddress": "Lütfen bir teslimat adresi seçin."
     },
     "pickupAvailable": "Gel-al",
+    "pickupService": "Gel-Al Hizmeti",
     "cat": {
       "all": "Tümü",
       "supermarket": "Süpermarket",

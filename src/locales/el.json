@@ -791,6 +791,7 @@
     "freeDelivery": "Free Delivery",
     "freeThreshold": "Free over {{amount}}",
     "pickupAvailable": "Pickup",
+    "pickupService": "Pickup service",
     "free": "Free",
     "orders": "orders",
     "priceLabel": "Price *",

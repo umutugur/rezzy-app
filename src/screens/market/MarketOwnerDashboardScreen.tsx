@@ -8,6 +8,7 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -29,8 +30,11 @@ import {
   createPanelProduct,
   updatePanelProduct,
   deletePanelProduct,
+  getMyPanelStore,
+  updateMyPanelStore,
   type MarketOrder,
   type MarketOrderStatus,
+  type MarketStore,
   type PanelProduct,
 } from "../../api/market.api";
 
@@ -342,7 +346,13 @@ export default function MarketOwnerDashboardScreen() {
   const region = useRegion((s) => s.region);
   const insets = useSafeAreaInsets();
 
-  const [mainTab, setMainTab] = useState<'orders' | 'products'>('orders');
+  const [mainTab, setMainTab] = useState<'orders' | 'products' | 'settings'>('orders');
+
+  // Store ayarları (Gel-Al hizmeti vb.)
+  const [storeInfo, setStoreInfo] = useState<MarketStore | null>(null);
+  const [storeLoading, setStoreLoading] = useState(false);
+  const [pickupEnabled, setPickupEnabled] = useState(true);
+  const [pickupSaving, setPickupSaving] = useState(false);
 
   const [allOrders, setAllOrders] = useState<MarketOrder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -406,6 +416,40 @@ export default function MarketOwnerDashboardScreen() {
       loadProducts();
     }
   }, [mainTab]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const loadStoreInfo = useCallback(async () => {
+    setStoreLoading(true);
+    try {
+      const store = await getMyPanelStore();
+      setStoreInfo(store);
+      setPickupEnabled(store.pickupEnabled ?? true);
+    } catch {
+      // silently fail
+    } finally {
+      setStoreLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (mainTab === 'settings' && !storeInfo) {
+      loadStoreInfo();
+    }
+  }, [mainTab]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleTogglePickup = useCallback(async (value: boolean) => {
+    setPickupEnabled(value);
+    setPickupSaving(true);
+    try {
+      const updated = await updateMyPanelStore({ pickupEnabled: value });
+      setStoreInfo(updated);
+      setPickupEnabled(updated.pickupEnabled ?? value);
+    } catch {
+      // başarısız olursa eski değere geri dön
+      setPickupEnabled(!value);
+    } finally {
+      setPickupSaving(false);
+    }
+  }, []);
 
   const openAddProduct = useCallback(() => {
     setEditingProduct(null);
@@ -517,16 +561,16 @@ export default function MarketOwnerDashboardScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
-      {/* ── Ana sekme: Siparişler / Ürünler ── */}
+      {/* ── Ana sekme: Siparişler / Ürünler / Ayarlar ── */}
       <View style={[styles.mainTabBar, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.borderDefault }]}>
-        {(['orders', 'products'] as const).map((tab) => (
+        {(['orders', 'products', 'settings'] as const).map((tab) => (
           <TouchableOpacity
             key={tab}
             style={[styles.mainTab, mainTab === tab && { borderBottomColor: theme.market.main, borderBottomWidth: 2 }]}
             onPress={() => setMainTab(tab)}
           >
             <Text style={[{ ...theme.typography.labelMd }, { color: mainTab === tab ? theme.market.main : theme.colors.textSecondary }]}>
-              {tab === 'orders' ? 'Siparişler' : 'Ürünler'}
+              {tab === 'orders' ? 'Siparişler' : tab === 'products' ? 'Ürünler' : 'Ayarlar'}
             </Text>
           </TouchableOpacity>
         ))}
@@ -715,6 +759,67 @@ export default function MarketOwnerDashboardScreen() {
             )}
           />
         </View>
+      )}
+
+      {mainTab === 'settings' && (
+        <ScrollView
+          contentContainerStyle={{
+            paddingHorizontal: theme.space[4],
+            paddingTop: theme.space[4],
+            paddingBottom: insets.bottom + theme.space[6],
+          }}
+        >
+          {storeLoading ? (
+            <View style={{ paddingTop: theme.space[6] }}>
+              <ActivityIndicator color={theme.market.main} />
+            </View>
+          ) : (
+            <View
+              style={[
+                styles.orderCard,
+                {
+                  backgroundColor: theme.colors.surface,
+                  borderRadius: theme.radius.lg,
+                  borderColor: theme.colors.borderDefault,
+                  ...theme.getElevation(1),
+                },
+              ]}
+            >
+              {/* Gel-Al Hizmeti satırı */}
+              <View
+                style={[
+                  styles.row,
+                  {
+                    paddingHorizontal: theme.space[4],
+                    paddingVertical: theme.space[4],
+                    justifyContent: 'space-between',
+                  },
+                ]}
+              >
+                <View style={{ flex: 1, marginRight: theme.space[3] }}>
+                  <Text style={{ ...theme.typography.labelLg, color: theme.colors.textPrimary }}>
+                    {t('market.pickupService')}
+                  </Text>
+                  <Text style={{ ...theme.typography.bodySm, color: theme.colors.textSecondary, marginTop: 2 }}>
+                    {pickupEnabled
+                      ? 'Müşteriler siparişlerini mağazadan teslim alabilir.'
+                      : 'Gel-al hizmeti şu an kapalı.'}
+                  </Text>
+                </View>
+                {pickupSaving ? (
+                  <ActivityIndicator size="small" color={theme.market.main} />
+                ) : (
+                  <Switch
+                    value={pickupEnabled}
+                    onValueChange={handleTogglePickup}
+                    trackColor={{ false: theme.colors.borderDefault, true: theme.market.main }}
+                    thumbColor={theme.colors.surface}
+                  />
+                )}
+              </View>
+            </View>
+          )}
+        </ScrollView>
       )}
 
       {/* ── Onay modal'ı ── */}

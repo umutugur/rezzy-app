@@ -372,6 +372,7 @@ export type UpdateStorePayload = Partial<Pick<
   | "deliveryFee"
   | "freeDeliveryThreshold"
   | "photos"
+  | "pickupEnabled"
 >>;
 
 export async function updateMyPanelStore(payload: UpdateStorePayload): Promise<MarketStore> {

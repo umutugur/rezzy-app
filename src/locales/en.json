@@ -920,6 +920,7 @@
       "selectAddress": "Please select a delivery address."
     },
     "pickupAvailable": "Pickup",
+    "pickupService": "Pickup service",
     "cat": {
       "all": "All",
       "supermarket": "Supermarket",
