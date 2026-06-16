@@ -907,6 +907,10 @@
       "minChars": "En az 2 karakter girin",
       "empty": "Sonuç bulunamadı",
       "all": "Tümü"
+    },
+    "collections": {
+      "seeAll": "Tümünü gör",
+      "title": "Koleksiyon"
     }
   },
   "taxi": {

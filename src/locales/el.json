@@ -828,6 +828,10 @@
       "minChars": "Enter at least 2 characters",
       "empty": "No results",
       "all": "All"
+    },
+    "collections": {
+      "seeAll": "See all",
+      "title": "Collection"
     }
   },
   "myOrders": {

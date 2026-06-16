@@ -4,6 +4,7 @@ import {
   Animated,
   FlatList,
   Image,
+  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -27,12 +28,17 @@ import { useRegion } from "../../store/useRegion";
 import { EmptyState, Skeleton } from "../../components/ui";
 import {
   getStores,
+  getMarketCollections,
   type MarketStore,
   type MarketStoreCategory,
+  type MarketProduct,
+  type MarketCollectionPreview,
 } from "../../api/market.api";
+import { effectivePrice, discountPercent } from "../../utils/marketPrice";
 import { useMarketCart } from "../../store/useMarketStore";
 import { useDeliveryAddress } from "../../store/useDeliveryAddress";
 import { listMyAddresses, type UserAddress } from "../../api/addresses";
+import { listActiveBanners, type BannerItem } from "../../api/banners";
 import { MarketRoutes } from "../../navigation/marketRoutes";
 
 // ─── Kategori veri ────────────────────────────────────────────────────────────
@@ -344,6 +350,229 @@ function StoreCard({ store, onPress }: { store: MarketStore; onPress: () => void
   );
 }
 
+// ─── Koleksiyon ürün kartı ────────────────────────────────────────────────────
+
+function CollectionProductCard({
+  product,
+  onPress,
+}: {
+  product: MarketProduct;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+  const { language } = useI18n();
+  const region = useRegion((s) => s.region);
+  const eff = effectivePrice(product);
+  const pct = discountPercent(product);
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[cpc.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderDefault }]}
+    >
+      <View style={cpc.thumb}>
+        {product.photos?.[0] ? (
+          <Image
+            source={{ uri: product.photos[0] }}
+            style={{ width: "100%", height: "100%" }}
+            resizeMode="contain"
+          />
+        ) : null}
+      </View>
+      <Text numberOfLines={2} style={[cpc.title, { color: theme.colors.textPrimary }]}>
+        {product.title}
+      </Text>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}>
+        {pct > 0 ? (
+          <>
+            <View style={cpc.badge}>
+              <Text style={cpc.badgeText}>%{pct}</Text>
+            </View>
+            <Text style={[cpc.priceDisc, { color: theme.colors.error }]}>
+              {formatCurrency(eff, region, language)}
+            </Text>
+          </>
+        ) : (
+          <Text style={[cpc.price, { color: theme.colors.textPrimary }]}>
+            {formatCurrency(product.price, region, language)}
+          </Text>
+        )}
+      </View>
+    </Pressable>
+  );
+}
+
+// ─── Koleksiyon Bölümü ────────────────────────────────────────────────────────
+
+function CollectionSection({
+  collection,
+  onSeeAll,
+  onPressProduct,
+}: {
+  collection: MarketCollectionPreview;
+  onSeeAll: () => void;
+  onPressProduct: (product: MarketProduct) => void;
+}) {
+  const theme = useTheme();
+  const { t } = useI18n();
+
+  if (!collection.products || collection.products.length === 0) return null;
+
+  return (
+    <View style={{ marginTop: theme.space[5] }}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 10,
+          paddingHorizontal: theme.space[4],
+        }}
+      >
+        <Text style={[ls.sectionTitle, { color: theme.colors.textPrimary, marginBottom: 0 }]}>
+          {collection.title}
+        </Text>
+        <Pressable onPress={onSeeAll}>
+          <Text style={{ fontSize: 13, fontWeight: "700", color: theme.colors.primary }}>
+            {t("market.collections.seeAll")}
+          </Text>
+        </Pressable>
+      </View>
+      <FlatList
+        data={collection.products}
+        keyExtractor={(p) => p._id}
+        renderItem={({ item }) => (
+          <CollectionProductCard product={item} onPress={() => onPressProduct(item)} />
+        )}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: theme.space[4] }}
+        ItemSeparatorComponent={() => <View style={{ width: 10 }} />}
+      />
+    </View>
+  );
+}
+
+// ─── Banner Carousel ────────────────────────────────────────────────────────────
+
+function MarketBannerCarousel({
+  banners,
+  onPressBanner,
+}: {
+  banners: BannerItem[];
+  onPressBanner: (b: BannerItem) => void;
+}) {
+  const theme = useTheme();
+  const bannerListRef = useRef<FlatList<BannerItem> | null>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const activeIndexRef = useRef(0);
+  const resetTimerRef = useRef<(() => void) | null>(null);
+
+  const bannerW = 320;
+  const bannerSep = 12;
+  const bannerStride = bannerW + bannerSep;
+
+  const scrollToBanner = useCallback((index: number, animated = true) => {
+    const count = banners.length;
+    if (!count) return;
+    const clamped = ((index % count) + count) % count;
+    try {
+      bannerListRef.current?.scrollToIndex({ index: clamped, animated });
+    } catch {}
+  }, [banners.length]);
+
+  useEffect(() => {
+    if (!banners || banners.length <= 1) {
+      setActiveIndex(0);
+      activeIndexRef.current = 0;
+      return;
+    }
+    let timer: any = null;
+    const start = () => {
+      stop();
+      timer = setInterval(() => {
+        const next = (activeIndexRef.current + 1) % banners.length;
+        activeIndexRef.current = next;
+        setActiveIndex(next);
+        scrollToBanner(next, true);
+      }, 5000);
+    };
+    const stop = () => {
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+    };
+    resetTimerRef.current = () => start();
+    start();
+    return () => {
+      stop();
+      resetTimerRef.current = null;
+    };
+  }, [banners, scrollToBanner]);
+
+  if (!banners || banners.length === 0) return null;
+
+  return (
+    <View style={{ marginTop: theme.space[3] }}>
+      <FlatList
+        ref={(r) => {
+          bannerListRef.current = r;
+        }}
+        data={banners}
+        keyExtractor={(i) => String(i._id)}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: theme.space[4] }}
+        ItemSeparatorComponent={() => <View style={{ width: bannerSep }} />}
+        decelerationRate="fast"
+        snapToInterval={bannerStride}
+        snapToAlignment="start"
+        getItemLayout={(_, index) => ({ length: bannerStride, offset: bannerStride * index, index })}
+        onMomentumScrollEnd={(e) => {
+          const x = e.nativeEvent.contentOffset.x;
+          const idx = Math.round(x / bannerStride);
+          const clamped = Math.max(0, Math.min(idx, banners.length - 1));
+          activeIndexRef.current = clamped;
+          setActiveIndex(clamped);
+          resetTimerRef.current?.();
+        }}
+        renderItem={({ item }) => (
+          <Pressable
+            style={[bc.card, { width: bannerW, backgroundColor: theme.colors.surfaceAlt }]}
+            onPress={() => onPressBanner(item)}
+          >
+            <Image source={{ uri: item.imageUrl }} style={bc.img} resizeMode="cover" />
+          </Pressable>
+        )}
+      />
+      {banners.length > 1 && (
+        <View style={bc.dotsRow}>
+          {banners.map((_, i) => {
+            const active = i === activeIndex;
+            return (
+              <Pressable
+                key={`dot-${i}`}
+                onPress={() => {
+                  activeIndexRef.current = i;
+                  setActiveIndex(i);
+                  scrollToBanner(i, true);
+                  resetTimerRef.current?.();
+                }}
+                hitSlop={10}
+                style={[
+                  { width: 7, height: 7, borderRadius: theme.radius.full, backgroundColor: theme.colors.borderStrong },
+                  active && { width: 18, borderRadius: theme.radius.full, backgroundColor: theme.colors.primary },
+                ]}
+              />
+            );
+          })}
+        </View>
+      )}
+    </View>
+  );
+}
+
 // ─── Ekran ───────────────────────────────────────────────────────────────────
 
 export default function MarketHomeScreen() {
@@ -359,6 +588,10 @@ export default function MarketHomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<UICategoryKey>("all");
   const [searchText, setSearchText] = useState("");
+
+  // Banner + koleksiyonlar
+  const [banners, setBanners] = useState<BannerItem[]>([]);
+  const [collections, setCollections] = useState<MarketCollectionPreview[]>([]);
 
   // Adres
   const { selectedAddressId, selectedAddress, setSelectedAddress } = useDeliveryAddress();
@@ -480,6 +713,56 @@ export default function MarketHomeScreen() {
   }, [gpsCoords]);
 
   useEffect(() => { fetchStores(selectedCategory); }, [selectedCategory, fetchStores]);
+
+  // ── Banner + koleksiyon yükleme ─────────────────────────────────────────────
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const items = await listActiveBanners({ placement: "market_home_top", region });
+        if (!alive) return;
+        setBanners(Array.isArray(items) ? items : []);
+      } catch {
+        if (alive) setBanners([]);
+      }
+    })();
+    return () => { alive = false; };
+  }, [region]);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const res = await getMarketCollections(region);
+        if (!alive) return;
+        setCollections(Array.isArray(res?.items) ? res.items : []);
+      } catch {
+        if (alive) setCollections([]);
+      }
+    })();
+    return () => { alive = false; };
+  }, [region]);
+
+  const onPressMarketBanner = useCallback((b: BannerItem) => {
+    if (b.marketStoreId) {
+      navigation.navigate(MarketRoutes.StoreDetail, { storeId: String(b.marketStoreId) });
+      return;
+    }
+    if (b.marketProductId) {
+      navigation.navigate(MarketRoutes.ProductDetail, { productId: String(b.marketProductId) });
+      return;
+    }
+    if (b.marketCollectionId) {
+      navigation.navigate(MarketRoutes.Collection, {
+        collectionId: String(b.marketCollectionId),
+        title: b.title ?? undefined,
+      });
+      return;
+    }
+    if (b.linkUrl) {
+      Linking.openURL(b.linkUrl).catch(() => {});
+    }
+  }, [navigation]);
 
   const filtered = stores.filter((s) =>
     searchText.trim() ? s.name.toLowerCase().includes(searchText.toLowerCase()) : true
@@ -609,20 +892,56 @@ export default function MarketHomeScreen() {
         ListHeaderComponent={
           loading
             ? () => (
-                <View style={{ paddingTop: theme.space[3] }}>
-                  {[1, 2, 3].map((n) => <StoreCardSkeleton key={n} />)}
+                <View>
+                  <MarketBannerCarousel banners={banners} onPressBanner={onPressMarketBanner} />
+                  {collections.map((c) => (
+                    <CollectionSection
+                      key={c._id}
+                      collection={c}
+                      onSeeAll={() =>
+                        navigation.navigate(MarketRoutes.Collection, {
+                          collectionId: c._id,
+                          title: c.title,
+                        })
+                      }
+                      onPressProduct={(p) =>
+                        navigation.navigate(MarketRoutes.ProductDetail, { productId: p._id })
+                      }
+                    />
+                  ))}
+                  <View style={{ paddingTop: theme.space[3] }}>
+                    {[1, 2, 3].map((n) => <StoreCardSkeleton key={n} />)}
+                  </View>
                 </View>
               )
             : () => (
-                <View style={{ paddingTop: theme.space[3] }}>
-                  <Text style={[ls.sectionTitle, { color: theme.colors.textPrimary }]}>
-                    {t("market.stores")}
-                    {filtered.length > 0 && (
-                      <Text style={{ color: theme.colors.textSecondary }}>
-                        {" "}({filtered.length})
-                      </Text>
-                    )}
-                  </Text>
+                <View>
+                  <MarketBannerCarousel banners={banners} onPressBanner={onPressMarketBanner} />
+                  {collections.map((c) => (
+                    <CollectionSection
+                      key={c._id}
+                      collection={c}
+                      onSeeAll={() =>
+                        navigation.navigate(MarketRoutes.Collection, {
+                          collectionId: c._id,
+                          title: c.title,
+                        })
+                      }
+                      onPressProduct={(p) =>
+                        navigation.navigate(MarketRoutes.ProductDetail, { productId: p._id })
+                      }
+                    />
+                  ))}
+                  <View style={{ paddingTop: theme.space[3] }}>
+                    <Text style={[ls.sectionTitle, { color: theme.colors.textPrimary }]}>
+                      {t("market.stores")}
+                      {filtered.length > 0 && (
+                        <Text style={{ color: theme.colors.textSecondary }}>
+                          {" "}({filtered.length})
+                        </Text>
+                      )}
+                    </Text>
+                  </View>
                 </View>
               )
         }
@@ -847,6 +1166,50 @@ const sc = StyleSheet.create({
 
 const ls = StyleSheet.create({
   sectionTitle: { fontSize: 18, fontWeight: "800", letterSpacing: -0.3, marginBottom: 12 },
+});
+
+const cpc = StyleSheet.create({
+  card: {
+    width: 130,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 10,
+  },
+  thumb: {
+    width: "100%",
+    height: 80,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    marginBottom: 6,
+  },
+  title: { fontSize: 12, fontWeight: "600" },
+  price: { fontSize: 13, fontWeight: "800" },
+  priceDisc: { fontSize: 13, fontWeight: "800" },
+  badge: {
+    backgroundColor: "#DC2626",
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+  },
+  badgeText: { fontSize: 10, fontWeight: "700", color: "#fff" },
+});
+
+const bc = StyleSheet.create({
+  card: {
+    borderRadius: 20,
+    overflow: "hidden",
+  },
+  img: { width: "100%", height: 130 },
+  dotsRow: {
+    marginTop: 10,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
 });
 
 const sk = StyleSheet.create({
