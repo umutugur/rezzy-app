@@ -34,8 +34,9 @@ export default function MarketCollectionScreen() {
       else setLoading(true);
       try {
         const res = await getMarketCollection(collectionId, pg);
-        setItems((prev) => (append ? [...prev, ...res.items] : res.items));
-        setTotal(res.total);
+        const list = Array.isArray(res.items) ? res.items : [];
+        setItems((prev) => (append ? [...prev, ...list] : list));
+        setTotal(typeof res.total === "number" ? res.total : list.length);
         setPage(pg);
       } catch {
         // silent

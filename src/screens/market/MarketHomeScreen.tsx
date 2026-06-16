@@ -385,7 +385,7 @@ function CollectionProductCard({
       <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}>
         {pct > 0 ? (
           <>
-            <View style={cpc.badge}>
+            <View style={[cpc.badge, { backgroundColor: theme.colors.error }]}>
               <Text style={cpc.badgeText}>%{pct}</Text>
             </View>
             <Text style={[cpc.priceDisc, { color: theme.colors.error }]}>
