@@ -242,15 +242,20 @@ export default function MarketStoreScreen() {
   const removeItem = useMarketCart((s) => s.removeItem);
   const updateQty = useMarketCart((s) => s.updateQty);
   const setDeliveryType = useMarketCart((s) => s.setDeliveryType);
+  const setPickupOnly = useMarketCart((s) => s.setPickupOnly);
 
-  // Gel-Al modundan gelindiyse sepetin teslimat tipini varsayılan olarak ayarla.
-  // Yalnızca sepet boşken uygula — dolu bir sepetin (bu mağaza ya da başka mağaza)
-  // teslimat tipini sessizce değiştirme; kullanıcı sepet ekranından değiştirebilir.
+  // Sepet bu market için kuruluyorsa (boş ya da zaten bu mağaza), keşif moduna göre
+  // teslimat tipini ve gel-al kilidini ayarla. Dolu/başka mağaza sepetini bozma.
   useEffect(() => {
-    if (initialServiceMode !== "pickup") return;
-    if (cartItems.length > 0) return;
-    setDeliveryType("pickup");
-  }, [initialServiceMode, cartItems.length, setDeliveryType]);
+    if (cartStoreId && cartStoreId !== storeId) return;
+    if (cartItems.length > 0 && cartStoreId !== storeId) return;
+    if (initialServiceMode === "pickup") {
+      setPickupOnly(true);
+      if (cartItems.length === 0) setDeliveryType("pickup");
+    } else if (initialServiceMode === "delivery") {
+      setPickupOnly(false);
+    }
+  }, [initialServiceMode, storeId, cartStoreId, cartItems.length, setPickupOnly, setDeliveryType]);
 
   const cartSubtotal = useMemo(() => computeSubtotal(cartItems), [cartItems]);
   const cartCount = cartItems.reduce((acc, i) => acc + i.qty, 0);
