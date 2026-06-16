@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   FlatList,
   Image,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -22,6 +23,7 @@ import { formatCurrency } from "../../utils/format";
 import { effectivePrice, discountPercent } from "../../utils/marketPrice";
 import { Badge, EmptyState, PriceTag, ReviewSection, Skeleton, StarRating } from "../../components/ui";
 import { getProducts, getStoreDetail, type MarketProduct, type MarketStore } from "../../api/market.api";
+import { listActiveBanners, type BannerItem } from "../../api/banners";
 import {
   computeSubtotal,
   useMarketCart,
@@ -232,6 +234,7 @@ export default function MarketStoreScreen() {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQ, setSearchQ] = useState("");
+  const [storeBanner, setStoreBanner] = useState<BannerItem | null>(null);
 
   const cartItems = useMarketCart((s) => s.items);
   const addItem = useMarketCart((s) => s.addItem);
@@ -304,6 +307,39 @@ export default function MarketStoreScreen() {
     return () => { cancelled = true; };
   }, [storeId]);
 
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const items = await listActiveBanners({ placement: "market_store_top", region });
+        if (!alive) return;
+        const match = items.find((b) => String(b.marketStoreId) === String(storeId));
+        setStoreBanner(match ?? null);
+      } catch {
+        if (alive) setStoreBanner(null);
+      }
+    })();
+    return () => { alive = false; };
+  }, [storeId, region]);
+
+  const onPressStoreBanner = useCallback(() => {
+    if (!storeBanner) return;
+    if (storeBanner.marketProductId) {
+      navigation.navigate(MarketRoutes.ProductDetail, { productId: String(storeBanner.marketProductId) });
+      return;
+    }
+    if (storeBanner.marketCollectionId) {
+      navigation.navigate(MarketRoutes.Collection, {
+        collectionId: String(storeBanner.marketCollectionId),
+        title: storeBanner.title ?? undefined,
+      });
+      return;
+    }
+    if (storeBanner.linkUrl) {
+      Linking.openURL(storeBanner.linkUrl).catch(() => {});
+    }
+  }, [storeBanner, navigation]);
+
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<MarketProduct>) => {
       const qty = qtyForProduct(item._id);
@@ -355,6 +391,26 @@ export default function MarketStoreScreen() {
               <Ionicons name="storefront-outline" size={48} color={theme.market.main} />
             )}
           </View>
+
+          {/* Market içi banner şeridi */}
+          {storeBanner ? (
+            <Pressable
+              onPress={onPressStoreBanner}
+              style={{
+                marginHorizontal: theme.space[4],
+                marginTop: theme.space[3],
+                borderRadius: theme.radius.md,
+                overflow: "hidden",
+                backgroundColor: theme.colors.surfaceAlt,
+              }}
+            >
+              <Image
+                source={{ uri: storeBanner.imageUrl }}
+                style={{ width: "100%", height: 90 }}
+                resizeMode="cover"
+              />
+            </Pressable>
+          ) : null}
 
           {/* Info */}
           <View style={{ paddingHorizontal: theme.space[4], paddingVertical: theme.space[3] }}>
