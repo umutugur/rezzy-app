@@ -12,6 +12,7 @@ import MarketOrderDetailScreen from "../screens/market/MarketOrderDetailScreen";
 import MarketOwnerDashboardScreen from "../screens/market/MarketOwnerDashboardScreen";
 import ProductDetailScreen from "../screens/market/ProductDetailScreen";
 import MarketSearchScreen from "../screens/market/MarketSearchScreen";
+import MarketCollectionScreen from "../screens/market/MarketCollectionScreen";
 
 const Stack = createStackNavigator<MarketStackParams>();
 
@@ -67,6 +68,11 @@ export default function MarketNavigator() {
       <Stack.Screen
         name={MarketRoutes.Search}
         component={MarketSearchScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name={MarketRoutes.Collection}
+        component={MarketCollectionScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>
