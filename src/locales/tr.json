@@ -837,6 +837,19 @@
   "market": {
     "title": "Market",
     "subtitle": "Taze ürünler kapına gelsin",
+    "mode": {
+      "delivery": "Teslimat",
+      "pickup": "Gel-Al"
+    },
+    "pickup": {
+      "locationLabel": "Gel-al konumu",
+      "currentLocation": "Mevcut konum",
+      "pickFromMap": "Haritadan seç",
+      "searchArea": "Bölge ara (örn. Girne)",
+      "areaNotFound": "Bölge bulunamadı",
+      "distanceKm": "{{km}} km",
+      "pickupDisabled": "Bu market gel-al hizmeti vermiyor"
+    },
     "deliveryAddress": "Teslimat Adresi",
     "currentLocation": "Mevcut Konum",
     "selectAddress": "Adres Seç",

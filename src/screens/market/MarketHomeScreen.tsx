@@ -1,6 +1,7 @@
 // src/screens/market/MarketHomeScreen.tsx
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Alert,
   Animated,
   FlatList,
   Image,
@@ -229,6 +230,122 @@ function AddressPicker({
   );
 }
 
+// ─── Gel-Al Konum Seçici Modal ─────────────────────────────────────────────────
+
+interface PickupLocationPickerProps {
+  visible: boolean;
+  onClose: () => void;
+  search: string;
+  onChangeSearch: (text: string) => void;
+  onSearch: () => void;
+  searching: boolean;
+  onUseCurrentLocation: () => void;
+  currentLabel: string | null;
+}
+
+function PickupLocationPicker({
+  visible,
+  onClose,
+  search,
+  onChangeSearch,
+  onSearch,
+  searching,
+  onUseCurrentLocation,
+  currentLabel,
+}: PickupLocationPickerProps) {
+  const insets = useSafeAreaInsets();
+  const { t } = useI18n();
+  const slideAnim = useRef(new Animated.Value(400)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        speed: 18,
+        bounciness: 4,
+      }).start();
+    } else {
+      Animated.timing(slideAnim, {
+        toValue: 400,
+        duration: 220,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [visible]);
+
+  return (
+    <Modal
+      transparent
+      visible={visible}
+      animationType="none"
+      onRequestClose={onClose}
+      statusBarTranslucent
+    >
+      <Pressable style={pm.overlay} onPress={onClose} />
+      <Animated.View
+        style={[
+          pm.sheet,
+          { paddingBottom: insets.bottom + 16 },
+          { transform: [{ translateY: slideAnim }] },
+        ]}
+      >
+        <View style={pm.handle} />
+        <Text style={pm.sheetTitle}>{t("market.pickup.locationLabel")}</Text>
+
+        {/* Mevcut konum */}
+        <TouchableOpacity
+          style={pm.row}
+          onPress={() => { onUseCurrentLocation(); onClose(); }}
+          activeOpacity={0.75}
+        >
+          <View style={pm.iconBox}>
+            <Ionicons name="locate" size={20} color="#15803D" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={pm.rowTitle}>{t("market.pickup.currentLocation")}</Text>
+            {currentLabel ? (
+              <Text style={pm.rowSub} numberOfLines={1}>{currentLabel}</Text>
+            ) : null}
+          </View>
+        </TouchableOpacity>
+
+        {/* Bölge ara */}
+        <Text style={pm.sectionLabel}>{t("market.pickup.pickFromMap")}</Text>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+            backgroundColor: "#F3F4F6",
+            borderRadius: 12,
+            paddingHorizontal: 12,
+            height: 44,
+          }}
+        >
+          <Ionicons name="search-outline" size={18} color="#6B7280" />
+          <TextInput
+            value={search}
+            onChangeText={onChangeSearch}
+            placeholder={t("market.pickup.searchArea")}
+            placeholderTextColor="#9CA3AF"
+            style={{ flex: 1, fontSize: 14, color: "#111827" }}
+            returnKeyType="search"
+            onSubmitEditing={onSearch}
+          />
+          {searching ? (
+            <Ionicons name="hourglass-outline" size={16} color="#9CA3AF" />
+          ) : (
+            <Pressable onPress={onSearch} hitSlop={8}>
+              <Ionicons name="arrow-forward-circle" size={22} color="#15803D" />
+            </Pressable>
+          )}
+        </View>
+      </Animated.View>
+    </Modal>
+  );
+}
+
 // ─── Kategori Resmi (CDN fotoğraf, görsel fallback) ──────────────────────────
 function CatImage({ uri, fallback }: { uri: string; fallback: string }) {
   const [failed, setFailed] = React.useState(false);
@@ -269,7 +386,15 @@ function StoreCardSkeleton() {
 
 // ─── Mağaza Kartı ─────────────────────────────────────────────────────────────
 
-function StoreCard({ store, onPress }: { store: MarketStore; onPress: () => void }) {
+function StoreCard({
+  store,
+  onPress,
+  distanceKm,
+}: {
+  store: MarketStore;
+  onPress: () => void;
+  distanceKm?: number | null;
+}) {
   const theme = useTheme();
   const { t, language } = useI18n();
   const region = useRegion((s) => s.region);
@@ -339,6 +464,14 @@ function StoreCard({ store, onPress }: { store: MarketStore; onPress: () => void
               <Ionicons name="bag-handle-outline" size={12} color={theme.colors.textSecondary} />
               <Text style={[sc.badgeText, { color: theme.colors.textSecondary }]}>{t("market.pickupAvailable")}</Text>
             </View>
+            {distanceKm != null && (
+              <View style={[sc.badge, { borderColor: "#E5E7EB" }]}>
+                <Ionicons name="navigate-outline" size={12} color={theme.colors.textSecondary} />
+                <Text style={[sc.badgeText, { color: theme.colors.textSecondary }]}>
+                  {t("market.pickup.distanceKm", { km: distanceKm.toFixed(1) })}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
       </View>
@@ -601,6 +734,13 @@ export default function MarketHomeScreen() {
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [showPicker, setShowPicker] = useState(false);
 
+  // Hizmet modu: Teslimat / Gel-Al
+  const [serviceMode, setServiceMode] = useState<"delivery" | "pickup">("delivery");
+  const [pickupLocation, setPickupLocation] = useState<{ lat: number; lng: number; label: string } | null>(null);
+  const [pickupSearch, setPickupSearch] = useState("");
+  const [showPickupPicker, setShowPickupPicker] = useState(false);
+  const [pickupSearching, setPickupSearching] = useState(false);
+
   // Sepet
   const cartItems = useMarketCart((s) => s.items);
   const cartTotal = useMarketCart((s) =>
@@ -685,6 +825,58 @@ export default function MarketHomeScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Gel-Al konumu çözümleme ──────────────────────────────────────────────────
+  const resolvePickupFromGps = useCallback(async () => {
+    if (gpsCoords) {
+      setPickupLocation({
+        lat: gpsCoords.lat,
+        lng: gpsCoords.lng,
+        label: t("market.pickup.currentLocation"),
+      });
+      return;
+    }
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") return;
+      const loc = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      const { latitude, longitude } = loc.coords;
+      setGpsCoords({ lat: latitude, lng: longitude });
+      setPickupLocation({
+        lat: latitude,
+        lng: longitude,
+        label: t("market.pickup.currentLocation"),
+      });
+    } catch { /* izin yok veya hata */ }
+  }, [gpsCoords, t]);
+
+  useEffect(() => {
+    if (serviceMode === "pickup" && !pickupLocation) {
+      resolvePickupFromGps();
+    }
+  }, [serviceMode, pickupLocation, resolvePickupFromGps]);
+
+  const handlePickupAreaSearch = useCallback(async () => {
+    const query = pickupSearch.trim();
+    if (!query) return;
+    setPickupSearching(true);
+    try {
+      const results = await Location.geocodeAsync(query);
+      const first = results?.[0];
+      if (first) {
+        setPickupLocation({ lat: first.latitude, lng: first.longitude, label: query });
+        setShowPickupPicker(false);
+      } else {
+        Alert.alert(t("market.pickup.areaNotFound"));
+      }
+    } catch {
+      Alert.alert(t("market.pickup.areaNotFound"));
+    } finally {
+      setPickupSearching(false);
+    }
+  }, [pickupSearch, t]);
+
   // Gösterilen adres etiketi
   const displayTitle = gpsActive
     ? t("market.currentLocation")
@@ -695,24 +887,34 @@ export default function MarketHomeScreen() {
 
   // ── Mağaza yükleme ──────────────────────────────────────────────────────────
   const fetchStores = useCallback(async (catKey: UICategoryKey) => {
+    // Gel-Al modunda konum çözülmeden sorgu yapma
+    if (serviceMode === "pickup" && !pickupLocation) return;
+
     setLoading(true);
     setError(null);
     try {
       const cat = CATEGORIES.find((c) => c.key === catKey);
       const apiCat = cat?.apiKey ?? undefined;
-      // GPS koordinatı varsa yakındaki marketleri mesafeye göre sırala
-      const lat = gpsCoords?.lat ?? undefined;
-      const lng = gpsCoords?.lng ?? undefined;
-      const result = await getStores(lat, lng, undefined, apiCat ?? null);
+      let result;
+      if (serviceMode === "pickup" && pickupLocation) {
+        result = await getStores(pickupLocation.lat, pickupLocation.lng, undefined, apiCat ?? null, true);
+      } else {
+        // GPS koordinatı varsa yakındaki marketleri mesafeye göre sırala
+        const lat = gpsCoords?.lat ?? undefined;
+        const lng = gpsCoords?.lng ?? undefined;
+        result = await getStores(lat, lng, undefined, apiCat ?? null);
+      }
       setStores(result.items);
     } catch {
       setError(t("market.loadError"));
     } finally {
       setLoading(false);
     }
-  }, [gpsCoords]);
+  }, [gpsCoords, serviceMode, pickupLocation]);
 
-  useEffect(() => { fetchStores(selectedCategory); }, [selectedCategory, fetchStores]);
+  useEffect(() => {
+    fetchStores(selectedCategory);
+  }, [selectedCategory, fetchStores]);
 
   // ── Banner + koleksiyon yükleme ─────────────────────────────────────────────
   useEffect(() => {
@@ -769,18 +971,27 @@ export default function MarketHomeScreen() {
   );
 
   const renderItem = useCallback(
-    ({ item }: ListRenderItemInfo<MarketStore>) => (
-      <StoreCard
-        store={item}
-        onPress={() =>
-          navigation.navigate(MarketRoutes.StoreDetail, {
-            storeId: item._id,
-            storeName: item.name,
-          })
-        }
-      />
-    ),
-    [navigation]
+    ({ item }: ListRenderItemInfo<MarketStore>) => {
+      let distanceKm: number | null = null;
+      if (serviceMode === "pickup" && pickupLocation && item.location?.coordinates) {
+        const [lng, lat] = item.location.coordinates;
+        distanceKm = haversineKm(pickupLocation.lat, pickupLocation.lng, lat, lng);
+      }
+      return (
+        <StoreCard
+          store={item}
+          distanceKm={distanceKm}
+          onPress={() =>
+            navigation.navigate(MarketRoutes.StoreDetail, {
+              storeId: item._id,
+              storeName: item.name,
+              initialServiceMode: serviceMode,
+            })
+          }
+        />
+      );
+    },
+    [navigation, serviceMode, pickupLocation]
   );
 
   return (
@@ -793,23 +1004,65 @@ export default function MarketHomeScreen() {
         end={{ x: 1, y: 1 }}
         style={[hdr.gradient, { paddingTop: insets.top + 6 }]}
       >
+        {/* ── Hizmet Modu Seçici ── */}
+        <View style={hdr.modeRow}>
+          {(["delivery", "pickup"] as const).map((mode) => {
+            const active = serviceMode === mode;
+            return (
+              <Pressable
+                key={mode}
+                onPress={() => setServiceMode(mode)}
+                style={[hdr.modeChip, active && hdr.modeChipActive]}
+              >
+                <Ionicons
+                  name={mode === "delivery" ? "bicycle-outline" : "bag-handle-outline"}
+                  size={14}
+                  color={active ? "#15803D" : "white"}
+                />
+                <Text style={[hdr.modeChipText, active && hdr.modeChipTextActive]}>
+                  {t(`market.mode.${mode}`)}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
         {/* ── Adres Çubuğu ── */}
-        <Pressable
-          style={hdr.addressBar}
-          onPress={() => setShowPicker(true)}
-          android_ripple={{ color: "rgba(255,255,255,0.15)" }}
-        >
-          <View style={hdr.addressIconWrap}>
-            <Ionicons name="location" size={16} color="#15803D" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={hdr.addressLabel}>{t("market.deliveryAddress")}</Text>
-            <Text style={hdr.addressValue} numberOfLines={1}>
-              {displaySub.length > 36 ? displaySub.slice(0, 36) + "…" : displaySub}
-            </Text>
-          </View>
-          <Ionicons name="chevron-down" size={18} color="rgba(255,255,255,0.85)" />
-        </Pressable>
+        {serviceMode === "delivery" ? (
+          <Pressable
+            style={hdr.addressBar}
+            onPress={() => setShowPicker(true)}
+            android_ripple={{ color: "rgba(255,255,255,0.15)" }}
+          >
+            <View style={hdr.addressIconWrap}>
+              <Ionicons name="location" size={16} color="#15803D" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={hdr.addressLabel}>{t("market.deliveryAddress")}</Text>
+              <Text style={hdr.addressValue} numberOfLines={1}>
+                {displaySub.length > 36 ? displaySub.slice(0, 36) + "…" : displaySub}
+              </Text>
+            </View>
+            <Ionicons name="chevron-down" size={18} color="rgba(255,255,255,0.85)" />
+          </Pressable>
+        ) : (
+          <Pressable
+            style={hdr.addressBar}
+            onPress={() => setShowPickupPicker(true)}
+            android_ripple={{ color: "rgba(255,255,255,0.15)" }}
+          >
+            <View style={hdr.addressIconWrap}>
+              <Ionicons name="bag-handle" size={16} color="#15803D" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={hdr.addressLabel}>{t("market.pickup.locationLabel")}</Text>
+              <Text style={hdr.addressValue} numberOfLines={1}>
+                {pickupLocation?.label ?? t("market.gettingLocation")}
+              </Text>
+            </View>
+            <Ionicons name="chevron-down" size={18} color="rgba(255,255,255,0.85)" />
+          </Pressable>
+        )}
 
         {/* ── Üst bar ── */}
         <View style={hdr.topBar}>
@@ -1017,6 +1270,18 @@ export default function MarketHomeScreen() {
           params: { backTo: "DeliveryHome" },
         })}
       />
+
+      {/* ── Gel-Al Konum Seçici Modal ─────────────────────────────── */}
+      <PickupLocationPicker
+        visible={showPickupPicker}
+        onClose={() => setShowPickupPicker(false)}
+        search={pickupSearch}
+        onChangeSearch={setPickupSearch}
+        onSearch={handlePickupAreaSearch}
+        searching={pickupSearching}
+        onUseCurrentLocation={resolvePickupFromGps}
+        currentLabel={gpsLabel}
+      />
     </View>
   );
 }
@@ -1025,6 +1290,36 @@ export default function MarketHomeScreen() {
 
 const hdr = StyleSheet.create({
   gradient: { paddingHorizontal: 16, paddingBottom: 20 },
+
+  // Hizmet modu seçici
+  modeRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 10,
+  },
+  modeChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.25)",
+  },
+  modeChipActive: {
+    backgroundColor: "white",
+    borderColor: "white",
+  },
+  modeChipText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "white",
+  },
+  modeChipTextActive: {
+    color: "#15803D",
+  },
 
   // Adres çubuğu
   addressBar: {

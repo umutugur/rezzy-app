@@ -758,6 +758,19 @@
   "market": {
     "title": "Market",
     "subtitle": "Fresh products delivered to your door",
+    "mode": {
+      "delivery": "Delivery",
+      "pickup": "Pickup"
+    },
+    "pickup": {
+      "locationLabel": "Pickup location",
+      "currentLocation": "Current location",
+      "pickFromMap": "Pick from map",
+      "searchArea": "Search area (e.g. Kyrenia)",
+      "areaNotFound": "Area not found",
+      "distanceKm": "{{km}} km",
+      "pickupDisabled": "This store does not offer pickup"
+    },
     "deliveryAddress": "Delivery Address",
     "currentLocation": "Current Location",
     "selectAddress": "Select Address",
