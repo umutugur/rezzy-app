@@ -14,6 +14,10 @@ export type BannerItem = {
 
   targetType: BannerTargetType;
   restaurantId: string;
+
+  marketStoreId?: string | null;
+  marketProductId?: string | null;
+  marketCollectionId?: string | null;
 };
 
 export async function listActiveBanners(input?: {

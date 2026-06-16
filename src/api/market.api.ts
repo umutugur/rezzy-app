@@ -175,6 +175,41 @@ export async function getProducts(
   return res.data as PaginatedResponse<MarketProduct>;
 }
 
+// ─── Koleksiyonlar ───────────────────────────────────────────────────────────
+
+export interface MarketCollectionPreview {
+  _id: string;
+  title: string;
+  kind: string;
+  imageUrl?: string | null;
+  products: MarketProduct[];
+}
+
+/**
+ * Anasayfa koleksiyon önizlemeleri (her biri ürünlerin ilk N'ini içerir).
+ */
+export async function getMarketCollections(
+  region?: string,
+): Promise<{ items: MarketCollectionPreview[] }> {
+  const { data } = await api.get("/market/collections", {
+    params: { region: region || undefined },
+  });
+  return data;
+}
+
+/**
+ * Tek koleksiyonun sayfalanmış ürün listesi.
+ */
+export async function getMarketCollection(
+  id: string,
+  page = 1,
+): Promise<PaginatedResponse<MarketProduct>> {
+  const { data } = await api.get(`/market/collections/${id}`, {
+    params: { page, limit: 20 },
+  });
+  return data as PaginatedResponse<MarketProduct>;
+}
+
 // ─── Global Ürün Arama ───────────────────────────────────────────────────────
 
 export interface MarketSearchResult {
