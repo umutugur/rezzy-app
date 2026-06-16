@@ -227,7 +227,7 @@ export default function MarketStoreScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const route = useRoute<RouteT>();
-  const { storeId } = route.params;
+  const { storeId, initialServiceMode } = route.params;
 
   const [store, setStore] = useState<MarketStore | null>(null);
   const [products, setProducts] = useState<MarketProduct[]>([]);
@@ -237,9 +237,19 @@ export default function MarketStoreScreen() {
   const [storeBanner, setStoreBanner] = useState<BannerItem | null>(null);
 
   const cartItems = useMarketCart((s) => s.items);
+  const cartStoreId = useMarketCart((s) => s.storeId);
   const addItem = useMarketCart((s) => s.addItem);
   const removeItem = useMarketCart((s) => s.removeItem);
   const updateQty = useMarketCart((s) => s.updateQty);
+  const setDeliveryType = useMarketCart((s) => s.setDeliveryType);
+
+  // Gel-Al modundan gelindiyse sepetin teslimat tipini varsayılan olarak ayarla.
+  // Sadece sepet boşsa veya zaten bu mağazaya aitse — başka mağazanın sepetini bozma.
+  useEffect(() => {
+    if (initialServiceMode !== "pickup") return;
+    if (cartStoreId && cartStoreId !== storeId) return;
+    setDeliveryType("pickup");
+  }, [initialServiceMode, storeId, cartStoreId, setDeliveryType]);
 
   const cartSubtotal = useMemo(() => computeSubtotal(cartItems), [cartItems]);
   const cartCount = cartItems.reduce((acc, i) => acc + i.qty, 0);

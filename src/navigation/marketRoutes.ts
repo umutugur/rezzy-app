@@ -15,7 +15,7 @@ export type MarketRouteName = (typeof MarketRoutes)[keyof typeof MarketRoutes];
 
 export type MarketStackParams = {
   [MarketRoutes.Home]:           undefined;
-  [MarketRoutes.StoreDetail]:    { storeId: string; storeName?: string };
+  [MarketRoutes.StoreDetail]:    { storeId: string; storeName?: string; initialServiceMode?: "delivery" | "pickup" };
   [MarketRoutes.ProductDetail]:  { productId: string };
   [MarketRoutes.Cart]:           undefined;
   [MarketRoutes.OrderDetail]:    { orderId: string };
