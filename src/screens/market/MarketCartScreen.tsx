@@ -270,6 +270,7 @@ export default function MarketCartScreen() {
   const items = useMarketCart((s) => s.items);
   const storeId = useMarketCart((s) => s.storeId);
   const deliveryType = useMarketCart((s) => s.deliveryType);
+  const pickupOnly = useMarketCart((s) => s.pickupOnly);
   const selectedAddressId = useMarketCart((s) => s.selectedAddressId);
   const setDeliveryType = useMarketCart((s) => s.setDeliveryType);
   const setSelectedAddressId = useMarketCart((s) => s.setSelectedAddressId);
@@ -312,6 +313,10 @@ export default function MarketCartScreen() {
       .then(setAddresses)
       .catch(() => {});
   }, [storeId]);
+
+  useEffect(() => {
+    if (pickupOnly && deliveryType !== "pickup") setDeliveryType("pickup");
+  }, [pickupOnly, deliveryType, setDeliveryType]);
 
   const handleOrder = useCallback(async () => {
     if (!storeId) return;
@@ -477,16 +482,18 @@ export default function MarketCartScreen() {
               icon="bag-handle-outline"
               onPress={() => setDeliveryType("pickup")}
             />
-            <DeliveryTypeCard
-              type="delivery"
-              selected={deliveryType === "delivery"}
-              title="Eve Teslimat"
-              subtitle={
-                deliveryFee === 0 ? t('market.free') : `+${formatCurrency(store?.deliveryFee ?? 0, region, language, 0)}`
-              }
-              icon="bicycle-outline"
-              onPress={() => setDeliveryType("delivery")}
-            />
+            {!pickupOnly && (
+              <DeliveryTypeCard
+                type="delivery"
+                selected={deliveryType === "delivery"}
+                title="Eve Teslimat"
+                subtitle={
+                  deliveryFee === 0 ? t('market.free') : `+${formatCurrency(store?.deliveryFee ?? 0, region, language, 0)}`
+                }
+                icon="bicycle-outline"
+                onPress={() => setDeliveryType("delivery")}
+              />
+            )}
           </View>
         </View>
 
