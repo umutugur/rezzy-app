@@ -24,6 +24,7 @@ export type MarketStore = {
   minOrderAmount: number;
   deliveryFee: number;
   freeDeliveryThreshold: number | null;
+  pickupEnabled?: boolean;
   isActive: boolean;
   rating: number;
   totalOrders: number;
@@ -130,12 +131,14 @@ export async function getStores(
   lng?: number | null,
   radius?: number,
   category?: MarketStoreCategory | null,
+  pickup?: boolean,
 ): Promise<PaginatedResponse<MarketStore>> {
   const params: Record<string, any> = {};
   if (lat != null) params.lat = lat;
   if (lng != null) params.lng = lng;
   if (radius != null) params.radius = radius;
   if (category) params.category = category;
+  if (pickup) params.pickup = 1;
 
   const res = await api.get("/market/stores", { params });
   return res.data as PaginatedResponse<MarketStore>;
