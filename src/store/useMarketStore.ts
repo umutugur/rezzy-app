@@ -17,6 +17,7 @@ type MarketCartState = {
   items: MarketCartItem[];
   storeId: string | null;
   deliveryType: DeliveryType;
+  pickupOnly: boolean;
   selectedAddressId: string | null;
 
   // Sepet işlemleri
@@ -25,6 +26,7 @@ type MarketCartState = {
   updateQty: (productId: string, qty: number) => void;
   clearCart: () => void;
   setDeliveryType: (type: DeliveryType) => void;
+  setPickupOnly: (v: boolean) => void;
   setSelectedAddressId: (id: string | null) => void;
   setStoreId: (id: string | null) => void;
 };
@@ -56,6 +58,7 @@ export const useMarketCart = create<MarketCartState>((set, get) => ({
   items: [],
   storeId: null,
   deliveryType: "delivery",
+  pickupOnly: false,
   selectedAddressId: null,
 
   addItem(product) {
@@ -108,11 +111,15 @@ export const useMarketCart = create<MarketCartState>((set, get) => ({
   },
 
   clearCart() {
-    set({ items: [], storeId: null, selectedAddressId: null });
+    set({ items: [], storeId: null, selectedAddressId: null, pickupOnly: false });
   },
 
   setDeliveryType(type) {
     set({ deliveryType: type });
+  },
+
+  setPickupOnly(v) {
+    set({ pickupOnly: v });
   },
 
   setSelectedAddressId(id) {
