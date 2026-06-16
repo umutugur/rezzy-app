@@ -244,12 +244,13 @@ export default function MarketStoreScreen() {
   const setDeliveryType = useMarketCart((s) => s.setDeliveryType);
 
   // Gel-Al modundan gelindiyse sepetin teslimat tipini varsayılan olarak ayarla.
-  // Sadece sepet boşsa veya zaten bu mağazaya aitse — başka mağazanın sepetini bozma.
+  // Yalnızca sepet boşken uygula — dolu bir sepetin (bu mağaza ya da başka mağaza)
+  // teslimat tipini sessizce değiştirme; kullanıcı sepet ekranından değiştirebilir.
   useEffect(() => {
     if (initialServiceMode !== "pickup") return;
-    if (cartStoreId && cartStoreId !== storeId) return;
+    if (cartItems.length > 0) return;
     setDeliveryType("pickup");
-  }, [initialServiceMode, storeId, cartStoreId, setDeliveryType]);
+  }, [initialServiceMode, cartItems.length, setDeliveryType]);
 
   const cartSubtotal = useMemo(() => computeSubtotal(cartItems), [cartItems]);
   const cartCount = cartItems.reduce((acc, i) => acc + i.qty, 0);
