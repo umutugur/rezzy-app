@@ -930,7 +930,11 @@
       "storeImage": "Store image (logo/cover)",
       "uploadImage": "Upload image",
       "imageSuggestionTitle": "This product's image already exists",
-      "useThisImage": "Use this"
+      "useThisImage": "Use this",
+      "logo": "Logo",
+      "cover": "Cover",
+      "logoHint": "Square (1:1)",
+      "coverHint": "Wide (16:9)"
     },
     "cat": {
       "all": "All",

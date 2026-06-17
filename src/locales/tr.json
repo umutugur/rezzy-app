@@ -890,7 +890,11 @@
       "storeImage": "Mağaza görseli (logo/kapak)",
       "uploadImage": "Görsel yükle",
       "imageSuggestionTitle": "Bu ürünün görseli sistemde var",
-      "useThisImage": "Bunu kullan"
+      "useThisImage": "Bunu kullan",
+      "logo": "Logo",
+      "cover": "Kapak",
+      "logoHint": "Kare (1:1)",
+      "coverHint": "Geniş (16:9)"
     },
     "cat": {
       "all": "Tümü",

@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as ImagePicker from "expo-image-picker";
 
 import { useTheme } from "../../contexts/ThemeContext";
 import { useI18n } from "../../i18n";
@@ -360,6 +361,8 @@ export default function MarketOwnerDashboardScreen() {
   const [storeLoading, setStoreLoading] = useState(false);
   const [pickupEnabled, setPickupEnabled] = useState(true);
   const [pickupSaving, setPickupSaving] = useState(false);
+  const [logoBusy, setLogoBusy] = useState(false);
+  const [coverBusy, setCoverBusy] = useState(false);
 
   const [allOrders, setAllOrders] = useState<MarketOrder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -465,6 +468,23 @@ export default function MarketOwnerDashboardScreen() {
     } finally {
       setPickupSaving(false);
     }
+  }, []);
+
+  const pickStoreImage = useCallback(async (aspect: [number, number]): Promise<string | null> => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (perm.status !== "granted") return null;
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect,
+      quality: 0.9,
+    });
+    if (res.canceled || !res.assets?.[0]) return null;
+    const a = res.assets[0];
+    const name = a.fileName || a.uri.split("/").pop() || "store.jpg";
+    const type = (a as any).mimeType || "image/jpeg";
+    const { url } = await uploadMarketImage({ uri: a.uri, name, type });
+    return url;
   }, []);
 
   const openAddProduct = useCallback(() => {
@@ -874,7 +894,7 @@ export default function MarketOwnerDashboardScreen() {
               </View>
             </View>
 
-            {/* Mağaza Görseli */}
+            {/* Logo */}
             <View
               style={[
                 styles.orderCard,
@@ -888,9 +908,83 @@ export default function MarketOwnerDashboardScreen() {
                 },
               ]}
             >
-              <Text style={{ ...theme.typography.labelLg, color: theme.colors.textPrimary, marginBottom: theme.space[3] }}>
-                {t('market.panel.storeImage')}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: theme.space[2] }}>
+                <Text style={{ ...theme.typography.labelLg, color: theme.colors.textPrimary, flex: 1 }}>
+                  {t('market.panel.logo')}
+                </Text>
+                <Text style={{ ...theme.typography.caption, color: theme.colors.textSecondary }}>
+                  {t('market.panel.logoHint')}
+                </Text>
+              </View>
+              <View style={{ alignItems: 'center', marginBottom: theme.space[3] }}>
+                {storeInfo?.logo ? (
+                  <Image
+                    source={{ uri: storeInfo.logo }}
+                    style={{ width: 80, height: 80, borderRadius: 40, borderWidth: 1, borderColor: theme.colors.borderDefault }}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: theme.colors.surfaceAlt, borderWidth: 1, borderColor: theme.colors.borderDefault, alignItems: 'center', justifyContent: 'center' }}>
+                    <Ionicons name="storefront-outline" size={32} color={theme.colors.textTertiary} />
+                  </View>
+                )}
+              </View>
+              <TouchableOpacity
+                disabled={logoBusy}
+                onPress={async () => {
+                  setLogoBusy(true);
+                  try {
+                    const url = await pickStoreImage([1, 1]);
+                    if (url) {
+                      const updated = await updateMyPanelStore({ logo: url });
+                      setStoreInfo(updated);
+                    }
+                  } catch {} finally {
+                    setLogoBusy(false);
+                  }
+                }}
+                style={{
+                  backgroundColor: logoBusy ? theme.colors.surfaceAlt : theme.market.main,
+                  borderRadius: theme.radius.xl,
+                  paddingVertical: theme.space[3],
+                  alignItems: 'center',
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                  gap: 6,
+                  opacity: logoBusy ? 0.6 : 1,
+                }}
+              >
+                {logoBusy
+                  ? <ActivityIndicator size="small" color={theme.market.main} />
+                  : <Ionicons name="image-outline" size={16} color={theme.colors.textInverse} />}
+                <Text style={{ ...theme.typography.labelMd, color: logoBusy ? theme.colors.textSecondary : theme.colors.textInverse }}>
+                  Görsel Seç / Değiştir
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Kapak */}
+            <View
+              style={[
+                styles.orderCard,
+                {
+                  backgroundColor: theme.colors.surface,
+                  borderRadius: theme.radius.lg,
+                  borderColor: theme.colors.borderDefault,
+                  marginTop: theme.space[3],
+                  padding: theme.space[4],
+                  ...theme.getElevation(1),
+                },
+              ]}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: theme.space[2] }}>
+                <Text style={{ ...theme.typography.labelLg, color: theme.colors.textPrimary, flex: 1 }}>
+                  {t('market.panel.cover')}
+                </Text>
+                <Text style={{ ...theme.typography.caption, color: theme.colors.textSecondary }}>
+                  {t('market.panel.coverHint')}
+                </Text>
+              </View>
               {storeInfo?.photos?.[0] ? (
                 <Image
                   source={{ uri: storeInfo.photos[0] }}
@@ -898,15 +992,38 @@ export default function MarketOwnerDashboardScreen() {
                   resizeMode="cover"
                 />
               ) : null}
-              <UploadButton
-                onPicked={async (file) => {
+              <TouchableOpacity
+                disabled={coverBusy}
+                onPress={async () => {
+                  setCoverBusy(true);
                   try {
-                    const { url } = await uploadMarketImage(file);
-                    const updated = await updateMyPanelStore({ photos: [url] });
-                    setStoreInfo(updated);
-                  } catch {}
+                    const url = await pickStoreImage([16, 9]);
+                    if (url) {
+                      const updated = await updateMyPanelStore({ photos: [url] });
+                      setStoreInfo(updated);
+                    }
+                  } catch {} finally {
+                    setCoverBusy(false);
+                  }
                 }}
-              />
+                style={{
+                  backgroundColor: coverBusy ? theme.colors.surfaceAlt : theme.market.main,
+                  borderRadius: theme.radius.xl,
+                  paddingVertical: theme.space[3],
+                  alignItems: 'center',
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                  gap: 6,
+                  opacity: coverBusy ? 0.6 : 1,
+                }}
+              >
+                {coverBusy
+                  ? <ActivityIndicator size="small" color={theme.market.main} />
+                  : <Ionicons name="image-outline" size={16} color={theme.colors.textInverse} />}
+                <Text style={{ ...theme.typography.labelMd, color: coverBusy ? theme.colors.textSecondary : theme.colors.textInverse }}>
+                  Görsel Seç / Değiştir
+                </Text>
+              </TouchableOpacity>
             </View>
             </>
           )}
