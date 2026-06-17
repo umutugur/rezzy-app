@@ -399,7 +399,7 @@ function StoreCard({
   const theme = useTheme();
   const { t, language } = useI18n();
   const region = useRegion((s) => s.region);
-  const logoUri = store.photos[0] ?? null;
+  const logoUri = store.logo ?? store.photos?.[0] ?? null;
   const letter = store.name.trim()[0]?.toUpperCase() ?? "M";
   const isFree = store.deliveryFee === 0;
   const hasFreeThreshold =
