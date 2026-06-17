@@ -13,6 +13,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  useWindowDimensions,
   View,
   type ListRenderItemInfo,
 } from "react-native";
@@ -601,8 +602,10 @@ function MarketBannerCarousel({
   const activeIndexRef = useRef(0);
   const resetTimerRef = useRef<(() => void) | null>(null);
 
-  const bannerW = 320;
+  const { width: screenW } = useWindowDimensions();
   const bannerSep = 12;
+  const pad = 16;
+  const bannerW = screenW - pad * 2;
   const bannerStride = bannerW + bannerSep;
 
   const scrollToBanner = useCallback((index: number, animated = true) => {
@@ -656,7 +659,7 @@ function MarketBannerCarousel({
         keyExtractor={(i) => String(i._id)}
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: theme.space[4] }}
+        contentContainerStyle={{ paddingHorizontal: pad }}
         ItemSeparatorComponent={() => <View style={{ width: bannerSep }} />}
         decelerationRate="fast"
         snapToInterval={bannerStride}
@@ -1500,7 +1503,7 @@ const bc = StyleSheet.create({
     borderRadius: 20,
     overflow: "hidden",
   },
-  img: { width: "100%", height: 130 },
+  img: { width: "100%", aspectRatio: 2 },
   dotsRow: {
     marginTop: 10,
     paddingHorizontal: 16,
