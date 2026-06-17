@@ -785,7 +785,10 @@
       "logo": "Logo",
       "cover": "Cover",
       "logoHint": "Square (1:1)",
-      "coverHint": "Wide (16:9)"
+      "coverHint": "Wide (16:9)",
+      "pickImage": "Choose / Change image",
+      "permissionNeeded": "Photo library permission needed",
+      "uploadFailed": "Image upload failed"
     },
     "free": "Free",
     "orders": "orders",

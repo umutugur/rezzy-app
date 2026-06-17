@@ -2,6 +2,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Image,
   Modal,
@@ -472,7 +473,10 @@ export default function MarketOwnerDashboardScreen() {
 
   const pickStoreImage = useCallback(async (aspect: [number, number]): Promise<string | null> => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (perm.status !== "granted") return null;
+    if (perm.status !== "granted") {
+      Alert.alert(t("market.panel.permissionNeeded"));
+      return null;
+    }
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -485,7 +489,7 @@ export default function MarketOwnerDashboardScreen() {
     const type = (a as any).mimeType || "image/jpeg";
     const { url } = await uploadMarketImage({ uri: a.uri, name, type });
     return url;
-  }, []);
+  }, [t]);
 
   const openAddProduct = useCallback(() => {
     setEditingProduct(null);
@@ -939,7 +943,9 @@ export default function MarketOwnerDashboardScreen() {
                       const updated = await updateMyPanelStore({ logo: url });
                       setStoreInfo(updated);
                     }
-                  } catch {} finally {
+                  } catch {
+                    Alert.alert(t("market.panel.uploadFailed"));
+                  } finally {
                     setLogoBusy(false);
                   }
                 }}
@@ -958,7 +964,7 @@ export default function MarketOwnerDashboardScreen() {
                   ? <ActivityIndicator size="small" color={theme.market.main} />
                   : <Ionicons name="image-outline" size={16} color={theme.colors.textInverse} />}
                 <Text style={{ ...theme.typography.labelMd, color: logoBusy ? theme.colors.textSecondary : theme.colors.textInverse }}>
-                  Görsel Seç / Değiştir
+                  {t("market.panel.pickImage")}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -1002,7 +1008,9 @@ export default function MarketOwnerDashboardScreen() {
                       const updated = await updateMyPanelStore({ photos: [url] });
                       setStoreInfo(updated);
                     }
-                  } catch {} finally {
+                  } catch {
+                    Alert.alert(t("market.panel.uploadFailed"));
+                  } finally {
                     setCoverBusy(false);
                   }
                 }}
@@ -1021,7 +1029,7 @@ export default function MarketOwnerDashboardScreen() {
                   ? <ActivityIndicator size="small" color={theme.market.main} />
                   : <Ionicons name="image-outline" size={16} color={theme.colors.textInverse} />}
                 <Text style={{ ...theme.typography.labelMd, color: coverBusy ? theme.colors.textSecondary : theme.colors.textInverse }}>
-                  Görsel Seç / Değiştir
+                  {t("market.panel.pickImage")}
                 </Text>
               </TouchableOpacity>
             </View>

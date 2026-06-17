@@ -894,7 +894,10 @@
       "logo": "Logo",
       "cover": "Kapak",
       "logoHint": "Kare (1:1)",
-      "coverHint": "Geniş (16:9)"
+      "coverHint": "Geniş (16:9)",
+      "pickImage": "Görsel Seç / Değiştir",
+      "permissionNeeded": "Galeri izni gerekli",
+      "uploadFailed": "Görsel yüklenemedi"
     },
     "cat": {
       "all": "Tümü",
