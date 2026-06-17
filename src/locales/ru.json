@@ -772,6 +772,17 @@
     "freeThreshold": "Free over {{amount}}",
     "pickupAvailable": "Pickup",
     "pickupService": "Pickup service",
+    "panel": {
+      "category": "Category",
+      "selectCategory": "Select category",
+      "categoryRequired": "Category is required",
+      "barcode": "Barcode",
+      "productImage": "Product image",
+      "storeImage": "Store image (logo/cover)",
+      "uploadImage": "Upload image",
+      "imageSuggestionTitle": "This product's image already exists",
+      "useThisImage": "Use this"
+    },
     "free": "Free",
     "orders": "orders",
     "priceLabel": "Price *",

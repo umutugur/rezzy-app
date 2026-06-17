@@ -881,6 +881,17 @@
     },
     "pickupAvailable": "Gel-al",
     "pickupService": "Gel-Al Hizmeti",
+    "panel": {
+      "category": "Kategori",
+      "selectCategory": "Kategori seç",
+      "categoryRequired": "Kategori zorunlu",
+      "barcode": "Barkod",
+      "productImage": "Ürün görseli",
+      "storeImage": "Mağaza görseli (logo/kapak)",
+      "uploadImage": "Görsel yükle",
+      "imageSuggestionTitle": "Bu ürünün görseli sistemde var",
+      "useThisImage": "Bunu kullan"
+    },
     "cat": {
       "all": "Tümü",
       "supermarket": "Süpermarket",

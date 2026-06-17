@@ -1,8 +1,9 @@
 // src/screens/market/MarketOwnerDashboardScreen.tsx
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   Modal,
   Pressable,
   RefreshControl,
@@ -32,11 +33,17 @@ import {
   deletePanelProduct,
   getMyPanelStore,
   updateMyPanelStore,
+  getMarketCategories,
+  uploadMarketImage,
+  getProductImageSuggestions,
   type MarketOrder,
   type MarketOrderStatus,
   type MarketStore,
   type PanelProduct,
+  type MarketCategory,
+  type ImageSuggestion,
 } from "../../api/market.api";
+import UploadButton from "../../components/UploadButton";
 
 // ─── Status config ─────────────────────────────────────────────────────────────
 
@@ -373,6 +380,11 @@ export default function MarketOwnerDashboardScreen() {
   const [formNetUnit, setFormNetUnit] = useState<'L' | 'ml' | 'kg' | 'g' | 'piece' | null>(null);
   const [formAttributes, setFormAttributes] = useState<{ label: string; value: string }[]>([]);
   const [formDiscountPrice, setFormDiscountPrice] = useState('');
+  const [formCategory, setFormCategory] = useState<string | null>(null);
+  const [formBarcode, setFormBarcode] = useState('');
+  const [formPhoto, setFormPhoto] = useState<string | null>(null);
+  const [categories, setCategories] = useState<MarketCategory[]>([]);
+  const [suggestions, setSuggestions] = useState<ImageSuggestion[]>([]);
   const [formSaving, setFormSaving] = useState(false);
 
   // Confirm modal + inline error state
@@ -398,6 +410,10 @@ export default function MarketOwnerDashboardScreen() {
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
+
+  useEffect(() => {
+    getMarketCategories().then(r => setCategories(r.items)).catch(() => {});
+  }, []);
 
   const loadProducts = useCallback(async () => {
     setProductsLoading(true);
@@ -462,6 +478,10 @@ export default function MarketOwnerDashboardScreen() {
     setFormNetUnit(null);
     setFormAttributes([]);
     setFormDiscountPrice('');
+    setFormCategory(null);
+    setFormBarcode('');
+    setFormPhoto(null);
+    setSuggestions([]);
     setFormError(null);
     setProductModalVisible(true);
   }, []);
@@ -477,12 +497,21 @@ export default function MarketOwnerDashboardScreen() {
     setFormNetUnit(product.netUnit ?? null);
     setFormAttributes(product.attributes ? product.attributes.map(a => ({ ...a })) : []);
     setFormDiscountPrice(product.discountPrice != null ? String(product.discountPrice) : '');
+    setFormCategory(
+      product.category != null
+        ? (typeof product.category === 'object' ? product.category._id : product.category)
+        : null
+    );
+    setFormBarcode(product.barcode ?? '');
+    setFormPhoto(product.photos?.[0] ?? null);
+    setSuggestions([]);
     setFormError(null);
     setProductModalVisible(true);
   }, []);
 
   const handleSaveProduct = useCallback(async () => {
     if (!formTitle.trim() || !formPrice) return;
+    if (!formCategory) { setFormError(t('market.panel.categoryRequired')); return; }
     setFormError(null);
     setFormSaving(true);
     try {
@@ -499,6 +528,9 @@ export default function MarketOwnerDashboardScreen() {
         netUnit: formNetUnit,
         attributes: formAttributes.filter(a => a.label.trim() && a.value.trim()),
         discountPrice: validDiscount,
+        category: formCategory,
+        barcode: formBarcode.trim() || null,
+        photos: formPhoto ? [formPhoto] : [],
       };
       if (editingProduct) {
         const updated = await updatePanelProduct(editingProduct._id, payload);
@@ -513,7 +545,29 @@ export default function MarketOwnerDashboardScreen() {
     } finally {
       setFormSaving(false);
     }
-  }, [editingProduct, formTitle, formPrice, formStock, formUnit, formBrand, formNetQuantity, formNetUnit, formAttributes, formDiscountPrice]);
+  }, [t, editingProduct, formTitle, formPrice, formStock, formUnit, formBrand, formNetQuantity, formNetUnit, formAttributes, formDiscountPrice, formCategory, formBarcode, formPhoto]);
+
+  // Debounced image suggestions
+  const suggestTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!productModalVisible) return;
+    if (suggestTimerRef.current) clearTimeout(suggestTimerRef.current);
+    const hasInput = formBarcode.trim() || formTitle.trim() || formBrand.trim();
+    if (!hasInput) { setSuggestions([]); return; }
+    suggestTimerRef.current = setTimeout(() => {
+      getProductImageSuggestions({
+        barcode: formBarcode.trim() || undefined,
+        title: formTitle.trim() || undefined,
+        brand: formBrand.trim() || undefined,
+      })
+        .then(r => setSuggestions(r.items))
+        .catch(() => setSuggestions([]));
+    }, 500);
+    return () => {
+      if (suggestTimerRef.current) clearTimeout(suggestTimerRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formBarcode, formTitle, formBrand, productModalVisible]);
 
   const handleDeleteProduct = useCallback((product: PanelProduct) => {
     setConfirmModal({
@@ -880,7 +934,47 @@ export default function MarketOwnerDashboardScreen() {
             </TouchableOpacity>
           </View>
 
+          <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
           <View style={{ gap: theme.space[3] }}>
+            {/* Category selector (required) */}
+            <View>
+              <Text style={{ ...theme.typography.labelSm, color: theme.colors.textSecondary, marginBottom: 4 }}>
+                {t('market.panel.category')} *
+              </Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  {categories.map(cat => {
+                    const selected = formCategory === cat._id;
+                    const i18nMap = cat.i18n as Record<string, { title: string } | undefined> | undefined;
+                    const label = i18nMap?.[language]?.title ?? cat.i18n?.tr?.title ?? cat.key;
+                    return (
+                      <Pressable
+                        key={cat._id}
+                        onPress={() => setFormCategory(cat._id)}
+                        style={{
+                          paddingHorizontal: theme.space[3],
+                          paddingVertical: theme.space[2],
+                          borderRadius: theme.radius.full,
+                          borderWidth: 1,
+                          borderColor: selected ? theme.market.main : theme.colors.borderDefault,
+                          backgroundColor: selected ? theme.market.light : theme.colors.surfaceAlt,
+                        }}
+                      >
+                        <Text style={{ ...theme.typography.labelSm, color: selected ? theme.market.main : theme.colors.textSecondary }}>
+                          {label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </ScrollView>
+              {!formCategory && (
+                <Text style={{ ...theme.typography.caption, color: theme.colors.textTertiary, marginTop: 4 }}>
+                  * {t('market.panel.selectCategory')}
+                </Text>
+              )}
+            </View>
+
             <View>
               <Text style={{ ...theme.typography.labelSm, color: theme.colors.textSecondary, marginBottom: 4 }}>Ürün Adı *</Text>
               <TextInput
@@ -1037,7 +1131,83 @@ export default function MarketOwnerDashboardScreen() {
                 </View>
               ))}
             </View>
+
+            {/* Barcode */}
+            <View>
+              <Text style={{ ...theme.typography.labelSm, color: theme.colors.textSecondary, marginBottom: 4 }}>
+                {t('market.panel.barcode')}
+              </Text>
+              <TextInput
+                value={formBarcode}
+                onChangeText={setFormBarcode}
+                placeholder="ör. 8690000000000"
+                placeholderTextColor={theme.colors.textTertiary}
+                style={{ backgroundColor: theme.colors.surfaceAlt, borderRadius: theme.radius.lg, paddingHorizontal: theme.space[4], paddingVertical: theme.space[3], ...theme.typography.bodyMd, color: theme.colors.textPrimary, borderWidth: 1, borderColor: theme.colors.borderDefault }}
+              />
+            </View>
+
+            {/* Product image */}
+            <View>
+              <Text style={{ ...theme.typography.labelSm, color: theme.colors.textSecondary, marginBottom: 4 }}>
+                {t('market.panel.productImage')}
+              </Text>
+              {formPhoto ? (
+                <View style={{ position: 'relative' }}>
+                  <Image
+                    source={{ uri: formPhoto }}
+                    style={{ width: '100%', height: 140, borderRadius: theme.radius.lg }}
+                    resizeMode="cover"
+                  />
+                  <Pressable
+                    onPress={() => setFormPhoto(null)}
+                    style={{ position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 12, padding: 2 }}
+                  >
+                    <Ionicons name="close" size={16} color="#fff" />
+                  </Pressable>
+                </View>
+              ) : null}
+              <View style={{ marginTop: formPhoto ? 8 : 0 }}>
+                <UploadButton
+                  onPicked={async (file) => {
+                    try {
+                      const { url } = await uploadMarketImage(file);
+                      setFormPhoto(url);
+                    } catch {}
+                  }}
+                />
+              </View>
+            </View>
+
+            {/* Image suggestions */}
+            {suggestions.length > 0 && !formPhoto && (
+              <View>
+                <Text style={{ ...theme.typography.labelSm, color: theme.colors.textSecondary, marginBottom: 8 }}>
+                  {t('market.panel.imageSuggestionTitle')}
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={{ flexDirection: 'row', gap: 10 }}>
+                    {suggestions.map((s, i) => (
+                      <Pressable
+                        key={`sug-${i}`}
+                        onPress={() => setFormPhoto(s.url)}
+                        style={{ alignItems: 'center', gap: 4 }}
+                      >
+                        <Image
+                          source={{ uri: s.url }}
+                          style={{ width: 80, height: 80, borderRadius: theme.radius.md, borderWidth: 1, borderColor: theme.colors.borderDefault }}
+                          resizeMode="cover"
+                        />
+                        <Text style={{ ...theme.typography.caption, color: theme.market.main }}>
+                          {t('market.panel.useThisImage')}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </ScrollView>
+              </View>
+            )}
           </View>
+          </ScrollView>
 
           {formError !== null && (
             <View style={{ backgroundColor: theme.colors.errorSoft, borderRadius: theme.radius.md, paddingHorizontal: theme.space[3], paddingVertical: theme.space[2], flexDirection: 'row', alignItems: 'center', gap: theme.space[2] }}>
@@ -1049,7 +1219,7 @@ export default function MarketOwnerDashboardScreen() {
           <TouchableOpacity
             onPress={handleSaveProduct}
             disabled={!formTitle.trim() || !formPrice || formSaving}
-            style={{ backgroundColor: theme.market.main, borderRadius: theme.radius.xl, paddingVertical: theme.space[4], alignItems: 'center', opacity: (!formTitle.trim() || !formPrice || formSaving) ? 0.5 : 1, marginTop: 'auto' }}
+            style={{ backgroundColor: theme.market.main, borderRadius: theme.radius.xl, paddingVertical: theme.space[4], alignItems: 'center', opacity: (!formTitle.trim() || !formPrice || formSaving) ? 0.5 : 1, marginTop: theme.space[2] }}
           >
             <Text style={{ ...theme.typography.labelLg, color: theme.colors.textInverse }}>
               {formSaving ? 'Kaydediliyor…' : editingProduct ? 'Güncelle' : 'Ekle'}
