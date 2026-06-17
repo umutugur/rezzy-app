@@ -664,7 +664,7 @@ function MarketBannerCarousel({
         decelerationRate="fast"
         snapToInterval={bannerStride}
         snapToAlignment="start"
-        getItemLayout={(_, index) => ({ length: bannerStride, offset: bannerStride * index, index })}
+        getItemLayout={(_, index) => ({ length: bannerW, offset: bannerStride * index, index })}
         onMomentumScrollEnd={(e) => {
           const x = e.nativeEvent.contentOffset.x;
           const idx = Math.round(x / bannerStride);
