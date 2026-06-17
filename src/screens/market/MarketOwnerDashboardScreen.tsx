@@ -828,6 +828,7 @@ export default function MarketOwnerDashboardScreen() {
               <ActivityIndicator color={theme.market.main} />
             </View>
           ) : (
+            <>
             <View
               style={[
                 styles.orderCard,
@@ -872,6 +873,42 @@ export default function MarketOwnerDashboardScreen() {
                 )}
               </View>
             </View>
+
+            {/* Mağaza Görseli */}
+            <View
+              style={[
+                styles.orderCard,
+                {
+                  backgroundColor: theme.colors.surface,
+                  borderRadius: theme.radius.lg,
+                  borderColor: theme.colors.borderDefault,
+                  marginTop: theme.space[3],
+                  padding: theme.space[4],
+                  ...theme.getElevation(1),
+                },
+              ]}
+            >
+              <Text style={{ ...theme.typography.labelLg, color: theme.colors.textPrimary, marginBottom: theme.space[3] }}>
+                {t('market.panel.storeImage')}
+              </Text>
+              {storeInfo?.photos?.[0] ? (
+                <Image
+                  source={{ uri: storeInfo.photos[0] }}
+                  style={{ width: '100%', height: 140, borderRadius: theme.radius.lg, marginBottom: theme.space[3] }}
+                  resizeMode="cover"
+                />
+              ) : null}
+              <UploadButton
+                onPicked={async (file) => {
+                  try {
+                    const { url } = await uploadMarketImage(file);
+                    const updated = await updateMyPanelStore({ photos: [url] });
+                    setStoreInfo(updated);
+                  } catch {}
+                }}
+              />
+            </View>
+            </>
           )}
         </ScrollView>
       )}
