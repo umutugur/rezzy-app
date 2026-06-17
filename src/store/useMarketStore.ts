@@ -111,7 +111,13 @@ export const useMarketCart = create<MarketCartState>((set, get) => ({
   },
 
   clearCart() {
-    set({ items: [], storeId: null, selectedAddressId: null, pickupOnly: false });
+    set({
+      items: [],
+      storeId: null,
+      selectedAddressId: null,
+      pickupOnly: false,
+      deliveryType: "delivery",
+    });
   },
 
   setDeliveryType(type) {
