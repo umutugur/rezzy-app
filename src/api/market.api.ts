@@ -18,6 +18,7 @@ export type MarketStore = {
   location?: { type: "Point"; coordinates: [number, number] };
   address: string;
   city: string;
+  logo?: string | null;
   photos: string[];
   workingHours: { open: string; close: string; days: number[] };
   deliveryZoneKm: number;
@@ -374,6 +375,7 @@ export type UpdateStorePayload = Partial<Pick<
   | "minOrderAmount"
   | "deliveryFee"
   | "freeDeliveryThreshold"
+  | "logo"
   | "photos"
   | "pickupEnabled"
 >>;
