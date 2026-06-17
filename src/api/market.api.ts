@@ -346,6 +346,9 @@ export type CoreCategory = {
   order?: number;
 };
 
+/** Alias used for the /market/categories endpoint (same shape as CoreCategory). */
+export type MarketCategory = CoreCategory;
+
 // ─── Panel Store API ────────────────────────────────────────────────────────────
 
 /**
@@ -407,6 +410,8 @@ export interface PanelProduct {
   netQuantity?: number | null;
   netUnit?: "L" | "ml" | "kg" | "g" | "piece" | null;
   discountPrice?: number | null;
+  /** Populated by backend via .populate({path:"category", select:"key i18n"}) */
+  category?: { _id: string; key?: string; i18n?: CoreCategory['i18n'] } | string | null;
   store: string;
   createdAt: string;
   updatedAt: string;
@@ -421,7 +426,7 @@ export async function getPanelProducts(
 }
 
 export async function createPanelProduct(
-  payload: Pick<PanelProduct, 'title' | 'price' | 'unit' | 'stock'> & Partial<Pick<PanelProduct, 'description' | 'barcode' | 'brand' | 'attributes' | 'netQuantity' | 'netUnit'>> & { discountPrice?: number | null },
+  payload: Pick<PanelProduct, 'title' | 'price' | 'unit' | 'stock'> & Partial<Pick<PanelProduct, 'description' | 'barcode' | 'brand' | 'attributes' | 'netQuantity' | 'netUnit'>> & { discountPrice?: number | null; category?: string; photos?: string[] },
 ): Promise<PanelProduct> {
   const { data } = await api.post('/market/panel/products', payload);
   return data;
@@ -429,7 +434,7 @@ export async function createPanelProduct(
 
 export async function updatePanelProduct(
   id: string,
-  payload: Partial<Pick<PanelProduct, 'title' | 'price' | 'unit' | 'stock' | 'description' | 'isActive' | 'barcode' | 'brand' | 'attributes' | 'netQuantity' | 'netUnit'>> & { discountPrice?: number | null },
+  payload: Partial<Pick<PanelProduct, 'title' | 'price' | 'unit' | 'stock' | 'description' | 'isActive' | 'barcode' | 'brand' | 'attributes' | 'netQuantity' | 'netUnit'>> & { discountPrice?: number | null; category?: string; photos?: string[] },
 ): Promise<PanelProduct> {
   const { data } = await api.patch(`/market/panel/products/${id}`, payload);
   return data;
@@ -437,4 +442,31 @@ export async function updatePanelProduct(
 
 export async function deletePanelProduct(id: string): Promise<void> {
   await api.delete(`/market/panel/products/${id}`);
+}
+
+// ─── Image Suggestions + Upload ─────────────────────────────────────────────────
+
+export interface ImageSuggestion {
+  url: string;
+  source: string;
+  title: string;
+  brand?: string;
+}
+
+export async function getProductImageSuggestions(
+  params: { barcode?: string; title?: string; brand?: string },
+): Promise<{ items: ImageSuggestion[] }> {
+  const { data } = await api.get("/market/panel/product-image-suggestions", { params });
+  return data;
+}
+
+export async function uploadMarketImage(
+  file: { uri: string; name: string; type: string },
+): Promise<{ url: string }> {
+  const form = new FormData();
+  form.append("file", { uri: file.uri, name: file.name, type: file.type } as any);
+  const { data } = await api.post("/market/panel/upload", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
 }
