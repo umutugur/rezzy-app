@@ -38,12 +38,16 @@ import {
   getMarketCategories,
   uploadMarketImage,
   getProductImageSuggestions,
+  getMyOrgProducts,
+  upsertOrgProductOverride,
   type MarketOrder,
   type MarketOrderStatus,
   type MarketStore,
   type PanelProduct,
   type MarketCategory,
   type ImageSuggestion,
+  type BranchOrgProduct,
+  type OrgProductsResponse,
 } from "../../api/market.api";
 import UploadButton from "../../components/UploadButton";
 
@@ -355,7 +359,7 @@ export default function MarketOwnerDashboardScreen() {
   const region = useRegion((s) => s.region);
   const insets = useSafeAreaInsets();
 
-  const [mainTab, setMainTab] = useState<'orders' | 'products' | 'settings'>('orders');
+  const [mainTab, setMainTab] = useState<'orders' | 'products' | 'chain' | 'settings'>('orders');
 
   // Store ayarları (Gel-Al hizmeti vb.)
   const [storeInfo, setStoreInfo] = useState<MarketStore | null>(null);
@@ -391,6 +395,16 @@ export default function MarketOwnerDashboardScreen() {
   const [suggestions, setSuggestions] = useState<ImageSuggestion[]>([]);
   const [formSaving, setFormSaving] = useState(false);
 
+  // Chain (Org) products state
+  const [orgProductsData, setOrgProductsData] = useState<OrgProductsResponse | null>(null);
+  const [orgProductsLoading, setOrgProductsLoading] = useState(false);
+  const [orgProductsRefreshing, setOrgProductsRefreshing] = useState(false);
+  // Per-row pending inputs: orgProductId → { price, discountPrice }
+  const [orgPriceInputs, setOrgPriceInputs] = useState<Record<string, { price: string; discountPrice: string }>>({});
+  // Saving state per row
+  const [orgSaving, setOrgSaving] = useState<Record<string, boolean>>({});
+  const [orgError, setOrgError] = useState<string | null>(null);
+
   // Confirm modal + inline error state
   const [confirmModal, setConfirmModal] = useState<ConfirmModalState | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -417,7 +431,9 @@ export default function MarketOwnerDashboardScreen() {
 
   useEffect(() => {
     getMarketCategories().then(r => setCategories(r.items)).catch(() => {});
-  }, []);
+    // Eagerly probe chain membership so the tab bar can show/hide "Zincir" on load
+    loadOrgProducts();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadProducts = useCallback(async () => {
     setProductsLoading(true);
@@ -455,6 +471,76 @@ export default function MarketOwnerDashboardScreen() {
       loadStoreInfo();
     }
   }, [mainTab]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const loadOrgProducts = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setOrgProductsRefreshing(true);
+    else setOrgProductsLoading(true);
+    setOrgError(null);
+    try {
+      const result = await getMyOrgProducts();
+      setOrgProductsData(result);
+    } catch {
+      setOrgError('Zincir ürünleri yüklenemedi.');
+    } finally {
+      setOrgProductsLoading(false);
+      setOrgProductsRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    // orgProductsData is already loaded on mount; only refetch if somehow null when switching to the tab
+    if (mainTab === 'chain' && orgProductsData === null && !orgProductsLoading) {
+      loadOrgProducts();
+    }
+  }, [mainTab]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleOrgOverrideSave = useCallback(async (item: BranchOrgProduct, patch: {
+    price?: number | null;
+    discountPrice?: number | null;
+    isAvailable?: boolean | null;
+    hidden?: boolean;
+  }) => {
+    setOrgSaving(prev => ({ ...prev, [item.orgProductId]: true }));
+    setOrgError(null);
+    try {
+      const cur = item.override ?? { price: null, discountPrice: null, isAvailable: null, hidden: false };
+      const body = {
+        price: cur.price,
+        discountPrice: cur.discountPrice,
+        isAvailable: cur.isAvailable,
+        hidden: cur.hidden,
+        ...patch,
+      };
+      await upsertOrgProductOverride(item.orgProductId, body);
+      // Refetch to reflect effective values
+      const result = await getMyOrgProducts();
+      setOrgProductsData(result);
+    } catch {
+      setOrgError('Override kaydedilemedi.');
+    } finally {
+      setOrgSaving(prev => ({ ...prev, [item.orgProductId]: false }));
+    }
+  }, []);
+
+  const handleOrgOverrideReset = useCallback(async (item: BranchOrgProduct) => {
+    setOrgSaving(prev => ({ ...prev, [item.orgProductId]: true }));
+    setOrgError(null);
+    try {
+      await upsertOrgProductOverride(item.orgProductId, {});
+      const result = await getMyOrgProducts();
+      setOrgProductsData(result);
+      // Clear local price inputs for this row
+      setOrgPriceInputs(prev => {
+        const next = { ...prev };
+        delete next[item.orgProductId];
+        return next;
+      });
+    } catch {
+      setOrgError('Override sıfırlanamadı.');
+    } finally {
+      setOrgSaving(prev => ({ ...prev, [item.orgProductId]: false }));
+    }
+  }, []);
 
   const handleTogglePickup = useCallback(async (value: boolean) => {
     setPickupEnabled(value);
@@ -639,20 +725,33 @@ export default function MarketOwnerDashboardScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
-      {/* ── Ana sekme: Siparişler / Ürünler / Ayarlar ── */}
-      <View style={[styles.mainTabBar, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.borderDefault }]}>
-        {(['orders', 'products', 'settings'] as const).map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            style={[styles.mainTab, mainTab === tab && { borderBottomColor: theme.market.main, borderBottomWidth: 2 }]}
-            onPress={() => setMainTab(tab)}
-          >
-            <Text style={[{ ...theme.typography.labelMd }, { color: mainTab === tab ? theme.market.main : theme.colors.textSecondary }]}>
-              {tab === 'orders' ? 'Siparişler' : tab === 'products' ? 'Ürünler' : 'Ayarlar'}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      {/* ── Ana sekme: Siparişler / Ürünler / [Zincir] / Ayarlar ── */}
+      {(() => {
+        const isChainStore = orgProductsData !== null
+          ? orgProductsData.organization !== null
+          : false;
+        const tabs: { key: 'orders' | 'products' | 'chain' | 'settings'; label: string }[] = [
+          { key: 'orders', label: 'Siparişler' },
+          { key: 'products', label: 'Ürünler' },
+          ...(isChainStore ? [{ key: 'chain' as const, label: 'Zincir' }] : []),
+          { key: 'settings', label: 'Ayarlar' },
+        ];
+        return (
+          <View style={[styles.mainTabBar, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.borderDefault }]}>
+            {tabs.map((tab) => (
+              <TouchableOpacity
+                key={tab.key}
+                style={[styles.mainTab, mainTab === tab.key && { borderBottomColor: theme.market.main, borderBottomWidth: 2 }]}
+                onPress={() => setMainTab(tab.key)}
+              >
+                <Text style={[{ ...theme.typography.labelMd }, { color: mainTab === tab.key ? theme.market.main : theme.colors.textSecondary }]}>
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        );
+      })()}
 
       {mainTab === 'orders' && (
         <>
@@ -835,6 +934,189 @@ export default function MarketOwnerDashboardScreen() {
                 </View>
               </View>
             )}
+          />
+        </View>
+      )}
+
+      {mainTab === 'chain' && (
+        <View style={{ flex: 1 }}>
+          {/* Header row */}
+          <View style={{ paddingHorizontal: theme.space[4], paddingVertical: theme.space[3], flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View>
+              <Text style={{ ...theme.typography.labelLg, color: theme.colors.textPrimary }}>
+                Zincir Ürünleri
+              </Text>
+              {orgProductsData?.organization && (
+                <Text style={{ ...theme.typography.caption, color: theme.colors.textSecondary, marginTop: 2 }}>
+                  {orgProductsData.organization.name}
+                </Text>
+              )}
+            </View>
+            <TouchableOpacity
+              onPress={() => loadOrgProducts(true)}
+              style={{ padding: theme.space[2] }}
+            >
+              <Ionicons name="refresh-outline" size={18} color={theme.market.main} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Inline error */}
+          {orgError !== null && (
+            <Pressable
+              onPress={() => setOrgError(null)}
+              style={{ backgroundColor: theme.colors.errorSoft, paddingHorizontal: theme.space[4], paddingVertical: theme.space[2], flexDirection: 'row', alignItems: 'center', gap: theme.space[2] }}
+            >
+              <Ionicons name="alert-circle-outline" size={16} color={theme.colors.error} />
+              <Text style={{ ...theme.typography.bodySm, color: theme.colors.error, flex: 1 }}>{orgError}</Text>
+              <Ionicons name="close" size={14} color={theme.colors.error} />
+            </Pressable>
+          )}
+
+          <FlatList
+            data={orgProductsLoading ? [] : (orgProductsData?.items ?? [])}
+            keyExtractor={(item) => item.orgProductId}
+            contentContainerStyle={{ paddingHorizontal: theme.space[4], paddingBottom: insets.bottom + theme.space[6] }}
+            refreshControl={
+              <RefreshControl
+                refreshing={orgProductsRefreshing}
+                onRefresh={() => loadOrgProducts(true)}
+                tintColor={theme.market.main}
+                colors={[theme.market.main]}
+              />
+            }
+            ListHeaderComponent={orgProductsLoading ? (
+              <View>{[1, 2, 3].map((n) => <OrderCardSkeleton key={n} />)}</View>
+            ) : null}
+            ListEmptyComponent={!orgProductsLoading ? (
+              <EmptyState illustration="market" title="Zincir ürünü yok" subtitle="Bu mağazaya atanmış zincir ürünü bulunamadı." />
+            ) : null}
+            renderItem={({ item }) => {
+              const saving = orgSaving[item.orgProductId] ?? false;
+              const inputs = orgPriceInputs[item.orgProductId];
+              const priceVal = inputs?.price ?? (item.override?.price != null ? String(item.override.price) : '');
+              const discountVal = inputs?.discountPrice ?? (item.override?.discountPrice != null ? String(item.override.discountPrice) : '');
+              const isAvail = item.override?.isAvailable ?? item.isAvailable;
+              const isHidden = item.override?.hidden ?? false;
+              const hasOverride = item.override !== null;
+
+              return (
+                <View style={[styles.orderCard, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.lg, borderColor: theme.colors.borderDefault, marginBottom: theme.space[3], ...theme.getElevation(1) }]}>
+                  {/* Header */}
+                  <View style={[styles.cardHeader, { paddingHorizontal: theme.space[4], paddingVertical: theme.space[3], borderBottomColor: theme.colors.borderDefault }]}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ ...theme.typography.labelLg, color: theme.colors.textPrimary }} numberOfLines={1}>
+                        {item.title}
+                      </Text>
+                      <Text style={{ ...theme.typography.caption, color: theme.colors.textSecondary, marginTop: 2 }}>
+                        {item.unit}{item.barcode ? ` • ${item.barcode}` : ''}
+                      </Text>
+                    </View>
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Text style={{ ...theme.typography.headingSm, color: theme.market.main }}>
+                        {formatCurrency(item.price, region, language)}
+                      </Text>
+                      {hasOverride && (
+                        <Badge variant="info" label="Override" size="sm" />
+                      )}
+                    </View>
+                  </View>
+
+                  {/* Override inputs */}
+                  <View style={{ paddingHorizontal: theme.space[4], paddingVertical: theme.space[3], gap: theme.space[3] }}>
+                    {/* Price inputs row */}
+                    <View style={{ flexDirection: 'row', gap: theme.space[3] }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ ...theme.typography.labelSm, color: theme.colors.textSecondary, marginBottom: 4 }}>Şube Fiyatı</Text>
+                        <TextInput
+                          value={priceVal}
+                          onChangeText={(text) => setOrgPriceInputs(prev => ({
+                            ...prev,
+                            [item.orgProductId]: { ...prev[item.orgProductId] ?? { price: '', discountPrice: '' }, price: text },
+                          }))}
+                          placeholder={String(item.price)}
+                          placeholderTextColor={theme.colors.textTertiary}
+                          keyboardType="decimal-pad"
+                          editable={!saving}
+                          style={{ backgroundColor: theme.colors.surfaceAlt, borderRadius: theme.radius.lg, paddingHorizontal: theme.space[3], paddingVertical: theme.space[2], ...theme.typography.bodyMd, color: theme.colors.textPrimary, borderWidth: 1, borderColor: theme.colors.borderDefault }}
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ ...theme.typography.labelSm, color: theme.colors.textSecondary, marginBottom: 4 }}>İndirimli</Text>
+                        <TextInput
+                          value={discountVal}
+                          onChangeText={(text) => setOrgPriceInputs(prev => ({
+                            ...prev,
+                            [item.orgProductId]: { ...prev[item.orgProductId] ?? { price: '', discountPrice: '' }, discountPrice: text },
+                          }))}
+                          placeholder="–"
+                          placeholderTextColor={theme.colors.textTertiary}
+                          keyboardType="decimal-pad"
+                          editable={!saving}
+                          style={{ backgroundColor: theme.colors.surfaceAlt, borderRadius: theme.radius.lg, paddingHorizontal: theme.space[3], paddingVertical: theme.space[2], ...theme.typography.bodyMd, color: theme.colors.textPrimary, borderWidth: 1, borderColor: theme.colors.borderDefault }}
+                        />
+                      </View>
+                    </View>
+
+                    {/* Toggles row */}
+                    <View style={{ flexDirection: 'row', gap: theme.space[4], alignItems: 'center' }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space[2], flex: 1 }}>
+                        <Switch
+                          value={isAvail ?? true}
+                          onValueChange={(val) => handleOrgOverrideSave(item, { isAvailable: val })}
+                          trackColor={{ false: theme.colors.borderDefault, true: theme.market.main }}
+                          thumbColor={theme.colors.surface}
+                          disabled={saving}
+                        />
+                        <Text style={{ ...theme.typography.bodySm, color: theme.colors.textSecondary }}>Stokta Var</Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.space[2], flex: 1 }}>
+                        <Switch
+                          value={isHidden}
+                          onValueChange={(val) => handleOrgOverrideSave(item, { hidden: val })}
+                          trackColor={{ false: theme.colors.borderDefault, true: theme.colors.error }}
+                          thumbColor={theme.colors.surface}
+                          disabled={saving}
+                        />
+                        <Text style={{ ...theme.typography.bodySm, color: theme.colors.textSecondary }}>Gizle</Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Action buttons */}
+                  <View style={[styles.cardFooter, { paddingHorizontal: theme.space[4], paddingVertical: theme.space[3], borderTopColor: theme.colors.borderDefault }]}>
+                    {saving ? (
+                      <ActivityIndicator color={theme.market.main} style={{ alignSelf: 'center' }} />
+                    ) : (
+                      <View style={[styles.row, { gap: theme.space[2] }]}>
+                        {hasOverride && (
+                          <Pressable
+                            onPress={() => handleOrgOverrideReset(item)}
+                            style={[styles.actionBtn, { borderColor: theme.colors.borderDefault, backgroundColor: theme.colors.surfaceAlt, borderRadius: theme.radius.md, paddingHorizontal: theme.space[3], paddingVertical: theme.space[2] }]}
+                          >
+                            <Ionicons name="refresh-outline" size={14} color={theme.colors.textSecondary} />
+                            <Text style={{ ...theme.typography.labelSm, color: theme.colors.textSecondary, marginLeft: 4 }}>Sıfırla</Text>
+                          </Pressable>
+                        )}
+                        <Pressable
+                          onPress={() => {
+                            const parsedPrice = priceVal.trim() !== '' ? Number(priceVal) : null;
+                            const parsedDiscount = discountVal.trim() !== '' ? Number(discountVal) : null;
+                            handleOrgOverrideSave(item, {
+                              price: parsedPrice,
+                              discountPrice: parsedDiscount,
+                            });
+                          }}
+                          style={[styles.actionBtn, { backgroundColor: theme.market.main, borderColor: theme.market.main, borderRadius: theme.radius.md, flex: 1, paddingHorizontal: theme.space[3], paddingVertical: theme.space[2] }]}
+                        >
+                          <Ionicons name="checkmark-outline" size={14} color={theme.colors.textInverse} />
+                          <Text style={{ ...theme.typography.labelSm, color: theme.colors.textInverse, marginLeft: 4 }}>Kaydet</Text>
+                        </Pressable>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              );
+            }}
           />
         </View>
       )}

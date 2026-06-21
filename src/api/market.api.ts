@@ -446,6 +446,67 @@ export async function deletePanelProduct(id: string): Promise<void> {
   await api.delete(`/market/panel/products/${id}`);
 }
 
+// ─── Zincir (Org) Ürünleri ───────────────────────────────────────────────────────
+
+export interface BranchOrgProductOverride {
+  price: number | null;
+  discountPrice: number | null;
+  isAvailable: boolean | null;
+  hidden: boolean;
+}
+
+export interface BranchOrgProduct {
+  /** Same as orgProductId */
+  _id: string;
+  orgProductId: string;
+  title: string;
+  barcode?: string | null;
+  unit: string;
+  /** Effective price (override.price ?? base price) */
+  price: number;
+  discountPrice?: number | null;
+  isAvailable: boolean;
+  imageUrl?: string | null;
+  category?: string | null;
+  override: BranchOrgProductOverride | null;
+}
+
+export interface OrgProductsResponse {
+  items: BranchOrgProduct[];
+  /** null if the store is not part of a chain */
+  organization: { _id: string; name: string } | null;
+}
+
+/**
+ * Market sahibinin zincir ürünlerini çeker.
+ * organization === null ise şube zincire dahil değildir.
+ */
+export async function getMyOrgProducts(q?: string): Promise<OrgProductsResponse> {
+  const params: Record<string, any> = {};
+  if (q && q.trim().length >= 2) params.q = q.trim();
+  const { data } = await api.get('/market/panel/org-products', { params });
+  return data as OrgProductsResponse;
+}
+
+export type OrgProductOverridePayload = {
+  price?: number | null;
+  discountPrice?: number | null;
+  isAvailable?: boolean | null;
+  hidden?: boolean;
+};
+
+/**
+ * Zincir ürününe şube override'ı uygula / güncelle.
+ * Boş {} body gönderilirse override sıfırlanır.
+ */
+export async function upsertOrgProductOverride(
+  orgProductId: string,
+  body: OrgProductOverridePayload,
+): Promise<{ ok: boolean }> {
+  const { data } = await api.put(`/market/panel/org-products/${orgProductId}/override`, body);
+  return data as { ok: boolean };
+}
+
 // ─── Image Suggestions + Upload ─────────────────────────────────────────────────
 
 export interface ImageSuggestion {
