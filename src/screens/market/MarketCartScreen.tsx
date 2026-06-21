@@ -22,7 +22,7 @@ import { useI18n } from "../../i18n";
 import { useRegion } from "../../store/useRegion";
 import { formatCurrency } from "../../utils/format";
 import { Badge, Button, EmptyState, PriceTag } from "../../components/ui";
-import { createOrder, getStoreDetail, type MarketStore, type PaymentMethod } from "../../api/market.api";
+import { createOrder, getStoreDetail, type MarketStore, type OrderLinePayload, type PaymentMethod } from "../../api/market.api";
 import { listMyAddresses, type UserAddress } from "../../api/addresses";
 import {
   computeDeliveryFee,
@@ -333,7 +333,16 @@ export default function MarketCartScreen() {
     try {
       const result = await createOrder({
         storeId,
-        items: items.map((i) => ({ productId: i.product._id, qty: i.qty })),
+        items: items.map((i): OrderLinePayload => {
+          if (i.product.source === "org") {
+            return {
+              source: "org",
+              orgProductId: i.product.orgProductId ?? i.product._id,
+              qty: i.qty,
+            };
+          }
+          return { productId: i.product._id, qty: i.qty };
+        }),
         type: deliveryType,
         deliveryAddressId:
           deliveryType === "delivery" ? selectedAddressId : null,

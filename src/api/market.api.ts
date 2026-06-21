@@ -62,6 +62,14 @@ export type MarketProduct = {
   lowest30?: number;
   createdAt: string;
   updatedAt: string;
+  /** Chain-catalog fields — present only for org (chain) products. */
+  source?: "product" | "org";
+  /** Org product id — same as _id for org lines; undefined for local products. */
+  orgProductId?: string;
+  /** Org product availability override. False means the branch marked it unavailable. */
+  isAvailable?: boolean;
+  /** Org product image URL (may differ from photos[]). */
+  imageUrl?: string | null;
 };
 
 export type MarketOrderStatus =
@@ -112,9 +120,14 @@ export type PaginatedResponse<T> = {
   limit: number;
 };
 
+/** A single line in a create-order request. */
+export type OrderLinePayload =
+  | { productId: string; qty: number; source?: "product" }
+  | { source: "org"; orgProductId: string; qty: number };
+
 export type CreateOrderPayload = {
   storeId: string;
-  items: { productId: string; qty: number }[];
+  items: OrderLinePayload[];
   type: "pickup" | "delivery";
   deliveryAddressId?: string | null;
   note?: string;

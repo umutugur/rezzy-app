@@ -53,8 +53,12 @@ function ProductRow({
   language: string;
 }) {
   const theme = useTheme();
-  const photoUri = product.photos[0] ?? null;
-  const outOfStock = product.stock === 0;
+  // For org (chain-catalog) items use isAvailable; for local items fall back to stock count.
+  const photoUri = (product.source === "org" ? product.imageUrl : product.photos[0]) ?? product.photos[0] ?? null;
+  const outOfStock =
+    product.source === "org"
+      ? product.isAvailable === false
+      : product.stock === 0;
   const pct = discountPercent(product);
   const eff = effectivePrice(product);
 
