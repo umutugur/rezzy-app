@@ -178,6 +178,8 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
             const driverId = typeof r.driver === 'object' && r.driver !== null
               ? String((r.driver as any)._id ?? (r.driver as any).user?._id ?? '')
               : String(r.driver ?? '');
+            const driverInfoObj = r.driver;
+            const driverUserObj = driverInfoObj?.user ?? driverInfoObj;
             navigation.navigate('TaxiReceipt' as any, {
               rideId: r._id,
               fare: r.fare,
@@ -187,6 +189,8 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
               dropoffAddress: r.dropoff?.address ?? '',
               paymentMethod: r.paymentMethod ?? 'cash',
               driverId,
+              driverName: (driverUserObj as any)?.name ?? '',
+              driverPhotoUrl: driverInfoObj?.photoUrl ?? (driverUserObj as any)?.photoUrl ?? '',
             });
           }
           return prev;
@@ -300,6 +304,7 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
   const driverRating: number = driver?.rating ?? 5.0;
   const driverPlate: string = driver?.vehiclePlate ?? '';
   const driverVehicle: string = driver?.vehicleModel ?? '';
+  const driverPhotoUrl: string = driver?.photoUrl ?? (driverUser as any)?.photoUrl ?? '';
 
   const pickupCoords = ride
     ? {
@@ -389,7 +394,13 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
       <View style={[s.card, { paddingBottom: insets.bottom + 16 }]}>
         {/* Driver info row */}
         <View style={s.driverRow}>
-          <Avatar name={driverName} size="lg56" ring ringColor={theme.driver.main} />
+          <Avatar
+            name={driverName}
+            source={driverPhotoUrl || undefined}
+            size="lg56"
+            ring
+            ringColor={theme.driver.main}
+          />
           <View style={s.driverInfo}>
             <Text style={s.driverName}>{driverName}</Text>
             <StarRating rating={driverRating} size="sm" readonly />

@@ -27,7 +27,8 @@ export interface TaxiDriverInfo {
   vehicleColor: string;
   rating: number;
   ratingCount: number;
-  user?: { _id: string; name: string; phone?: string };
+  photoUrl?: string;
+  user?: { _id: string; name: string; phone?: string; photoUrl?: string };
 }
 
 export interface TaxiRide {

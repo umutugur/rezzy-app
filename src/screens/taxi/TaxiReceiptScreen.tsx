@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRoute, useNavigation, type RouteProp } from '@react-navigation/native';
@@ -40,6 +41,8 @@ export type TaxiReceiptParams = {
   dropoffAddress: string;
   paymentMethod: string;
   driverId: string;
+  driverName?: string;
+  driverPhotoUrl?: string;
 };
 
 export default function TaxiReceiptScreen() {
@@ -49,7 +52,7 @@ export default function TaxiReceiptScreen() {
   const { t, language } = useI18n();
   const region = useRegion((s) => s.region);
   const route = useRoute<RouteProp<{ TaxiReceipt: TaxiReceiptParams }, 'TaxiReceipt'>>();
-  const { rideId, fare, distanceKm, durationMin, pickupAddress, dropoffAddress, paymentMethod, driverId } = route.params;
+  const { rideId, fare, distanceKm, durationMin, pickupAddress, dropoffAddress, paymentMethod, driverId, driverName, driverPhotoUrl } = route.params;
 
   const [rating, setRating] = useState(5);
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
@@ -137,6 +140,20 @@ export default function TaxiReceiptScreen() {
         {/* ── Rating ── */}
         {!ratingSubmitted ? (
           <View style={s.ratingCard}>
+            {/* Driver avatar */}
+            {driverPhotoUrl ? (
+              <Image
+                source={{ uri: driverPhotoUrl }}
+                style={s.driverAvatar}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={s.driverAvatarFallback}>
+                <Text style={s.driverAvatarInitial}>
+                  {driverName ? driverName.trim().charAt(0).toUpperCase() : '?'}
+                </Text>
+              </View>
+            )}
             <Text style={s.ratingTitle}>{t('taxi.receipt.rateDriver')}</Text>
             <Text style={s.ratingSubtitle}>{t('taxi.receipt.howWasRide')}</Text>
             <StarRating value={rating} onChange={setRating} size={36} />
@@ -219,6 +236,23 @@ function makeStyles(theme: ReturnType<typeof useTheme>, insets: ReturnType<typeo
       alignItems: 'center',
       gap: theme.space[3],
       ...theme.getElevation(1),
+    },
+    driverAvatar: {
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+    },
+    driverAvatarFallback: {
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      backgroundColor: theme.taxi.main + '30',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    driverAvatarInitial: {
+      ...theme.typography.headingLg,
+      color: theme.taxi.main,
     },
     ratingTitle: { ...theme.typography.headingMd, color: theme.colors.textPrimary },
     ratingSubtitle: { ...theme.typography.bodyMd, color: theme.colors.textSecondary },
