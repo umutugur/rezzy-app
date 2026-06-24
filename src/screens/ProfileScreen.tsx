@@ -1234,56 +1234,6 @@ export default function ProfileScreen() {
         </PremiumSection>
       )}
 
-      {/* ── İŞ ORTAĞI OL ────────────────────────────────────────────────── */}
-      <PremiumSection title={t("partner.profileSection") || "İş Ortağı"}>
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => navigation.navigate("PartnerHub")}
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 12,
-            paddingHorizontal: 16,
-            paddingVertical: 14,
-            backgroundColor: theme.colors.surface,
-          }}
-        >
-          <View style={{
-            width: 38, height: 38, borderRadius: 10,
-            backgroundColor: theme.colors.errorSoft,
-            alignItems: "center", justifyContent: "center",
-          }}>
-            <Car size={20} color={theme.colors.primary} strokeWidth={2} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 15, fontWeight: "700", color: theme.colors.textPrimary }}>
-              {t("partner.profileRow") || "İş Ortağı Ol"}
-            </Text>
-            <Text style={{ fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 }}>
-              {t("partner.profileRowSub") || "Sürücü, market veya restoran olarak başvur"}
-            </Text>
-          </View>
-          {(() => {
-            if (!driverAppLoaded) return <Ionicons name="chevron-forward" size={16} color={theme.colors.borderStrong} />;
-            const status = driverApp?.status ?? null;
-            if (!status) return <Ionicons name="chevron-forward" size={16} color={theme.colors.borderStrong} />;
-            const meta: Record<string, { bg: string; fg: string; key: string }> = {
-              draft: { bg: theme.colors.surfaceAlt, fg: theme.colors.textSecondary, key: "partner.badge.draft" },
-              pending: { bg: theme.colors.warningSoft, fg: theme.colors.warning, key: "partner.badge.pending" },
-              approved: { bg: theme.colors.successSoft, fg: theme.colors.success, key: "partner.badge.approved" },
-              rejected: { bg: theme.colors.errorSoft, fg: theme.colors.error, key: "partner.badge.rejected" },
-            };
-            const m = meta[status];
-            if (!m) return <Ionicons name="chevron-forward" size={16} color={theme.colors.borderStrong} />;
-            return (
-              <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: m.bg }}>
-                <Text style={{ fontSize: 12, fontWeight: "700", color: m.fg }}>{t(m.key)}</Text>
-              </View>
-            );
-          })()}
-        </TouchableOpacity>
-      </PremiumSection>
-
       {/* Yasal & Destek */}
       <PremiumSection title={t("profile.section.legalSupport")}>
         <ListRow icon="file-document-outline"  label={t("profile.legal.terms")}         onPress={goTerms} />
@@ -1294,6 +1244,85 @@ export default function ProfileScreen() {
         <ListRow icon="certificate-outline"    label={t("profile.legal.licenses")}      onPress={goLicenses} />
         <ListRow icon="information-outline"    label={t("profile.legal.about")}         onPress={goAbout} />
         <ListRow icon="trash-can-outline"      label={t("profile.legal.deleteAccount")} onPress={goDelete} destructive isLast />
+      </PremiumSection>
+
+      {/* ── İŞ ORTAĞI OL (yasal & destek sonrası, parlatılmış CTA) ─────────── */}
+      <PremiumSection title={t("partner.profileSection") || "İş Ortağı"}>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => navigation.navigate("PartnerHub")}
+          style={{
+            marginHorizontal: 12,
+            marginTop: 2,
+            marginBottom: 6,
+            borderRadius: 16,
+            overflow: "hidden",
+            backgroundColor: theme.colors.errorSoft,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 14,
+            paddingHorizontal: 16,
+            paddingVertical: 16,
+          }}
+        >
+          <View
+            style={{
+              width: 46,
+              height: 46,
+              borderRadius: 14,
+              backgroundColor: theme.colors.primary,
+              alignItems: "center",
+              justifyContent: "center",
+              shadowColor: theme.colors.primary,
+              shadowOpacity: 0.35,
+              shadowRadius: 8,
+              shadowOffset: { width: 0, height: 3 },
+              elevation: 3,
+            }}
+          >
+            <Ionicons name="briefcase" size={22} color={theme.colors.textInverse} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 15.5, fontWeight: "800", color: theme.colors.textPrimary, letterSpacing: 0.2 }}>
+              {t("partner.profileRow") || "İş Ortağı Ol"}
+            </Text>
+            <Text style={{ fontSize: 12, color: theme.colors.textSecondary, marginTop: 3, lineHeight: 16 }}>
+              {t("partner.profileRowSub") || "Sürücü, market veya restoran olarak Rezvix'te kazan"}
+            </Text>
+          </View>
+          {(() => {
+            const Arrow = (
+              <View
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: 15,
+                  backgroundColor: theme.colors.primary,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Ionicons name="chevron-forward" size={16} color={theme.colors.textInverse} />
+              </View>
+            );
+            if (!driverAppLoaded) return Arrow;
+            const status = driverApp?.status ?? null;
+            if (!status) return Arrow;
+            const meta: Record<string, { bg: string; fg: string; key: string }> = {
+              draft: { bg: theme.colors.surfaceAlt, fg: theme.colors.textSecondary, key: "partner.badge.draft" },
+              pending: { bg: theme.colors.warningSoft, fg: theme.colors.warning, key: "partner.badge.pending" },
+              approved: { bg: theme.colors.successSoft, fg: theme.colors.success, key: "partner.badge.approved" },
+              rejected: { bg: theme.colors.errorSoft, fg: theme.colors.error, key: "partner.badge.rejected" },
+            };
+            const m = meta[status];
+            if (!m) return Arrow;
+            return (
+              <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: m.bg }}>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: m.fg }}>{t(m.key)}</Text>
+              </View>
+            );
+          })()}
+        </TouchableOpacity>
       </PremiumSection>
 
       {/* QR Kamera Modalı */}
