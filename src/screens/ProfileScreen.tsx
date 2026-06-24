@@ -35,6 +35,7 @@ import { getMe, patchMe, uploadAvatarRN, changePassword } from "../api/user";
 import { checkinByQR, checkinManual } from "../api/restaurantTools";
 import { useNavigation } from "@react-navigation/native";
 import { listFavorites, removeFavorite, type FavoriteRestaurant } from "../api/favorites";
+import { getMyDriverApplication, type DriverApplication } from "../api/driverApplication.api";
 import { useRegion } from "../store/useRegion";
 import { useI18n } from "../i18n";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -93,6 +94,10 @@ export default function ProfileScreen() {
 
   const [favs, setFavs] = useState<FavoriteRestaurant[]>([]);
   const [favBusyId, setFavBusyId] = useState<string | null>(null);
+
+  // Sürücü başvurusu durumu (rozet için)
+  const [driverApp, setDriverApp] = useState<DriverApplication | null>(null);
+  const [driverAppLoaded, setDriverAppLoaded] = useState(false);
 
   // şifre alanları
   const [curPw, setCurPw] = useState("");
@@ -205,6 +210,13 @@ export default function ProfileScreen() {
           setFavs(fl || []);
         }
       } catch {}
+      try {
+        const app = await getMyDriverApplication();
+        setDriverApp(app);
+      } catch {}
+      finally {
+        setDriverAppLoaded(true);
+      }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1221,6 +1233,55 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </PremiumSection>
       )}
+
+      {/* ── SÜRÜCÜ BAŞVURUSU ────────────────────────────────────────────── */}
+      <PremiumSection title={t("driverApplication.profileSection") || "Sürücü Başvurusu"}>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => navigation.navigate("DriverApplication")}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 12,
+            paddingHorizontal: 16,
+            paddingVertical: 14,
+            backgroundColor: theme.colors.surface,
+          }}
+        >
+          <View style={{
+            width: 38, height: 38, borderRadius: 10,
+            backgroundColor: theme.driver.light,
+            alignItems: "center", justifyContent: "center",
+          }}>
+            <Car size={20} color={theme.driver.main} strokeWidth={2} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 15, fontWeight: "700", color: theme.colors.textPrimary }}>
+              {t("driverApplication.profileRow") || "Sürücü Başvurusu"}
+            </Text>
+            <Text style={{ fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 }}>
+              {t("driverApplication.profileRowSub") || "Sürücü olmak için başvur"}
+            </Text>
+          </View>
+          {(() => {
+            const status = driverApp?.status ?? (driverAppLoaded ? "none" : null);
+            if (!status) return <Ionicons name="chevron-forward" size={16} color={theme.colors.borderStrong} />;
+            const meta: Record<string, { bg: string; fg: string; key: string }> = {
+              none: { bg: theme.colors.surfaceAlt, fg: theme.colors.textSecondary, key: "driverApplication.badge.none" },
+              draft: { bg: theme.colors.surfaceAlt, fg: theme.colors.textSecondary, key: "driverApplication.badge.draft" },
+              pending: { bg: theme.colors.warningSoft, fg: theme.colors.warning, key: "driverApplication.badge.pending" },
+              approved: { bg: theme.colors.successSoft, fg: theme.colors.success, key: "driverApplication.badge.approved" },
+              rejected: { bg: theme.colors.errorSoft, fg: theme.colors.error, key: "driverApplication.badge.rejected" },
+            };
+            const m = meta[status] || meta.none;
+            return (
+              <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: m.bg }}>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: m.fg }}>{t(m.key)}</Text>
+              </View>
+            );
+          })()}
+        </TouchableOpacity>
+      </PremiumSection>
 
       {/* Yasal & Destek */}
       <PremiumSection title={t("profile.section.legalSupport")}>

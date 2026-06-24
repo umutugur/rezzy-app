@@ -57,6 +57,7 @@ import MarketNavigator from "../navigation/MarketNavigator";
 import TaxiNavigator from "../navigation/TaxiNavigator";
 import DriverNavigator from "../navigation/DriverNavigator";
 import DriverRegistrationScreen from "../screens/driver/DriverRegistrationScreen";
+import DriverApplicationScreen from "../screens/driver/DriverApplicationScreen";
 
 import { useAuth } from "../store/useAuth";
 import { useRegion } from "../store/useRegion";
@@ -389,6 +390,11 @@ export default function RootNavigator() {
             <RootStack.Screen
               name="DriverRegistration"
               component={DriverRegistrationScreen}
+              options={{ title: 'Sürücü Başvurusu', headerShown: true }}
+            />
+            <RootStack.Screen
+              name="DriverApplication"
+              component={DriverApplicationScreen}
               options={{ title: 'Sürücü Başvurusu', headerShown: true }}
             />
           </>

@@ -698,62 +698,74 @@
       "title": "Rezvix Taxi",
       "whereTo": "Where to?",
       "vehicleType": "Vehicle type",
-      "ride": { "label": "Ride",   "sub": "1-4 passengers" },
-      "xl":   { "label": "XL",     "sub": "1-6 passengers" },
-      "lux":  { "label": "Luxury", "sub": "Premium" },
-      "pet":  { "label": "Pet",    "sub": "Pet friendly" }
+      "ride": {
+        "label": "Ride",
+        "sub": "1-4 passengers"
+      },
+      "xl": {
+        "label": "XL",
+        "sub": "1-6 passengers"
+      },
+      "lux": {
+        "label": "Luxury",
+        "sub": "Premium"
+      },
+      "pet": {
+        "label": "Pet",
+        "sub": "Pet friendly"
+      }
     },
     "matched": {
-      "onTheWay":            "On the way",
-      "searching":           "Searching",
-      "pickup":              "Pickup",
+      "onTheWay": "On the way",
+      "searching": "Searching",
+      "pickup": "Pickup",
       "freeCancelCountdown": "Free cancel: {{seconds}}s",
-      "freeCancelExpired":   "Free cancel window closed",
-      "cancelFree":          "Cancel (Free)",
-      "cancel":              "Cancel",
-      "thanks":              "✓ Thank you!",
-      "rideCompleted":       "Ride completed",
-      "rateDriver":          "Rate your driver",
-      "submitRating":        "Submit Rating",
-      "skip":                "Skip"
+      "freeCancelExpired": "Free cancel window closed",
+      "cancelFree": "Cancel (Free)",
+      "cancel": "Cancel",
+      "thanks": "✓ Thank you!",
+      "rideCompleted": "Ride completed",
+      "rateDriver": "Rate your driver",
+      "submitRating": "Submit Rating",
+      "skip": "Skip"
     },
     "receipt": {
-      "title":           "Ride Completed",
-      "paidWith":        "Paid with {{method}}",
-      "distance":        "Distance",
-      "duration":        "Duration",
-      "payment":         "Payment",
-      "pickup":          "Pickup",
-      "dropoff":         "Dropoff",
-      "rateDriver":      "Rate your driver",
-      "howWasRide":      "How was your ride?",
-      "submitting":      "Submitting…",
-      "submitRating":    "Submit Rating",
-      "ratingError":     "Could not submit rating.",
-      "skip":            "Skip",
-      "thanks":          "Thanks!",
+      "title": "Ride Completed",
+      "paidWith": "Paid with {{method}}",
+      "distance": "Distance",
+      "duration": "Duration",
+      "payment": "Payment",
+      "pickup": "Pickup",
+      "dropoff": "Dropoff",
+      "rateDriver": "Rate your driver",
+      "howWasRide": "How was your ride?",
+      "submitting": "Submitting…",
+      "submitRating": "Submit Rating",
+      "ratingError": "Could not submit rating.",
+      "skip": "Skip",
+      "thanks": "Thanks!",
       "ratingSubmitted": "Your rating has been submitted.",
-      "backToHome":      "Back to Home",
-      "cash":            "Cash",
-      "card":            "Card",
-      "online":          "Online"
+      "backToHome": "Back to Home",
+      "cash": "Cash",
+      "card": "Card",
+      "online": "Online"
     }
   },
   "homeLanding": {
-    "serviceReservation":    "Reservation",
+    "serviceReservation": "Reservation",
     "serviceReservationSub": "Book a table",
-    "serviceDelivery":       "Delivery",
-    "serviceDeliverySub":    "Delivered to your door",
-    "serviceMarket":         "Market",
-    "serviceMarketSub":      "Fresh products",
-    "serviceQR":             "QR Menu",
-    "serviceQRSub":          "Scan at your table",
-    "serviceTaxi":           "Taxi",
-    "serviceTaxiSub":        "Fast and safe transport",
-    "exploreTitle":          "Explore Venues",
-    "exploreSub":            "Bar • Café • Restaurant",
-    "featuredTitle":         "Featured Venues",
-    "seeAll":                "See all"
+    "serviceDelivery": "Delivery",
+    "serviceDeliverySub": "Delivered to your door",
+    "serviceMarket": "Market",
+    "serviceMarketSub": "Fresh products",
+    "serviceQR": "QR Menu",
+    "serviceQRSub": "Scan at your table",
+    "serviceTaxi": "Taxi",
+    "serviceTaxiSub": "Fast and safe transport",
+    "exploreTitle": "Explore Venues",
+    "exploreSub": "Bar • Café • Restaurant",
+    "featuredTitle": "Featured Venues",
+    "seeAll": "See all"
   },
   "market": {
     "title": "Market",
@@ -874,7 +886,11 @@
     "loadError": "Failed to load orders",
     "retry": "Try Again",
     "unknownStore": "Restaurant",
-    "filter": { "all": "All", "delivery": "Delivery", "market": "Market" },
+    "filter": {
+      "all": "All",
+      "delivery": "Delivery",
+      "market": "Market"
+    },
     "status": {
       "preparing": "Preparing",
       "onTheWay": "On the way",
@@ -882,7 +898,10 @@
       "cancelled": "Cancelled",
       "ready": "Ready"
     },
-    "action": { "detail": "Details", "repeat": "Reorder" },
+    "action": {
+      "detail": "Details",
+      "repeat": "Reorder"
+    },
     "empty": {
       "title": "No orders yet",
       "all": "Your delivery and market orders will appear here.",
@@ -904,24 +923,100 @@
     "confirm": "OK"
   },
   "driver": {
-    "newRequest":    "New Passenger Request",
-    "pickup":        "Pickup",
-    "dropoff":       "Dropoff",
-    "accept":        "ACCEPT",
-    "reject":        "REJECT",
-    "acceptError":   "Could not accept ride.",
-    "rideActive":    "Ride in Progress",
-    "rideMatched":   "Passenger Matched",
-    "todayRides":    "Rides",
-    "startError":    "Could not start ride.",
+    "newRequest": "New Passenger Request",
+    "pickup": "Pickup",
+    "dropoff": "Dropoff",
+    "accept": "ACCEPT",
+    "reject": "REJECT",
+    "acceptError": "Could not accept ride.",
+    "rideActive": "Ride in Progress",
+    "rideMatched": "Passenger Matched",
+    "todayRides": "Rides",
+    "startError": "Could not start ride.",
     "completeError": "Could not complete ride.",
-    "completed":     "Completed",
-    "cancelled":     "Cancelled",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
     "bgPermTitle": "Background Location Required",
     "bgPermBody": "To receive ride calls while the app is closed, we need access to your location at all times.",
     "bgPermBodySettings": "Please set location access to \"Allow all the time\" in your phone Settings.",
     "bgPermAllow": "Allow",
     "bgPermOpenSettings": "Open Settings",
     "bgPermLater": "Not Now"
+  },
+  "driverApplication": {
+    "profileSection": "Αίτηση Οδηγού",
+    "profileRow": "Αίτηση Οδηγού",
+    "profileRowSub": "Κάντε αίτηση για να γίνετε οδηγός",
+    "title": "Αίτηση Οδηγού",
+    "subtitle": "Ολοκληρώστε την αίτησή σας ανεβάζοντας όχημα, selfie και τα απαιτούμενα έγγραφα.",
+    "loading": "Φόρτωση αίτησης…",
+    "retry": "Δοκιμάστε ξανά",
+    "submit": "Υποβολή Αίτησης",
+    "resubmit": "Επανυποβολή",
+    "submitting": "Υποβολή…",
+    "footerNote": "Η αίτησή σας εξετάζεται εντός 1-2 εργάσιμων ημερών.",
+    "submittedAt": "Υποβλήθηκε: %{date}",
+    "section": {
+      "vehicle": "Στοιχεία Οχήματος",
+      "selfie": "Selfie",
+      "documents": "Έγγραφα"
+    },
+    "field": {
+      "vehicleType": "Τύπος Οχήματος",
+      "plate": "Πινακίδα *",
+      "brand": "Μάρκα *",
+      "model": "Μοντέλο *",
+      "color": "Χρώμα *"
+    },
+    "vehicleType": {
+      "sedan": "Sedan",
+      "van": "Van / XL",
+      "luxury": "Πολυτελές",
+      "pet": "Φιλικό σε Κατοικίδια"
+    },
+    "selfie": {
+      "cta": "Ανέβασμα Selfie",
+      "hint": "Αυτή η φωτογραφία εμφανίζεται στους επιβάτες. Το πρόσωπο πρέπει να φαίνεται καθαρά."
+    },
+    "documents": {
+      "upload": "Ανέβασμα Εγγράφου",
+      "number": "Αριθμός Εγγράφου",
+      "expiry": "Ημ. Λήξης",
+      "empty": "Δεν υπάρχουν απαιτήσεις εγγράφων για αυτήν την περιοχή."
+    },
+    "docStatus": {
+      "pending": "Σε εξέταση",
+      "verified": "Επιβεβαιωμένο",
+      "rejected": "Απορρίφθηκε"
+    },
+    "hint": {
+      "vehicle": "Συμπληρώστε όλα τα στοιχεία του οχήματος.",
+      "selfie": "Ανεβάστε ένα selfie.",
+      "documents": "Ανεβάστε τα απαιτούμενα έγγραφα."
+    },
+    "error": {
+      "load": "Αδυναμία φόρτωσης αίτησης.",
+      "upload": "Η μεταφόρτωση απέτυχε.",
+      "submit": "Αδυναμία υποβολής αίτησης."
+    },
+    "pending": {
+      "title": "Η Αίτηση Εξετάζεται",
+      "body": "Η αίτησή σας ελήφθη. Θα σας ειδοποιήσουμε μόλις εγκριθεί."
+    },
+    "approved": {
+      "title": "Η Αίτηση Εγκρίθηκε!",
+      "body": "Μπορείτε πλέον να δέχεστε διαδρομές ως οδηγός."
+    },
+    "rejected": {
+      "title": "Η Αίτηση Απορρίφθηκε",
+      "body": "Διορθώστε τα απορριφθέντα έγγραφα και υποβάλετε ξανά."
+    },
+    "badge": {
+      "none": "Καμία",
+      "draft": "Πρόχειρο",
+      "pending": "Σε εξέταση",
+      "approved": "Εγκρίθηκε",
+      "rejected": "Απορρίφθηκε"
+    }
   }
 }

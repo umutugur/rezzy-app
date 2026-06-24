@@ -873,8 +873,8 @@
     "orders": "sipariş",
     "priceLabel": "Fiyat *",
     "cart": {
-      "placeAndPay":   "Öde ve Siparişi Ver",
-      "placeOrder":    "Siparişi Ver",
+      "placeAndPay": "Öde ve Siparişi Ver",
+      "placeOrder": "Siparişi Ver",
       "minOrderError": "Bu markette minimum sipariş tutarı {{amount}}.",
       "minOrderLabel": "Min sipariş {{min}} — {{remaining}} daha ekleyin",
       "selectAddress": "Lütfen bir teslimat adresi seçin."
@@ -950,45 +950,57 @@
       "title": "Rezvix Taksi",
       "whereTo": "Nereye?",
       "vehicleType": "Araç tipi",
-      "ride": { "label": "Ride", "sub": "1-4 kişi" },
-      "xl":   { "label": "XL",   "sub": "1-6 kişi" },
-      "lux":  { "label": "Lüks", "sub": "Premium" },
-      "pet":  { "label": "Pet",  "sub": "Evcil dost" }
+      "ride": {
+        "label": "Ride",
+        "sub": "1-4 kişi"
+      },
+      "xl": {
+        "label": "XL",
+        "sub": "1-6 kişi"
+      },
+      "lux": {
+        "label": "Lüks",
+        "sub": "Premium"
+      },
+      "pet": {
+        "label": "Pet",
+        "sub": "Evcil dost"
+      }
     },
     "matched": {
-      "onTheWay":            "Yolda",
-      "searching":           "Aranıyor",
-      "pickup":              "Kalkış",
+      "onTheWay": "Yolda",
+      "searching": "Aranıyor",
+      "pickup": "Kalkış",
       "freeCancelCountdown": "Ücretsiz iptal: {{seconds}}s",
-      "freeCancelExpired":   "Ücretsiz iptal süresi doldu",
-      "cancelFree":          "İptal Et (Ücretsiz)",
-      "cancel":              "İptal Et",
-      "thanks":              "✓ Teşekkürler!",
-      "rideCompleted":       "Yolculuğunuz tamamlandı",
-      "rateDriver":          "Sürücünüzü değerlendirin",
-      "submitRating":        "Puanı Gönder",
-      "skip":                "Atla"
+      "freeCancelExpired": "Ücretsiz iptal süresi doldu",
+      "cancelFree": "İptal Et (Ücretsiz)",
+      "cancel": "İptal Et",
+      "thanks": "✓ Teşekkürler!",
+      "rideCompleted": "Yolculuğunuz tamamlandı",
+      "rateDriver": "Sürücünüzü değerlendirin",
+      "submitRating": "Puanı Gönder",
+      "skip": "Atla"
     },
     "receipt": {
-      "title":           "Yolculuk Tamamlandı",
-      "paidWith":        "{{method}} ile ödendi",
-      "distance":        "Mesafe",
-      "duration":        "Süre",
-      "payment":         "Ödeme",
-      "pickup":          "Kalkış",
-      "dropoff":         "Varış",
-      "rateDriver":      "Sürücüyü Değerlendir",
-      "howWasRide":      "Yolculuğunuz nasıldı?",
-      "submitting":      "Gönderiliyor…",
-      "submitRating":    "Puanı Gönder",
-      "ratingError":     "Puanlama gönderilemedi.",
-      "skip":            "Geç",
-      "thanks":          "Teşekkürler!",
+      "title": "Yolculuk Tamamlandı",
+      "paidWith": "{{method}} ile ödendi",
+      "distance": "Mesafe",
+      "duration": "Süre",
+      "payment": "Ödeme",
+      "pickup": "Kalkış",
+      "dropoff": "Varış",
+      "rateDriver": "Sürücüyü Değerlendir",
+      "howWasRide": "Yolculuğunuz nasıldı?",
+      "submitting": "Gönderiliyor…",
+      "submitRating": "Puanı Gönder",
+      "ratingError": "Puanlama gönderilemedi.",
+      "skip": "Geç",
+      "thanks": "Teşekkürler!",
       "ratingSubmitted": "Puanınız gönderildi.",
-      "backToHome":      "Ana Sayfaya Dön",
-      "cash":            "Nakit",
-      "card":            "Kart",
-      "online":          "Online"
+      "backToHome": "Ana Sayfaya Dön",
+      "cash": "Nakit",
+      "card": "Kart",
+      "online": "Online"
     },
     "history": {
       "title": "Geçmiş Yolculuklar",
@@ -1022,24 +1034,100 @@
     }
   },
   "driver": {
-    "newRequest":    "Yeni Yolcu Talebi",
-    "pickup":        "Kalkış",
-    "dropoff":       "Varış",
-    "accept":        "KABUL ET",
-    "reject":        "REDDET",
-    "acceptError":   "Kabul edilemedi.",
-    "rideActive":    "Yolculuk Sürüyor",
-    "rideMatched":   "Yolcu Eşleşildi",
-    "todayRides":    "Yolculuk",
-    "startError":    "Yolculuk başlatılamadı.",
+    "newRequest": "Yeni Yolcu Talebi",
+    "pickup": "Kalkış",
+    "dropoff": "Varış",
+    "accept": "KABUL ET",
+    "reject": "REDDET",
+    "acceptError": "Kabul edilemedi.",
+    "rideActive": "Yolculuk Sürüyor",
+    "rideMatched": "Yolcu Eşleşildi",
+    "todayRides": "Yolculuk",
+    "startError": "Yolculuk başlatılamadı.",
     "completeError": "Yolculuk tamamlanamadı.",
-    "completed":     "Tamamlandı",
-    "cancelled":     "İptal",
+    "completed": "Tamamlandı",
+    "cancelled": "İptal",
     "bgPermTitle": "Arka Plan Konumu Gerekli",
     "bgPermBody": "Uygulama kapalıyken de çağrı alabilmeniz için konumunuza her zaman erişmemiz gerekiyor.",
     "bgPermBodySettings": "İzni telefon Ayarları'ndan \"Her zaman izin ver\" olarak güncellemeniz gerekiyor.",
     "bgPermAllow": "İzin Ver",
     "bgPermOpenSettings": "Ayarları Aç",
     "bgPermLater": "Şimdi Değil"
+  },
+  "driverApplication": {
+    "profileSection": "Sürücü Başvurusu",
+    "profileRow": "Sürücü Başvurusu",
+    "profileRowSub": "Sürücü olmak için başvur",
+    "title": "Sürücü Başvurusu",
+    "subtitle": "Araç, selfie ve gerekli belgeleri yükleyerek başvurunu tamamla.",
+    "loading": "Başvuru bilgileri yükleniyor…",
+    "retry": "Tekrar Dene",
+    "submit": "Başvuruyu Gönder",
+    "resubmit": "Yeniden Gönder",
+    "submitting": "Gönderiliyor…",
+    "footerNote": "Başvurun 1-2 iş günü içinde değerlendirilir.",
+    "submittedAt": "Gönderim: %{date}",
+    "section": {
+      "vehicle": "Araç Bilgileri",
+      "selfie": "Selfie",
+      "documents": "Belgeler"
+    },
+    "field": {
+      "vehicleType": "Araç Tipi",
+      "plate": "Plaka *",
+      "brand": "Marka *",
+      "model": "Model *",
+      "color": "Renk *"
+    },
+    "vehicleType": {
+      "sedan": "Sedan",
+      "van": "Van / XL",
+      "luxury": "Lüks",
+      "pet": "Evcil Dost"
+    },
+    "selfie": {
+      "cta": "Selfie Yükle",
+      "hint": "Bu fotoğraf yolculara gösterilir. Yüzün net görünmeli."
+    },
+    "documents": {
+      "upload": "Belge Yükle",
+      "number": "Belge No",
+      "expiry": "Son Geçerlilik Tarihi",
+      "empty": "Bu bölge için belge gereksinimi tanımlı değil."
+    },
+    "docStatus": {
+      "pending": "İnceleniyor",
+      "verified": "Onaylı",
+      "rejected": "Reddedildi"
+    },
+    "hint": {
+      "vehicle": "Tüm araç bilgilerini doldur.",
+      "selfie": "Bir selfie yükle.",
+      "documents": "Zorunlu belgeleri yükle."
+    },
+    "error": {
+      "load": "Başvuru bilgileri yüklenemedi.",
+      "upload": "Yükleme başarısız oldu.",
+      "submit": "Başvuru gönderilemedi."
+    },
+    "pending": {
+      "title": "Başvurun İnceleniyor",
+      "body": "Başvurun alındı. Onaylandığında bildirim göndereceğiz."
+    },
+    "approved": {
+      "title": "Başvurun Onaylandı!",
+      "body": "Artık sürücü olarak yolculuk alabilirsin."
+    },
+    "rejected": {
+      "title": "Başvurun Reddedildi",
+      "body": "Reddedilen belgeleri düzeltip yeniden gönder."
+    },
+    "badge": {
+      "none": "Yok",
+      "draft": "Taslak",
+      "pending": "İnceleniyor",
+      "approved": "Onaylandı",
+      "rejected": "Reddedildi"
+    }
   }
 }
