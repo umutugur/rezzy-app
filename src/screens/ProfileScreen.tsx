@@ -1234,11 +1234,11 @@ export default function ProfileScreen() {
         </PremiumSection>
       )}
 
-      {/* ── SÜRÜCÜ BAŞVURUSU ────────────────────────────────────────────── */}
-      <PremiumSection title={t("driverApplication.profileSection") || "Sürücü Başvurusu"}>
+      {/* ── İŞ ORTAĞI OL ────────────────────────────────────────────────── */}
+      <PremiumSection title={t("partner.profileSection") || "İş Ortağı"}>
         <TouchableOpacity
           activeOpacity={0.8}
-          onPress={() => navigation.navigate("DriverApplication")}
+          onPress={() => navigation.navigate("PartnerHub")}
           style={{
             flexDirection: "row",
             alignItems: "center",
@@ -1250,30 +1250,31 @@ export default function ProfileScreen() {
         >
           <View style={{
             width: 38, height: 38, borderRadius: 10,
-            backgroundColor: theme.driver.light,
+            backgroundColor: theme.colors.errorSoft,
             alignItems: "center", justifyContent: "center",
           }}>
-            <Car size={20} color={theme.driver.main} strokeWidth={2} />
+            <Car size={20} color={theme.colors.primary} strokeWidth={2} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 15, fontWeight: "700", color: theme.colors.textPrimary }}>
-              {t("driverApplication.profileRow") || "Sürücü Başvurusu"}
+              {t("partner.profileRow") || "İş Ortağı Ol"}
             </Text>
             <Text style={{ fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 }}>
-              {t("driverApplication.profileRowSub") || "Sürücü olmak için başvur"}
+              {t("partner.profileRowSub") || "Sürücü, market veya restoran olarak başvur"}
             </Text>
           </View>
           {(() => {
-            const status = driverApp?.status ?? (driverAppLoaded ? "none" : null);
+            if (!driverAppLoaded) return <Ionicons name="chevron-forward" size={16} color={theme.colors.borderStrong} />;
+            const status = driverApp?.status ?? null;
             if (!status) return <Ionicons name="chevron-forward" size={16} color={theme.colors.borderStrong} />;
             const meta: Record<string, { bg: string; fg: string; key: string }> = {
-              none: { bg: theme.colors.surfaceAlt, fg: theme.colors.textSecondary, key: "driverApplication.badge.none" },
-              draft: { bg: theme.colors.surfaceAlt, fg: theme.colors.textSecondary, key: "driverApplication.badge.draft" },
-              pending: { bg: theme.colors.warningSoft, fg: theme.colors.warning, key: "driverApplication.badge.pending" },
-              approved: { bg: theme.colors.successSoft, fg: theme.colors.success, key: "driverApplication.badge.approved" },
-              rejected: { bg: theme.colors.errorSoft, fg: theme.colors.error, key: "driverApplication.badge.rejected" },
+              draft: { bg: theme.colors.surfaceAlt, fg: theme.colors.textSecondary, key: "partner.badge.draft" },
+              pending: { bg: theme.colors.warningSoft, fg: theme.colors.warning, key: "partner.badge.pending" },
+              approved: { bg: theme.colors.successSoft, fg: theme.colors.success, key: "partner.badge.approved" },
+              rejected: { bg: theme.colors.errorSoft, fg: theme.colors.error, key: "partner.badge.rejected" },
             };
-            const m = meta[status] || meta.none;
+            const m = meta[status];
+            if (!m) return <Ionicons name="chevron-forward" size={16} color={theme.colors.borderStrong} />;
             return (
               <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: m.bg }}>
                 <Text style={{ fontSize: 12, fontWeight: "700", color: m.fg }}>{t(m.key)}</Text>

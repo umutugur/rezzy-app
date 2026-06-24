@@ -1129,5 +1129,134 @@
       "approved": "Onaylandı",
       "rejected": "Reddedildi"
     }
+  },
+  "partner": {
+    "profileSection": "İş Ortağı",
+    "profileRow": "İş Ortağı Ol",
+    "profileRowSub": "Sürücü, market veya restoran olarak başvur",
+    "loading": "Bilgiler yükleniyor…",
+    "retry": "Tekrar Dene",
+    "submit": "Başvuruyu Gönder",
+    "resubmit": "Yeniden Gönder",
+    "submitting": "Gönderiliyor…",
+    "footerNote": "Başvurun 1-2 iş günü içinde değerlendirilir.",
+    "submittedAt": "Gönderim: %{date}",
+    "title": {
+      "driver": "Sürücü Başvurusu",
+      "market": "Market Başvurusu",
+      "restaurant": "Restoran Başvurusu"
+    },
+    "subtitle": {
+      "driver": "Araç, selfie ve gerekli belgeleri yükleyerek başvurunu tamamla.",
+      "market": "İşletme bilgilerini, selfie ve gerekli belgeleri yükleyerek başvur.",
+      "restaurant": "İşletme bilgilerini, selfie ve gerekli belgeleri yükleyerek başvur."
+    },
+    "section": {
+      "vehicle": "Araç Bilgileri",
+      "business": "İşletme Bilgileri",
+      "selfie": "Selfie",
+      "documents": "Belgeler"
+    },
+    "field": {
+      "vehicleType": "Araç Tipi",
+      "plate": "Plaka *",
+      "brand": "Marka *",
+      "model": "Model *",
+      "color": "Renk *",
+      "businessName": "İşletme Adı *",
+      "businessNamePlaceholder": "İşletme adı",
+      "category": "Kategori *",
+      "categoryPlaceholder": {
+        "market": "Market, manav, şarküteri…",
+        "restaurant": "Restoran, kafe, fast food…"
+      },
+      "address": "Adres *",
+      "addressPlaceholder": "Açık adres",
+      "phone": "Telefon",
+      "location": "Konum"
+    },
+    "vehicleType": {
+      "sedan": "Sedan",
+      "van": "Van / XL",
+      "luxury": "Lüks",
+      "pet": "Evcil Dost"
+    },
+    "business": {
+      "useMyLocation": "Konumumu Kullan",
+      "captured": "Konum alındı: %{lat}, %{lng}",
+      "locationPermission": "Konum izni verilmedi.",
+      "locationFail": "Konum alınamadı."
+    },
+    "selfie": {
+      "cta": "Selfie Yükle",
+      "hint": {
+        "driver": "Bu fotoğraf yolculara gösterilir. Yüzün net görünmeli.",
+        "business": "Yetkili kişinin fotoğrafı. Yüz net görünmeli."
+      }
+    },
+    "documents": {
+      "upload": "Belge Yükle",
+      "number": "Belge No",
+      "expiry": "Son Geçerlilik Tarihi",
+      "empty": "Bu bölge için belge gereksinimi tanımlı değil."
+    },
+    "docStatus": {
+      "pending": "İnceleniyor",
+      "verified": "Onaylı",
+      "rejected": "Reddedildi"
+    },
+    "hint": {
+      "vehicle": "Tüm araç bilgilerini doldur.",
+      "business": "İşletme adı, kategori, adres ve konumu doldur.",
+      "selfie": "Bir selfie yükle.",
+      "documents": "Zorunlu belgeleri yükle."
+    },
+    "error": {
+      "load": "Bilgiler yüklenemedi.",
+      "upload": "Yükleme başarısız oldu.",
+      "submit": "Başvuru gönderilemedi."
+    },
+    "pending": {
+      "title": "Başvurun İnceleniyor",
+      "body": "Başvurun alındı. Onaylandığında bildirim göndereceğiz."
+    },
+    "approved": {
+      "title": "Başvurun Onaylandı!",
+      "body": {
+        "driver": "Artık sürücü olarak yolculuk alabilirsin.",
+        "market": "Artık market olarak satış yapabilirsin.",
+        "restaurant": "Artık restoran olarak hizmet verebilirsin."
+      }
+    },
+    "rejected": {
+      "title": "Başvurun Reddedildi",
+      "body": "Reddedilen belgeleri düzeltip yeniden gönder."
+    },
+    "badge": {
+      "draft": "Taslak",
+      "pending": "İnceleniyor",
+      "approved": "Onaylandı",
+      "rejected": "Reddedildi"
+    },
+    "hub": {
+      "title": "İş Ortağı Ol",
+      "subtitle": "Rezvix ile sürücü, market veya restoran olarak çalışmaya başla.",
+      "lockedHint": "Şu anda kullanılamaz",
+      "exclusiveNote": "Aynı anda yalnızca bir iş ortağı türü olabilirsin.",
+      "card": {
+        "driver": {
+          "title": "Sürücü",
+          "sub": "Taksi sürücüsü olarak başvur"
+        },
+        "market": {
+          "title": "Market",
+          "sub": "Market işletmesi olarak başvur"
+        },
+        "restaurant": {
+          "title": "Restoran",
+          "sub": "Restoran işletmesi olarak başvur"
+        }
+      }
+    }
   }
 }

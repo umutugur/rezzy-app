@@ -1169,5 +1169,134 @@
       "approved": "Approved",
       "rejected": "Rejected"
     }
+  },
+  "partner": {
+    "profileSection": "Partner",
+    "profileRow": "Become a Partner",
+    "profileRowSub": "Apply as a driver, market or restaurant",
+    "loading": "Loading details…",
+    "retry": "Retry",
+    "submit": "Submit Application",
+    "resubmit": "Resubmit",
+    "submitting": "Submitting…",
+    "footerNote": "Your application is reviewed within 1-2 business days.",
+    "submittedAt": "Submitted: %{date}",
+    "title": {
+      "driver": "Driver Application",
+      "market": "Market Application",
+      "restaurant": "Restaurant Application"
+    },
+    "subtitle": {
+      "driver": "Complete your application by uploading your vehicle, selfie and required documents.",
+      "market": "Apply by providing your business info, selfie and required documents.",
+      "restaurant": "Apply by providing your business info, selfie and required documents."
+    },
+    "section": {
+      "vehicle": "Vehicle Details",
+      "business": "Business Details",
+      "selfie": "Selfie",
+      "documents": "Documents"
+    },
+    "field": {
+      "vehicleType": "Vehicle Type",
+      "plate": "Plate *",
+      "brand": "Brand *",
+      "model": "Model *",
+      "color": "Color *",
+      "businessName": "Business Name *",
+      "businessNamePlaceholder": "Business name",
+      "category": "Category *",
+      "categoryPlaceholder": {
+        "market": "Grocery, greengrocer, deli…",
+        "restaurant": "Restaurant, café, fast food…"
+      },
+      "address": "Address *",
+      "addressPlaceholder": "Full address",
+      "phone": "Phone",
+      "location": "Location"
+    },
+    "vehicleType": {
+      "sedan": "Sedan",
+      "van": "Van / XL",
+      "luxury": "Luxury",
+      "pet": "Pet Friendly"
+    },
+    "business": {
+      "useMyLocation": "Use My Location",
+      "captured": "Location captured: %{lat}, %{lng}",
+      "locationPermission": "Location permission denied.",
+      "locationFail": "Could not get location."
+    },
+    "selfie": {
+      "cta": "Upload Selfie",
+      "hint": {
+        "driver": "This photo is shown to riders. Your face must be clearly visible.",
+        "business": "Photo of the authorized person. Face must be clearly visible."
+      }
+    },
+    "documents": {
+      "upload": "Upload Document",
+      "number": "Document No",
+      "expiry": "Expiry Date",
+      "empty": "No document requirements defined for this region."
+    },
+    "docStatus": {
+      "pending": "Under Review",
+      "verified": "Verified",
+      "rejected": "Rejected"
+    },
+    "hint": {
+      "vehicle": "Fill in all vehicle details.",
+      "business": "Fill in business name, category, address and location.",
+      "selfie": "Upload a selfie.",
+      "documents": "Upload the required documents."
+    },
+    "error": {
+      "load": "Failed to load details.",
+      "upload": "Upload failed.",
+      "submit": "Failed to submit application."
+    },
+    "pending": {
+      "title": "Application Under Review",
+      "body": "Your application was received. We'll notify you once approved."
+    },
+    "approved": {
+      "title": "Application Approved!",
+      "body": {
+        "driver": "You can now accept rides as a driver.",
+        "market": "You can now sell as a market.",
+        "restaurant": "You can now serve as a restaurant."
+      }
+    },
+    "rejected": {
+      "title": "Application Rejected",
+      "body": "Fix the rejected documents and resubmit."
+    },
+    "badge": {
+      "draft": "Draft",
+      "pending": "Under Review",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "hub": {
+      "title": "Become a Partner",
+      "subtitle": "Start working with Rezvix as a driver, market or restaurant.",
+      "lockedHint": "Currently unavailable",
+      "exclusiveNote": "You can only have one partner type at a time.",
+      "card": {
+        "driver": {
+          "title": "Driver",
+          "sub": "Apply as a taxi driver"
+        },
+        "market": {
+          "title": "Market",
+          "sub": "Apply as a market business"
+        },
+        "restaurant": {
+          "title": "Restaurant",
+          "sub": "Apply as a restaurant business"
+        }
+      }
+    }
   }
 }

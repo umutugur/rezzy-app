@@ -57,7 +57,8 @@ import MarketNavigator from "../navigation/MarketNavigator";
 import TaxiNavigator from "../navigation/TaxiNavigator";
 import DriverNavigator from "../navigation/DriverNavigator";
 import DriverRegistrationScreen from "../screens/driver/DriverRegistrationScreen";
-import DriverApplicationScreen from "../screens/driver/DriverApplicationScreen";
+import PartnerHubScreen from "../screens/partner/PartnerHubScreen";
+import PartnerApplicationScreen from "../screens/partner/PartnerApplicationScreen";
 
 import { useAuth } from "../store/useAuth";
 import { useRegion } from "../store/useRegion";
@@ -393,9 +394,14 @@ export default function RootNavigator() {
               options={{ title: 'Sürücü Başvurusu', headerShown: true }}
             />
             <RootStack.Screen
-              name="DriverApplication"
-              component={DriverApplicationScreen}
-              options={{ title: 'Sürücü Başvurusu', headerShown: true }}
+              name="PartnerHub"
+              component={PartnerHubScreen}
+              options={{ title: 'İş Ortağı Ol', headerShown: true }}
+            />
+            <RootStack.Screen
+              name="PartnerApplication"
+              component={PartnerApplicationScreen}
+              options={{ title: 'İş Ortağı Başvurusu', headerShown: true }}
             />
           </>
         ) : (
