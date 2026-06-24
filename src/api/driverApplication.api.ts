@@ -55,7 +55,7 @@ export type SubmitPayload = {
  * GET /taxi/driver/requirements?country=<country> -> data.items
  */
 export async function getDriverRequirements(country: string): Promise<DriverDocRequirement[]> {
-  const { data } = await api.get("/taxi/driver/requirements", { params: { country } });
+  const { data } = await api.get("/taxi/driver/requirements", { params: { country }, timeout: 15000 });
   return (data?.items ?? []) as DriverDocRequirement[];
 }
 
@@ -65,7 +65,7 @@ export async function getDriverRequirements(country: string): Promise<DriverDocR
  * GET /taxi/driver/application/me -> data.application
  */
 export async function getMyDriverApplication(): Promise<DriverApplication | null> {
-  const { data } = await api.get("/taxi/driver/application/me");
+  const { data } = await api.get("/taxi/driver/application/me", { timeout: 15000 });
   return (data?.application ?? null) as DriverApplication | null;
 }
 
