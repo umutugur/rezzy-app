@@ -139,7 +139,10 @@ export default function DriverApplicationScreen() {
     } finally {
       setLoading(false);
     }
-  }, [countryCode, t]);
+    // `t` deliberately excluded: useI18n's t is a fresh ref each render and would
+    // recreate load → re-fire the effect in a loop (infinite re-fetch / stuck loading).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [countryCode]);
 
   useEffect(() => {
     load();
