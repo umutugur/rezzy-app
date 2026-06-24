@@ -28,6 +28,8 @@ export type AppDocument = {
   rejectReason: string | null;
 };
 
+export type AppType = "driver" | "market" | "restaurant";
+
 export type DriverApplication = {
   _id: string;
   countryCode: string;
@@ -39,6 +41,8 @@ export type DriverApplication = {
   reviewedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  appType?: AppType;
+  payload?: Record<string, any>;
 };
 
 export type SubmitPayload = {
@@ -48,45 +52,98 @@ export type SubmitPayload = {
   documents: { requirementKey: string; fileUrl: string; number?: string; expiry?: string | null }[];
 };
 
-// ─── API Functions ──────────────────────────────────────────────────────────────
+export type PartnerSubmitPayload = {
+  appType: AppType;
+  countryCode: string;
+  payload: Record<string, any>; // driver:{plate,brand,model,color,type}; market/restaurant:{businessName,category,address,location,phone?}
+  selfieUrl: string;
+  documents: { requirementKey: string; fileUrl: string; number?: string; expiry?: string | null }[];
+};
+
+// ─── Generic /partner/* API Functions ──────────────────────────────────────────
 
 /**
- * Ülkeye göre sürücü belge gereksinimlerini listeler.
- * GET /taxi/driver/requirements?country=<country> -> data.items
+ * Uygulama türü ve ülkeye göre belge gereksinimlerini listeler.
+ * GET /partner/requirements?appType=<appType>&country=<country> -> data.items
  */
-export async function getDriverRequirements(country: string): Promise<DriverDocRequirement[]> {
-  const { data } = await api.get("/taxi/driver/requirements", { params: { country }, timeout: 15000 });
+export async function getPartnerRequirements(
+  appType: AppType,
+  country: string,
+): Promise<DriverDocRequirement[]> {
+  const { data } = await api.get("/partner/requirements", { params: { appType, country }, timeout: 15000 });
   return (data?.items ?? []) as DriverDocRequirement[];
 }
 
 /**
- * Giriş yapmış kullanıcının kendi sürücü başvurusunu döndürür.
+ * Giriş yapmış kullanıcının kendi partner başvurusunu döndürür.
  * Başvuru yoksa null döner.
- * GET /taxi/driver/application/me -> data.application
+ * GET /partner/application/me -> data.application
  */
-export async function getMyDriverApplication(): Promise<DriverApplication | null> {
-  const { data } = await api.get("/taxi/driver/application/me", { timeout: 15000 });
+export async function getMyPartnerApplication(): Promise<DriverApplication | null> {
+  const { data } = await api.get("/partner/application/me", { timeout: 15000 });
   return (data?.application ?? null) as DriverApplication | null;
 }
 
 /**
- * Yeni sürücü başvurusu oluşturur.
- * POST /taxi/driver/application -> data.application
+ * Yeni partner başvurusu oluşturur.
+ * POST /partner/application -> data.application
  */
-export async function submitDriverApplication(payload: SubmitPayload): Promise<DriverApplication> {
-  const { data } = await api.post("/taxi/driver/application", payload);
+export async function submitPartnerApplication(body: PartnerSubmitPayload): Promise<DriverApplication> {
+  const { data } = await api.post("/partner/application", body);
   return data.application as DriverApplication;
 }
 
 /**
  * Reddedilen başvuruyu belgelerle birlikte yeniden gönderir.
- * PUT /taxi/driver/application/resubmit -> data.application
+ * PUT /partner/application/resubmit -> data.application
+ */
+export async function resubmitPartnerApplication(
+  documents: PartnerSubmitPayload["documents"],
+): Promise<DriverApplication> {
+  const { data } = await api.put("/partner/application/resubmit", { documents });
+  return data.application as DriverApplication;
+}
+
+// ─── Legacy Driver Aliases (DriverApplicationScreen uyumluluğu için) ────────────
+
+/**
+ * @deprecated Use getPartnerRequirements("driver", country) instead.
+ * Ülkeye göre sürücü belge gereksinimlerini listeler.
+ */
+export async function getDriverRequirements(country: string): Promise<DriverDocRequirement[]> {
+  return getPartnerRequirements("driver", country);
+}
+
+/**
+ * @deprecated Use getMyPartnerApplication() instead.
+ * Giriş yapmış kullanıcının kendi sürücü başvurusunu döndürür.
+ */
+export async function getMyDriverApplication(): Promise<DriverApplication | null> {
+  return getMyPartnerApplication();
+}
+
+/**
+ * @deprecated Use submitPartnerApplication() instead.
+ * Yeni sürücü başvurusu oluşturur.
+ */
+export async function submitDriverApplication(payload: SubmitPayload): Promise<DriverApplication> {
+  return submitPartnerApplication({
+    appType: "driver",
+    countryCode: payload.countryCode,
+    payload: payload.vehicle ?? {},
+    selfieUrl: payload.selfieUrl,
+    documents: payload.documents,
+  });
+}
+
+/**
+ * @deprecated Use resubmitPartnerApplication() instead.
+ * Reddedilen başvuruyu belgelerle birlikte yeniden gönderir.
  */
 export async function resubmitDriverApplication(
   documents: SubmitPayload["documents"],
 ): Promise<DriverApplication> {
-  const { data } = await api.put("/taxi/driver/application/resubmit", { documents });
-  return data.application as DriverApplication;
+  return resubmitPartnerApplication(documents);
 }
 
 // Dosya yükleme için: uploads.ts içindeki `uploadToCloud` fonksiyonunu kullan.
