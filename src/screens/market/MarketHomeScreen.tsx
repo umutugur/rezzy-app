@@ -5,8 +5,10 @@ import {
   Animated,
   FlatList,
   Image,
+  Keyboard,
   Linking,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -257,6 +259,18 @@ function PickupLocationPicker({
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
   const slideAnim = useRef(new Animated.Value(400)).current;
+  const [kbHeight, setKbHeight] = useState(0);
+
+  // Klavye açılınca alttaki sheet'i yukarı kaldır ki yazılan bölge görünsün.
+  useEffect(() => {
+    const showEvt = Platform.OS === "ios" ? "keyboardWillChangeFrame" : "keyboardDidShow";
+    const hideEvt = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const onShow = (e: any) => setKbHeight(e?.endCoordinates?.height ?? 0);
+    const onHide = () => setKbHeight(0);
+    const s = Keyboard.addListener(showEvt, onShow);
+    const h = Keyboard.addListener(hideEvt, onHide);
+    return () => { s.remove(); h.remove(); };
+  }, []);
 
   useEffect(() => {
     if (visible) {
@@ -287,7 +301,7 @@ function PickupLocationPicker({
       <Animated.View
         style={[
           pm.sheet,
-          { paddingBottom: insets.bottom + 16 },
+          { paddingBottom: insets.bottom + 16, marginBottom: kbHeight },
           { transform: [{ translateY: slideAnim }] },
         ]}
       >
@@ -662,7 +676,11 @@ function MarketBannerCarousel({
         contentContainerStyle={{ paddingHorizontal: pad }}
         ItemSeparatorComponent={() => <View style={{ width: bannerSep }} />}
         decelerationRate="fast"
-        snapToInterval={bannerStride}
+        scrollEnabled={banners.length > 1}
+        alwaysBounceHorizontal={false}
+        bounces={false}
+        disableIntervalMomentum
+        snapToOffsets={banners.map((_, i) => i * bannerStride)}
         snapToAlignment="start"
         getItemLayout={(_, index) => ({ length: bannerW, offset: bannerStride * index, index })}
         onMomentumScrollEnd={(e) => {
