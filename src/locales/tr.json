@@ -1192,6 +1192,23 @@
       "search": "Ara",
       "selectBrandFirst": "Önce marka seç"
     },
+    "colors": {
+      "select": "Renk seç",
+      "free": "Renk (elle gir)",
+      "white": "Beyaz",
+      "black": "Siyah",
+      "gray": "Gri",
+      "silver": "Gümüş",
+      "red": "Kırmızı",
+      "blue": "Mavi",
+      "green": "Yeşil",
+      "brown": "Kahverengi",
+      "orange": "Turuncu",
+      "yellow": "Sarı",
+      "beige": "Bej",
+      "gold": "Altın",
+      "purple": "Mor"
+    },
     "business": {
       "useMyLocation": "Konumumu Kullan",
       "captured": "Konum alındı: %{lat}, %{lng}",

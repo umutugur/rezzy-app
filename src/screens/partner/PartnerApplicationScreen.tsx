@@ -74,6 +74,12 @@ const VEHICLE_TYPES: { value: VehicleType; emoji: string; labelKey: string }[] =
   { value: 'pet', emoji: '🐾', labelKey: 'partner.vehicleType.pet' },
 ];
 
+// Sabit araç renkleri — i18n ile, veritabanı bağlantısı yok.
+const CAR_COLOR_KEYS = [
+  'white', 'black', 'gray', 'silver', 'red', 'blue', 'green',
+  'brown', 'orange', 'yellow', 'beige', 'gold', 'purple',
+] as const;
+
 /** region (2 harfli ISO) -> requirements API country kodu. CY → KKTC, belirsizse KKTC. */
 function regionToCountryCode(region?: string | null): string {
   const r = String(region || '').toUpperCase();
@@ -135,6 +141,8 @@ export default function PartnerApplicationScreen() {
   const [modelOther, setModelOther] = useState(false);
   const [makeSheet, setMakeSheet] = useState(false);
   const [modelSheet, setModelSheet] = useState(false);
+  const [colorSheet, setColorSheet] = useState(false);
+  const [colorOther, setColorOther] = useState(false);
 
   // ─── business form state ─────────────────────────────────────────────────────
   const [businessName, setBusinessName] = useState('');
@@ -175,6 +183,7 @@ export default function PartnerApplicationScreen() {
           setModel((matching.vehicle?.model || p.model) ?? '');
           setColor((matching.vehicle?.color || p.color) ?? '');
           setVehicleType(((matching.vehicle?.type || p.type) as VehicleType) || 'sedan');
+          setPhone(p.phone ?? '');
         } else {
           setBusinessName(p.businessName ?? '');
           setCategory(p.category ?? '');
@@ -369,7 +378,7 @@ export default function PartnerApplicationScreen() {
   }, []);
 
   // ─── validation ─────────────────────────────────────────────────────────────
-  const driverValid = !!(plate.trim() && brand.trim() && model.trim() && color.trim());
+  const driverValid = !!(plate.trim() && brand.trim() && model.trim() && color.trim() && phone.trim());
   const businessValid = !!(businessName.trim() && category.trim() && address.trim() && coords);
   const payloadValid = isDriver ? driverValid : businessValid;
 
@@ -405,6 +414,7 @@ export default function PartnerApplicationScreen() {
         model: model.trim(),
         color: color.trim(),
         type: vehicleType,
+        phone: phone.trim(),
       };
     }
     const out: Record<string, any> = {
@@ -635,7 +645,45 @@ export default function PartnerApplicationScreen() {
               <Field theme={theme} label={t('partner.vehicle.modelFree')} value={model} onChangeText={setModel} placeholder="Corolla, Clio…" editable={!isRejected} icon={<Car size={16} color={theme.colors.textTertiary} strokeWidth={2} />} />
             )}
 
-            <Field theme={theme} label={t('partner.field.color')} value={color} onChangeText={setColor} placeholder="Beyaz, Siyah…" editable={!isRejected} icon={<Palette size={16} color={theme.colors.textTertiary} strokeWidth={2} />} />
+            {/* Color — sabit i18n renk listesi (dropdown) + "Diğeri" serbest metin */}
+            <SelectorButton
+              theme={theme}
+              accent={ACCENT}
+              label={t('partner.field.color')}
+              value={color}
+              placeholder={t('partner.colors.select')}
+              disabled={isRejected}
+              onPress={() => setColorSheet(true)}
+              icon={<Palette size={16} color={theme.colors.textTertiary} strokeWidth={2} />}
+            />
+            {colorOther && (
+              <Field theme={theme} label={t('partner.colors.free')} value={color} onChangeText={setColor} placeholder="Bordo, Lacivert…" editable={!isRejected} icon={<Palette size={16} color={theme.colors.textTertiary} strokeWidth={2} />} />
+            )}
+
+            {/* Phone — sürücü iletişim numarası */}
+            <Field theme={theme} label={t('partner.field.phone')} value={phone} onChangeText={setPhone} placeholder="+90 …" keyboardType="phone-pad" autoCapitalize="none" editable={!isRejected} icon={<Phone size={16} color={theme.colors.textTertiary} strokeWidth={2} />} />
+
+            {/* Color picker sheet */}
+            <PickerSheet
+              theme={theme}
+              accent={ACCENT}
+              visible={colorSheet}
+              title={t('partner.colors.select')}
+              searchPlaceholder={t('partner.vehicle.search')}
+              otherLabel={t('partner.vehicle.other')}
+              options={CAR_COLOR_KEYS.map((k) => t(`partner.colors.${k}`))}
+              onClose={() => setColorSheet(false)}
+              onSelect={(name) => {
+                setColor(name);
+                setColorOther(false);
+                setColorSheet(false);
+              }}
+              onOther={() => {
+                setColorOther(true);
+                setColor('');
+                setColorSheet(false);
+              }}
+            />
 
             {/* Make picker sheet */}
             <PickerSheet
@@ -897,11 +945,12 @@ function SectionTitle({ theme, accent, children }: { theme: any; accent: string;
 }
 
 function Field({
-  theme, label, value, onChangeText, placeholder, autoCapitalize = 'words', icon, editable = true,
+  theme, label, value, onChangeText, placeholder, autoCapitalize = 'words', icon, editable = true, keyboardType = 'default',
 }: {
   theme: any; label: string; value: string; onChangeText: (v: string) => void;
   placeholder?: string; autoCapitalize?: 'none' | 'words' | 'sentences' | 'characters';
   icon: React.ReactNode; editable?: boolean;
+  keyboardType?: 'default' | 'phone-pad' | 'numeric' | 'email-address';
 }) {
   return (
     <View style={{ marginBottom: 14 }}>
@@ -919,6 +968,7 @@ function Field({
           placeholder={placeholder}
           placeholderTextColor={theme.colors.textTertiary}
           autoCapitalize={autoCapitalize}
+          keyboardType={keyboardType}
           editable={editable}
           style={{ flex: 1, ...theme.typography.bodyMd, color: theme.colors.textPrimary, paddingVertical: 12 }}
         />

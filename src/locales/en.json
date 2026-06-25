@@ -1232,6 +1232,23 @@
       "search": "Search",
       "selectBrandFirst": "Select a brand first"
     },
+    "colors": {
+      "select": "Select color",
+      "free": "Color (type)",
+      "white": "White",
+      "black": "Black",
+      "gray": "Gray",
+      "silver": "Silver",
+      "red": "Red",
+      "blue": "Blue",
+      "green": "Green",
+      "brown": "Brown",
+      "orange": "Orange",
+      "yellow": "Yellow",
+      "beige": "Beige",
+      "gold": "Gold",
+      "purple": "Purple"
+    },
     "business": {
       "useMyLocation": "Use My Location",
       "captured": "Location captured: %{lat}, %{lng}",
