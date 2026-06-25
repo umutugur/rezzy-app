@@ -146,6 +146,20 @@ export async function resubmitDriverApplication(
   return resubmitPartnerApplication(documents);
 }
 
+// ─── Vehicle Catalog (makes / models) ──────────────────────────────────────────
+
+export type VehicleMakeItem = { _id: string; countryCode: string; name: string; order: number };
+export type VehicleModelItem = { _id: string; countryCode: string; make: string; name: string; order: number };
+
+export async function getVehicleMakes(country: string): Promise<VehicleMakeItem[]> {
+  const { data } = await api.get("/vehicle/makes", { params: { country }, timeout: 15000 });
+  return (data?.items ?? []) as VehicleMakeItem[];
+}
+export async function getVehicleModels(country: string, make: string): Promise<VehicleModelItem[]> {
+  const { data } = await api.get("/vehicle/models", { params: { country, make }, timeout: 15000 });
+  return (data?.items ?? []) as VehicleModelItem[];
+}
+
 // Dosya yükleme için: uploads.ts içindeki `uploadToCloud` fonksiyonunu kullan.
 // import { uploadToCloud } from "./uploads";
 export { uploadToCloud } from "./uploads";
