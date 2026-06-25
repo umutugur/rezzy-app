@@ -18,9 +18,25 @@ export async function uploadToCloud(file: { uri: string; name: string; type: str
     encoding: FileSystem.EncodingType.Base64,
   });
   const dataUri = `data:${type};base64,${base64}`;
-  const { data } = await api.post("/uploads", { file: dataUri });
 
-  const url = data?.url || data?.secure_url || data?.Location || data?.data?.url;
-  if (!url) throw new Error("Yükleme başarısız: URL alınamadı.");
-  return String(url);
+  // Render free-tier uykudan kalkarken İLK istek (sunucuyu uyandıran istek)
+  // bağlantı kopmasıyla düşebilir; ikinci deneme artık sıcak sunucuya gider.
+  // Bu yüzden ağ/abort hatalarında otomatik yeniden dene → kullanıcı görmez.
+  let lastErr: any;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const { data } = await api.post("/uploads", { file: dataUri }, { timeout: 90000 });
+      const url = data?.url || data?.secure_url || data?.Location || data?.data?.url;
+      if (url) return String(url);
+      throw new Error("Yükleme başarısız: URL alınamadı.");
+    } catch (e: any) {
+      lastErr = e;
+      const code = e?.code;
+      // Sadece sunucu yanıtı OLMAYAN hatalarda (ağ kopması/abort/timeout) tekrar dene.
+      const retriable = !e?.response || code === "ECONNABORTED" || code === "ERR_NETWORK";
+      if (!retriable || attempt === 2) throw e;
+      await new Promise((res) => setTimeout(res, 1200 * (attempt + 1)));
+    }
+  }
+  throw lastErr;
 }
