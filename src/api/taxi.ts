@@ -58,6 +58,8 @@ export interface FareEstimate {
   distanceKm: number;
   durationMin: number;
   vehicleType: VehicleType;
+  /** Gerçek yol rotası noktaları (OSRM). Haritada çizgi bunu takip eder. */
+  geometry?: { lat: number; lng: number }[];
 }
 
 export interface PlaceResult {

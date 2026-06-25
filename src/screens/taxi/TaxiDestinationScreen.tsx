@@ -266,14 +266,18 @@ export default function TaxiDestinationScreen({ navigation }: any) {
       };
 
   const routeCoords =
-    pickupCoords && dropoffCoords
-      ? [
+    fareEstimate?.geometry && fareEstimate.geometry.length >= 2
+      ? // OSRM gerçek yol rotası — sokakları takip eder
+        fareEstimate.geometry.map((p) => ({ latitude: p.lat, longitude: p.lng }))
+      : pickupCoords && dropoffCoords
+      ? // Henüz tahmin gelmediyse geçici düz çizgi
+        [
           { latitude: pickupCoords.lat, longitude: pickupCoords.lng },
           { latitude: dropoffCoords.lat, longitude: dropoffCoords.lng },
         ]
       : [];
 
-  const hasRoute = routeCoords.length === 2;
+  const hasRoute = routeCoords.length >= 2;
   // Koordinatlar set edilince buton aktif — fareEstimate beklemeye gerek yok (estimate güzel ama zorunlu değil)
   const canCallTaxi = Boolean(pickupCoords && dropoffCoords) && !loadingEstimate && !loadingCreate && !stripeBusy;
   const isBusy = loadingCreate || stripeBusy;
