@@ -14,6 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import {
@@ -240,10 +241,19 @@ export default function PartnerApplicationScreen() {
     });
     if (r.canceled || !r.assets?.[0]) return null;
     const a = r.assets[0];
+
+    // Yükleme öncesi yeniden boyutlandır + sıkıştır:
+    //  • payload'ı ~3-4MB'tan birkaç yüz KB'a düşürür → mobil uplink'te abort olmaz
+    //  • iCloud/FileProvider URI'sini temiz, yerel bir JPEG'e dönüştürür
+    const manipulated = await manipulateAsync(
+      a.uri,
+      [{ resize: { width: 1280 } }],
+      { compress: 0.6, format: SaveFormat.JPEG },
+    );
     return {
-      uri: a.uri,
-      name: (a as any).fileName || `upload-${Date.now()}.jpg`,
-      type: (a as any).mimeType || 'image/jpeg',
+      uri: manipulated.uri,
+      name: `upload-${Date.now()}.jpg`,
+      type: 'image/jpeg',
     };
   }, []);
 
