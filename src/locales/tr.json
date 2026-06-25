@@ -1192,7 +1192,11 @@
       "hint": {
         "driver": "Bu fotoğraf yolculara gösterilir. Yüzün net görünmeli.",
         "business": "Yetkili kişinin fotoğrafı. Yüz net görünmeli."
-      }
+      },
+      "pick": "Selfie Ekle",
+      "camera": "Kameradan Çek",
+      "library": "Galeriden Seç",
+      "cancel": "İptal"
     },
     "documents": {
       "upload": "Belge Yükle",

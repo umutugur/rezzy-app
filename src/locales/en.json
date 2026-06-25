@@ -1232,7 +1232,11 @@
       "hint": {
         "driver": "This photo is shown to riders. Your face must be clearly visible.",
         "business": "Photo of the authorized person. Face must be clearly visible."
-      }
+      },
+      "pick": "Add Selfie",
+      "camera": "Take Photo",
+      "library": "Choose from Gallery",
+      "cancel": "Cancel"
     },
     "documents": {
       "upload": "Upload Document",
