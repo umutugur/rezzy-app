@@ -618,8 +618,12 @@ function MarketBannerCarousel({
 
   const { width: screenW } = useWindowDimensions();
   const bannerSep = 12;
-  const pad = 16;
-  const bannerW = screenW - pad * 2;
+  // Bu carousel, üst listenin contentContainer'ı (paddingHorizontal: theme.space[4])
+  // içinde render edilir. Yani container zaten her iki yandan içerlek. Kartı container
+  // genişliğine göre boyutla ve KENDİ yan padding'ini EKLEME (yoksa çift padding →
+  // banner sağa taşar / ekrana sığmaz).
+  const parentPad = theme.space[4];
+  const bannerW = screenW - parentPad * 2;
   const bannerStride = bannerW + bannerSep;
 
   const scrollToBanner = useCallback((index: number, animated = true) => {
@@ -673,7 +677,6 @@ function MarketBannerCarousel({
         keyExtractor={(i) => String(i._id)}
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: pad }}
         ItemSeparatorComponent={() => <View style={{ width: bannerSep }} />}
         decelerationRate="fast"
         scrollEnabled={banners.length > 1}
