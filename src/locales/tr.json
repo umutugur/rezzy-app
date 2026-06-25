@@ -1181,6 +1181,17 @@
       "luxury": "Lüks",
       "pet": "Evcil Dost"
     },
+    "vehicle": {
+      "brand": "Marka",
+      "model": "Model",
+      "selectBrand": "Marka seç",
+      "selectModel": "Model seç",
+      "other": "Listede yok / Diğeri",
+      "brandFree": "Marka (elle gir)",
+      "modelFree": "Model (elle gir)",
+      "search": "Ara",
+      "selectBrandFirst": "Önce marka seç"
+    },
     "business": {
       "useMyLocation": "Konumumu Kullan",
       "captured": "Konum alındı: %{lat}, %{lng}",

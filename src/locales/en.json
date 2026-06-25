@@ -1221,6 +1221,17 @@
       "luxury": "Luxury",
       "pet": "Pet Friendly"
     },
+    "vehicle": {
+      "brand": "Brand",
+      "model": "Model",
+      "selectBrand": "Select brand",
+      "selectModel": "Select model",
+      "other": "Not listed - Other",
+      "brandFree": "Brand (type)",
+      "modelFree": "Model (type)",
+      "search": "Search",
+      "selectBrandFirst": "Select a brand first"
+    },
     "business": {
       "useMyLocation": "Use My Location",
       "captured": "Location captured: %{lat}, %{lng}",

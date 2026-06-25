@@ -12,6 +12,8 @@ import {
   Image,
   ActionSheetIOS,
   Alert,
+  Modal,
+  FlatList,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -39,6 +41,9 @@ import {
   Phone,
   Building2,
   Navigation,
+  ChevronDown,
+  Search,
+  X,
 } from 'lucide-react-native';
 
 import { useTheme } from '../../contexts/ThemeContext';
@@ -50,10 +55,14 @@ import {
   submitPartnerApplication,
   resubmitPartnerApplication,
   uploadToCloud,
+  getVehicleMakes,
+  getVehicleModels,
   type DriverDocRequirement,
   type DriverApplication,
   type DriverI18n,
   type AppType,
+  type VehicleMakeItem,
+  type VehicleModelItem,
 } from '../../api/driverApplication.api';
 
 type VehicleType = 'sedan' | 'van' | 'luxury' | 'pet';
@@ -118,6 +127,14 @@ export default function PartnerApplicationScreen() {
   const [model, setModel] = useState('');
   const [color, setColor] = useState('');
   const [vehicleType, setVehicleType] = useState<VehicleType>('sedan');
+
+  // ─── vehicle catalog (make → model dropdowns) ────────────────────────────────
+  const [makes, setMakes] = useState<VehicleMakeItem[]>([]);
+  const [models, setModels] = useState<VehicleModelItem[]>([]);
+  const [brandOther, setBrandOther] = useState(false);
+  const [modelOther, setModelOther] = useState(false);
+  const [makeSheet, setMakeSheet] = useState(false);
+  const [modelSheet, setModelSheet] = useState(false);
 
   // ─── business form state ─────────────────────────────────────────────────────
   const [businessName, setBusinessName] = useState('');
@@ -191,6 +208,23 @@ export default function PartnerApplicationScreen() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Load vehicle makes for the active country (driver only).
+  useEffect(() => {
+    if (!isDriver || !countryCode) return;
+    getVehicleMakes(countryCode).then(setMakes).catch(() => setMakes([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDriver, countryCode]); // no `t`
+
+  // Load models whenever a catalog brand is chosen (skip when free-text "other").
+  useEffect(() => {
+    if (!isDriver || !countryCode || !brand || brandOther) {
+      setModels([]);
+      return;
+    }
+    getVehicleModels(countryCode, brand).then(setModels).catch(() => setModels([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDriver, countryCode, brand, brandOther]); // no `t`
 
   const status = application?.status ?? null;
   const isReadOnly = status === 'pending' || status === 'approved';
@@ -569,9 +603,87 @@ export default function PartnerApplicationScreen() {
             </View>
 
             <Field theme={theme} label={t('partner.field.plate')} value={plate} onChangeText={setPlate} placeholder="34 ABC 123" autoCapitalize="characters" editable={!isRejected} icon={<Hash size={16} color={theme.colors.textTertiary} strokeWidth={2} />} />
-            <Field theme={theme} label={t('partner.field.brand')} value={brand} onChangeText={setBrand} placeholder="Toyota, Renault…" editable={!isRejected} icon={<Car size={16} color={theme.colors.textTertiary} strokeWidth={2} />} />
-            <Field theme={theme} label={t('partner.field.model')} value={model} onChangeText={setModel} placeholder="Corolla, Clio…" editable={!isRejected} icon={<Car size={16} color={theme.colors.textTertiary} strokeWidth={2} />} />
+
+            {/* Brand — catalog dropdown + "Other" free-text fallback */}
+            <SelectorButton
+              theme={theme}
+              accent={ACCENT}
+              label={t('partner.field.brand')}
+              value={brand}
+              placeholder={t('partner.vehicle.selectBrand')}
+              disabled={isRejected}
+              onPress={() => setMakeSheet(true)}
+              icon={<Car size={16} color={theme.colors.textTertiary} strokeWidth={2} />}
+            />
+            {brandOther && (
+              <Field theme={theme} label={t('partner.vehicle.brandFree')} value={brand} onChangeText={setBrand} placeholder="Toyota, Renault…" editable={!isRejected} icon={<Car size={16} color={theme.colors.textTertiary} strokeWidth={2} />} />
+            )}
+
+            {/* Model — depends on a selected brand; catalog dropdown + "Other" free-text */}
+            <SelectorButton
+              theme={theme}
+              accent={ACCENT}
+              label={t('partner.field.model')}
+              value={model}
+              placeholder={t('partner.vehicle.selectModel')}
+              disabled={isRejected || !brand || brandOther}
+              hint={!brand || brandOther ? t('partner.vehicle.selectBrandFirst') : undefined}
+              onPress={() => setModelSheet(true)}
+              icon={<Car size={16} color={theme.colors.textTertiary} strokeWidth={2} />}
+            />
+            {(modelOther || brandOther) && (
+              <Field theme={theme} label={t('partner.vehicle.modelFree')} value={model} onChangeText={setModel} placeholder="Corolla, Clio…" editable={!isRejected} icon={<Car size={16} color={theme.colors.textTertiary} strokeWidth={2} />} />
+            )}
+
             <Field theme={theme} label={t('partner.field.color')} value={color} onChangeText={setColor} placeholder="Beyaz, Siyah…" editable={!isRejected} icon={<Palette size={16} color={theme.colors.textTertiary} strokeWidth={2} />} />
+
+            {/* Make picker sheet */}
+            <PickerSheet
+              theme={theme}
+              accent={ACCENT}
+              visible={makeSheet}
+              title={t('partner.vehicle.selectBrand')}
+              searchPlaceholder={t('partner.vehicle.search')}
+              otherLabel={t('partner.vehicle.other')}
+              options={makes.map((m) => m.name)}
+              onClose={() => setMakeSheet(false)}
+              onSelect={(name) => {
+                setBrand(name);
+                setBrandOther(false);
+                setModel('');
+                setModelOther(false);
+                setMakeSheet(false);
+              }}
+              onOther={() => {
+                setBrandOther(true);
+                setBrand('');
+                setModel('');
+                setModelOther(true);
+                setMakeSheet(false);
+              }}
+            />
+
+            {/* Model picker sheet */}
+            <PickerSheet
+              theme={theme}
+              accent={ACCENT}
+              visible={modelSheet}
+              title={t('partner.vehicle.selectModel')}
+              searchPlaceholder={t('partner.vehicle.search')}
+              otherLabel={t('partner.vehicle.other')}
+              options={models.map((m) => m.name)}
+              onClose={() => setModelSheet(false)}
+              onSelect={(name) => {
+                setModel(name);
+                setModelOther(false);
+                setModelSheet(false);
+              }}
+              onOther={() => {
+                setModelOther(true);
+                setModel('');
+                setModelSheet(false);
+              }}
+            />
           </>
         )}
 
@@ -812,6 +924,151 @@ function Field({
         />
       </View>
     </View>
+  );
+}
+
+function SelectorButton({
+  theme, accent, label, value, placeholder, hint, disabled, onPress, icon,
+}: {
+  theme: any; accent: string; label: string; value: string; placeholder: string;
+  hint?: string; disabled?: boolean; onPress: () => void; icon: React.ReactNode;
+}) {
+  const filled = !!value;
+  return (
+    <View style={{ marginBottom: 14 }}>
+      <Text style={{ ...theme.typography.labelSm, color: theme.colors.textSecondary, marginBottom: 6 }}>{label}</Text>
+      <TouchableOpacity
+        activeOpacity={disabled ? 1 : 0.8}
+        onPress={disabled ? undefined : onPress}
+        style={{
+          flexDirection: 'row', alignItems: 'center', gap: 12,
+          backgroundColor: theme.colors.surfaceAlt, borderRadius: theme.radius.lg,
+          paddingHorizontal: 14, paddingVertical: 14,
+          borderWidth: 1, borderColor: filled ? accent + '66' : theme.colors.borderDefault,
+          opacity: disabled ? 0.5 : 1,
+        }}
+      >
+        {icon}
+        <Text
+          numberOfLines={1}
+          style={{
+            flex: 1, ...theme.typography.bodyMd,
+            color: filled ? theme.colors.textPrimary : theme.colors.textTertiary,
+          }}
+        >
+          {value || placeholder}
+        </Text>
+        <ChevronDown size={18} color={disabled ? theme.colors.textTertiary : accent} strokeWidth={2} />
+      </TouchableOpacity>
+      {!!hint && disabled && (
+        <Text style={{ ...theme.typography.caption, color: theme.colors.textTertiary, marginTop: 5 }}>{hint}</Text>
+      )}
+    </View>
+  );
+}
+
+function PickerSheet({
+  theme, accent, visible, title, searchPlaceholder, otherLabel, options, onClose, onSelect, onOther,
+}: {
+  theme: any; accent: string; visible: boolean; title: string; searchPlaceholder: string;
+  otherLabel: string; options: string[]; onClose: () => void;
+  onSelect: (name: string) => void; onOther: () => void;
+}) {
+  const [query, setQuery] = useState('');
+
+  // Reset the search field each time the sheet opens.
+  useEffect(() => {
+    if (visible) setQuery('');
+  }, [visible]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return options;
+    return options.filter((o) => o.toLowerCase().includes(q));
+  }, [options, query]);
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' }}>
+        {/* tap-to-dismiss backdrop */}
+        <TouchableOpacity activeOpacity={1} onPress={onClose} style={{ flex: 1 }} />
+        <View
+          style={{
+            maxHeight: '78%',
+            backgroundColor: theme.colors.background,
+            borderTopLeftRadius: theme.radius.xl,
+            borderTopRightRadius: theme.radius.xl,
+            borderTopWidth: 1,
+            borderColor: theme.colors.borderDefault,
+            paddingTop: 10,
+            overflow: 'hidden',
+          }}
+        >
+          {/* grabber */}
+          <View style={{ alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: theme.colors.borderDefault, marginBottom: 12 }} />
+
+          {/* header */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 12 }}>
+            <Text style={{ ...theme.typography.headingSm, color: theme.colors.textPrimary }}>{title}</Text>
+            <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <X size={22} color={theme.colors.textSecondary} strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
+
+          {/* search */}
+          <View style={{ paddingHorizontal: 20, marginBottom: 8 }}>
+            <View style={{
+              flexDirection: 'row', alignItems: 'center', gap: 10,
+              backgroundColor: theme.colors.surfaceAlt, borderRadius: theme.radius.lg,
+              paddingHorizontal: 14, borderWidth: 1, borderColor: theme.colors.borderDefault,
+            }}>
+              <Search size={16} color={theme.colors.textTertiary} strokeWidth={2} />
+              <TextInput
+                value={query}
+                onChangeText={setQuery}
+                placeholder={searchPlaceholder}
+                placeholderTextColor={theme.colors.textTertiary}
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={{ flex: 1, ...theme.typography.bodyMd, color: theme.colors.textPrimary, paddingVertical: 11 }}
+              />
+            </View>
+          </View>
+
+          <FlatList
+            data={filtered}
+            keyExtractor={(item, i) => `${item}-${i}`}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: 28 }}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => onSelect(item)}
+                style={{
+                  paddingHorizontal: 20, paddingVertical: 15,
+                  borderBottomWidth: 1, borderBottomColor: theme.colors.borderDefault + '55',
+                }}
+              >
+                <Text style={{ ...theme.typography.bodyMd, color: theme.colors.textPrimary }}>{item}</Text>
+              </TouchableOpacity>
+            )}
+            ListFooterComponent={
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={onOther}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 8,
+                  paddingHorizontal: 20, paddingVertical: 16,
+                }}
+              >
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: accent }} />
+                <Text style={{ ...theme.typography.labelMd, color: accent, fontWeight: '700' }}>{otherLabel}</Text>
+              </TouchableOpacity>
+            }
+          />
+        </View>
+      </View>
+    </Modal>
   );
 }
 
