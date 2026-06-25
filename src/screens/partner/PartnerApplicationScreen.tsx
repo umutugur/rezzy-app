@@ -10,6 +10,8 @@ import {
   Platform,
   ActivityIndicator,
   Image,
+  ActionSheetIOS,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -232,13 +234,22 @@ export default function PartnerApplicationScreen() {
   }, [t]);
 
   // ─── image pick + upload ────────────────────────────────────────────────────
-  const pickImage = useCallback(async (): Promise<{ uri: string; name: string; type: string } | null> => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) return null;
-    const r = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.85,
-    });
+  const pickImage = useCallback(async (
+    source: 'camera' | 'library' = 'library',
+  ): Promise<{ uri: string; name: string; type: string } | null> => {
+    let r: ImagePicker.ImagePickerResult;
+    if (source === 'camera') {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) return null;
+      r = await ImagePicker.launchCameraAsync({ quality: 0.85 });
+    } else {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) return null;
+      r = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.85,
+      });
+    }
     if (r.canceled || !r.assets?.[0]) return null;
     const a = r.assets[0];
 
@@ -257,9 +268,33 @@ export default function PartnerApplicationScreen() {
     };
   }, []);
 
+  const chooseSelfieSource = useCallback(
+    (): Promise<'camera' | 'library' | null> =>
+      new Promise((resolve) => {
+        if (Platform.OS === 'ios') {
+          ActionSheetIOS.showActionSheetWithOptions(
+            {
+              options: [t('partner.selfie.camera'), t('partner.selfie.library'), t('partner.selfie.cancel')],
+              cancelButtonIndex: 2,
+            },
+            (i) => resolve(i === 0 ? 'camera' : i === 1 ? 'library' : null),
+          );
+        } else {
+          Alert.alert(t('partner.selfie.pick'), undefined, [
+            { text: t('partner.selfie.camera'), onPress: () => resolve('camera') },
+            { text: t('partner.selfie.library'), onPress: () => resolve('library') },
+            { text: t('partner.selfie.cancel'), style: 'cancel', onPress: () => resolve(null) },
+          ]);
+        }
+      }),
+    [t],
+  );
+
   const onPickSelfie = useCallback(async () => {
     try {
-      const file = await pickImage();
+      const src = await chooseSelfieSource();
+      if (!src) return;
+      const file = await pickImage(src);
       if (!file) return;
       setSelfieUploading(true);
       const url = await uploadToCloud(file);
@@ -270,12 +305,12 @@ export default function PartnerApplicationScreen() {
     } finally {
       setSelfieUploading(false);
     }
-  }, [pickImage, t]);
+  }, [pickImage, chooseSelfieSource, t]);
 
   const onPickDoc = useCallback(
     async (key: string) => {
       try {
-        const file = await pickImage();
+        const file = await pickImage('library');
         if (!file) return;
         setDocs((prev) => ({ ...prev, [key]: { ...(prev[key] || { number: '', expiry: '', fileUrl: '' }), uploading: true } }));
         const url = await uploadToCloud(file);
@@ -307,7 +342,8 @@ export default function PartnerApplicationScreen() {
   const requiredDocsFilled = requirements
     .filter((r) => r.required && r.file)
     .every((r) => !!docs[r.key]?.fileUrl);
-  const canSubmit = payloadValid && !!selfieUrl && requiredDocsFilled && !submitting;
+  const selfieOk = isDriver ? !!selfieUrl : true;
+  const canSubmit = payloadValid && selfieOk && requiredDocsFilled && !submitting;
 
   const buildDocsPayload = useCallback(
     (onlyEditable = false) => {
@@ -356,7 +392,7 @@ export default function PartnerApplicationScreen() {
         appType,
         countryCode,
         payload: buildPayload(),
-        selfieUrl,
+        selfieUrl: isDriver ? selfieUrl : '',
         documents: buildDocsPayload(false),
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -366,7 +402,7 @@ export default function PartnerApplicationScreen() {
     } finally {
       setSubmitting(false);
     }
-  }, [canSubmit, appType, countryCode, buildPayload, selfieUrl, buildDocsPayload, t]);
+  }, [canSubmit, appType, countryCode, buildPayload, selfieUrl, isDriver, buildDocsPayload, t]);
 
   const onResubmit = useCallback(async () => {
     setSubmitting(true);
@@ -463,7 +499,8 @@ export default function PartnerApplicationScreen() {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: theme.colors.background }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={insets.top + 8}
     >
       <ScrollView
         contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingTop: 16, paddingHorizontal: 20 }}
@@ -495,25 +532,37 @@ export default function PartnerApplicationScreen() {
             <Text style={{ ...theme.typography.labelSm, color: theme.colors.textSecondary, marginBottom: 8 }}>
               {t('partner.field.vehicleType')}
             </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 18 }}>
               {VEHICLE_TYPES.map((vt) => {
                 const active = vehicleType === vt.value;
                 return (
                   <TouchableOpacity
                     key={vt.value}
+                    activeOpacity={0.85}
                     disabled={isReadOnly || isRejected}
                     onPress={() => setVehicleType(vt.value)}
                     style={{
-                      flexDirection: 'row', alignItems: 'center', gap: 6,
-                      paddingHorizontal: 14, paddingVertical: 10,
+                      flex: 1, alignItems: 'center', gap: 4,
+                      paddingVertical: 10, paddingHorizontal: 4,
                       borderRadius: theme.radius.lg, borderWidth: 1.5,
                       borderColor: active ? ACCENT : theme.colors.borderDefault,
                       backgroundColor: active ? styles.accentSoft : theme.colors.surface,
                       opacity: isRejected ? 0.5 : 1,
                     }}
                   >
-                    <Text style={{ fontSize: 16 }}>{vt.emoji}</Text>
-                    <Text style={{ ...theme.typography.labelMd, color: active ? ACCENT : theme.colors.textSecondary }}>{t(vt.labelKey)}</Text>
+                    <Text style={{ fontSize: 22, lineHeight: 26 }}>{vt.emoji}</Text>
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        ...theme.typography.labelSm,
+                        fontSize: 11,
+                        textAlign: 'center',
+                        color: active ? ACCENT : theme.colors.textSecondary,
+                        fontWeight: active ? '700' : '500',
+                      }}
+                    >
+                      {t(vt.labelKey)}
+                    </Text>
                   </TouchableOpacity>
                 );
               })}
@@ -568,24 +617,28 @@ export default function PartnerApplicationScreen() {
           </>
         )}
 
-        {/* ── SELFIE ── */}
-        <View style={{ height: 8 }} />
-        <SectionTitle theme={theme} accent={ACCENT}>{t('partner.section.selfie')}</SectionTitle>
-        <Text style={{ ...theme.typography.caption, color: theme.colors.textTertiary, marginBottom: 12 }}>
-          {t(`partner.selfie.hint.${isDriver ? 'driver' : 'business'}`)}
-        </Text>
-        <PhotoPicker
-          theme={theme}
-          accent={ACCENT}
-          accentSoft={styles.accentSoft}
-          url={selfieUrl}
-          uploading={selfieUploading}
-          disabled={isRejected}
-          onPick={onPickSelfie}
-          label={t('partner.selfie.cta')}
-          icon={<Camera size={22} color={ACCENT} strokeWidth={1.8} />}
-          rounded
-        />
+        {/* ── SELFIE (driver only) ── */}
+        {isDriver && (
+          <>
+            <View style={{ height: 8 }} />
+            <SectionTitle theme={theme} accent={ACCENT}>{t('partner.section.selfie')}</SectionTitle>
+            <Text style={{ ...theme.typography.caption, color: theme.colors.textTertiary, marginBottom: 12 }}>
+              {t('partner.selfie.hint.driver')}
+            </Text>
+            <PhotoPicker
+              theme={theme}
+              accent={ACCENT}
+              accentSoft={styles.accentSoft}
+              url={selfieUrl}
+              uploading={selfieUploading}
+              disabled={isRejected}
+              onPick={onPickSelfie}
+              label={t('partner.selfie.cta')}
+              icon={<Camera size={22} color={ACCENT} strokeWidth={1.8} />}
+              rounded
+            />
+          </>
+        )}
 
         {/* ── DOCUMENTS ── */}
         <View style={{ height: 8 }} />
@@ -678,7 +731,7 @@ export default function PartnerApplicationScreen() {
         {!isRejected && !canSubmit && (
           <View style={{ gap: 4, marginBottom: 12 }}>
             {!payloadValid && <HintRow theme={theme} text={t(isDriver ? 'partner.hint.vehicle' : 'partner.hint.business')} />}
-            {!selfieUrl && <HintRow theme={theme} text={t('partner.hint.selfie')} />}
+            {!selfieOk && <HintRow theme={theme} text={t('partner.hint.selfie')} />}
             {!requiredDocsFilled && <HintRow theme={theme} text={t('partner.hint.documents')} />}
           </View>
         )}
