@@ -28,6 +28,7 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { PriceTag, type PriceCurrency } from '../../components/ui/PriceTag';
 import { currencyFromRegion } from '../../utils/format';
+import { useI18n } from '../../i18n';
 import {
   searchPlaces,
   estimateFare,
@@ -50,6 +51,7 @@ function toRideLocation(place: PlaceResult): RideLocation {
 export default function TaxiDestinationScreen({ navigation }: any) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const { t } = useI18n();
   const region = useRegion((s) => s.region);
   const currency = currencyFromRegion(region);
 
@@ -162,7 +164,7 @@ export default function TaxiDestinationScreen({ navigation }: any) {
       selectedVehicleType,
     )
       .then((est) => { if (!cancelled) setFareEstimate(est); })
-      .catch(() => { if (!cancelled) setError('Ücret tahmini alınamadı.'); })
+      .catch(() => { if (!cancelled) setError(t('taxi.destination.estimateFailed')); })
       .finally(() => { if (!cancelled) setLoadingEstimate(false); });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -199,7 +201,7 @@ export default function TaxiDestinationScreen({ navigation }: any) {
         });
 
         if (initError) {
-          setError(initError.message ?? 'Ödeme ekranı açılamadı.');
+          setError(initError.message ?? t('taxi.destination.paymentInitFailed'));
           setStripeBusy(false);
           return;
         }
@@ -209,7 +211,7 @@ export default function TaxiDestinationScreen({ navigation }: any) {
 
         if (presentError) {
           if (presentError.code !== 'Canceled') {
-            setError(presentError.message ?? 'Ödeme tamamlanamadı.');
+            setError(presentError.message ?? t('taxi.destination.paymentFailed'));
           }
           return;
         }
@@ -230,7 +232,7 @@ export default function TaxiDestinationScreen({ navigation }: any) {
         setActiveRideModal({ rideId: existingId });
         return;
       }
-      setError(e?.response?.data?.message ?? 'Yolculuk oluşturulamadı.');
+      setError(e?.response?.data?.message ?? t('taxi.destination.rideCreateFailed'));
     } finally {
       setLoadingCreate(false);
       setStripeBusy(false);
@@ -372,7 +374,7 @@ export default function TaxiDestinationScreen({ navigation }: any) {
           <Navigation size={16} color={theme.colors.success} strokeWidth={2.5} />
           <View style={s.inputWrap}>
             <Input
-              placeholder="Nereden? (kalkış)"
+              placeholder={t('taxi.destination.fromPlaceholder')}
               value={pickupQuery}
               onChangeText={handlePickupChange}
               onFocus={() => setActiveField('pickup')}
@@ -386,7 +388,7 @@ export default function TaxiDestinationScreen({ navigation }: any) {
           <MapPin size={16} color={theme.colors.error} strokeWidth={2.5} />
           <View style={s.inputWrap}>
             <Input
-              placeholder="Nereye? (varış)"
+              placeholder={t('taxi.destination.toPlaceholder')}
               value={dropoffQuery}
               onChangeText={handleDropoffChange}
               onFocus={() => setActiveField('dropoff')}
@@ -505,7 +507,7 @@ export default function TaxiDestinationScreen({ navigation }: any) {
           haptic="medium"
           style={{ backgroundColor: theme.taxi.main, marginTop: theme.space[3] }}
         >
-          {selectedPaymentMethod === 'online' ? 'Öde ve Taksi Çağır' : 'Taksi Çağır'}
+          {selectedPaymentMethod === 'online' ? t('taxi.destination.payAndCall') : t('taxi.destination.call')}
         </Button>
         </ScrollView>
       </View>

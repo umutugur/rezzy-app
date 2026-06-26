@@ -979,7 +979,15 @@
       "rideCompleted": "Yolculuğunuz tamamlandı",
       "rateDriver": "Sürücünüzü değerlendirin",
       "submitRating": "Puanı Gönder",
-      "skip": "Atla"
+      "skip": "Atla",
+      "cancelledTitle": "Yolculuk İptal Edildi",
+      "cancelledMsg": "Sürücü yolculuğu iptal etti.",
+      "reasonTimeout": "Sürücü bulunamadı (zaman aşımı)",
+      "notFoundTitle": "Sürücü Bulunamadı",
+      "notFoundMsg": "120 saniye içinde uygun sürücü bulunamadı. Lütfen tekrar deneyin.",
+      "reasonByPassenger": "Yolcu tarafından iptal edildi",
+      "cancelFailed": "Yolculuk iptal edilemedi. Lütfen tekrar deneyin.",
+      "waitingDriver": "Sürücü bekleniyor…"
     },
     "receipt": {
       "title": "Yolculuk Tamamlandı",
@@ -1031,6 +1039,16 @@
       "ratedText": "Değerlendirdiniz",
       "submit": "Gönder",
       "ratingError": "Puanlama kaydedilemedi."
+    },
+    "destination": {
+      "estimateFailed": "Ücret tahmini alınamadı.",
+      "paymentInitFailed": "Ödeme ekranı açılamadı.",
+      "paymentFailed": "Ödeme tamamlanamadı.",
+      "rideCreateFailed": "Yolculuk oluşturulamadı.",
+      "fromPlaceholder": "Nereden? (kalkış)",
+      "toPlaceholder": "Nereye? (varış)",
+      "payAndCall": "Öde ve Taksi Çağır",
+      "call": "Taksi Çağır"
     }
   },
   "driver": {

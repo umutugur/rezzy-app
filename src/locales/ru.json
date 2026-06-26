@@ -707,7 +707,15 @@
       "rideCompleted": "Ride completed",
       "rateDriver": "Rate your driver",
       "submitRating": "Submit Rating",
-      "skip": "Skip"
+      "skip": "Skip",
+      "cancelledTitle": "Поездка отменена",
+      "cancelledMsg": "Водитель отменил поездку.",
+      "reasonTimeout": "Водитель не найден (тайм-аут)",
+      "notFoundTitle": "Водитель не найден",
+      "notFoundMsg": "За 120 секунд подходящий водитель не найден. Попробуйте ещё раз.",
+      "reasonByPassenger": "Отменено пассажиром",
+      "cancelFailed": "Не удалось отменить поездку. Попробуйте ещё раз.",
+      "waitingDriver": "Ожидание водителя…"
     },
     "receipt": {
       "title": "Ride Completed",
@@ -729,6 +737,16 @@
       "cash": "Cash",
       "card": "Card",
       "online": "Online"
+    },
+    "destination": {
+      "estimateFailed": "Не удалось рассчитать стоимость.",
+      "paymentInitFailed": "Не удалось открыть оплату.",
+      "paymentFailed": "Оплата не завершена.",
+      "rideCreateFailed": "Не удалось создать поездку.",
+      "fromPlaceholder": "Откуда? (подача)",
+      "toPlaceholder": "Куда? (назначение)",
+      "payAndCall": "Оплатить и вызвать такси",
+      "call": "Вызвать такси"
     }
   },
   "homeLanding": {

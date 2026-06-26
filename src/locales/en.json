@@ -1019,7 +1019,15 @@
       "rideCompleted": "Ride completed",
       "rateDriver": "Rate your driver",
       "submitRating": "Submit Rating",
-      "skip": "Skip"
+      "skip": "Skip",
+      "cancelledTitle": "Ride Cancelled",
+      "cancelledMsg": "The driver cancelled the ride.",
+      "reasonTimeout": "No driver found (timeout)",
+      "notFoundTitle": "No Driver Found",
+      "notFoundMsg": "No available driver was found within 120 seconds. Please try again.",
+      "reasonByPassenger": "Cancelled by passenger",
+      "cancelFailed": "Couldn't cancel the ride. Please try again.",
+      "waitingDriver": "Waiting for driver…"
     },
     "receipt": {
       "title": "Ride Completed",
@@ -1071,6 +1079,16 @@
       "ratedText": "You rated this ride",
       "submit": "Submit",
       "ratingError": "Could not save rating."
+    },
+    "destination": {
+      "estimateFailed": "Couldn't get fare estimate.",
+      "paymentInitFailed": "Couldn't open payment sheet.",
+      "paymentFailed": "Payment couldn't be completed.",
+      "rideCreateFailed": "Couldn't create ride.",
+      "fromPlaceholder": "From? (pickup)",
+      "toPlaceholder": "Where to? (drop-off)",
+      "payAndCall": "Pay & Call Taxi",
+      "call": "Call Taxi"
     }
   },
   "driver": {

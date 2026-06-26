@@ -727,7 +727,15 @@
       "rideCompleted": "Ride completed",
       "rateDriver": "Rate your driver",
       "submitRating": "Submit Rating",
-      "skip": "Skip"
+      "skip": "Skip",
+      "cancelledTitle": "Η διαδρομή ακυρώθηκε",
+      "cancelledMsg": "Ο οδηγός ακύρωσε τη διαδρομή.",
+      "reasonTimeout": "Δεν βρέθηκε οδηγός (λήξη χρόνου)",
+      "notFoundTitle": "Δεν Βρέθηκε Οδηγός",
+      "notFoundMsg": "Δεν βρέθηκε διαθέσιμος οδηγός σε 120 δευτερόλεπτα. Δοκιμάστε ξανά.",
+      "reasonByPassenger": "Ακυρώθηκε από τον επιβάτη",
+      "cancelFailed": "Δεν ήταν δυνατή η ακύρωση. Δοκιμάστε ξανά.",
+      "waitingDriver": "Αναμονή οδηγού…"
     },
     "receipt": {
       "title": "Ride Completed",
@@ -749,6 +757,16 @@
       "cash": "Cash",
       "card": "Card",
       "online": "Online"
+    },
+    "destination": {
+      "estimateFailed": "Δεν ήταν δυνατός ο υπολογισμός κόστους.",
+      "paymentInitFailed": "Δεν ήταν δυνατό το άνοιγμα πληρωμής.",
+      "paymentFailed": "Η πληρωμή δεν ολοκληρώθηκε.",
+      "rideCreateFailed": "Δεν ήταν δυνατή η δημιουργία διαδρομής.",
+      "fromPlaceholder": "Από; (παραλαβή)",
+      "toPlaceholder": "Πού; (προορισμός)",
+      "payAndCall": "Πληρωμή & Κλήση Ταξί",
+      "call": "Κλήση Ταξί"
     }
   },
   "homeLanding": {

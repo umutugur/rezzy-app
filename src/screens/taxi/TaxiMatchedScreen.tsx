@@ -161,7 +161,7 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
     const onStatusChange = (payload: any) => {
       if (payload.status === 'cancelled') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-        setInfoModal({ title: 'Yolculuk İptal Edildi', message: 'Sürücü yolculuğu iptal etti.', onOk: () => navigation.goBack() });
+        setInfoModal({ title: t('taxi.matched.cancelledTitle'), message: t('taxi.matched.cancelledMsg'), onOk: () => navigation.goBack() });
       } else if (payload.status === 'matched') {
         // Sürücü kabul etti — sürücü bilgilerini (ad, plaka, araç) çek
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -254,12 +254,12 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
     if (rideStatusRef.current !== 'searching') return;
 
     // Sürücü bulunamadı — otomatik iptal
-    cancelRide(rideId, 'Sürücü bulunamadı (zaman aşımı)')
+    cancelRide(rideId, t('taxi.matched.reasonTimeout'))
       .catch(() => {})
       .finally(() => {
         setActiveRide(null);
         setIsSearching(false);
-        setInfoModal({ title: 'Sürücü Bulunamadı', message: '120 saniye içinde uygun sürücü bulunamadı. Lütfen tekrar deneyin.', onOk: () => navigation.replace('TaxiDestination') });
+        setInfoModal({ title: t('taxi.matched.notFoundTitle'), message: t('taxi.matched.notFoundMsg'), onOk: () => navigation.replace('TaxiDestination') });
       });
   // secondsLeft 0'a düştüğünde bir kez çalışması yeterli
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -268,12 +268,12 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
   const handleCancel = useCallback(async () => {
     setCancelling(true);
     try {
-      await cancelRide(rideId, 'Yolcu tarafından iptal edildi');
+      await cancelRide(rideId, t('taxi.matched.reasonByPassenger'));
       setActiveRide(null);
       setIsSearching(false);
       navigation.goBack();
     } catch {
-      setCancelError('Yolculuk iptal edilemedi. Lütfen tekrar deneyin.');
+      setCancelError(t('taxi.matched.cancelFailed'));
     } finally {
       setCancelling(false);
     }
@@ -300,7 +300,7 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
 
   const driver = ride?.driver;
   const driverUser = driver?.user ?? driver;
-  const driverName: string = (driverUser as any)?.name ?? 'Sürücü bekleniyor…';
+  const driverName: string = (driverUser as any)?.name ?? t('taxi.matched.waitingDriver');
   const driverRating: number = driver?.rating ?? 5.0;
   const driverPlate: string = driver?.vehiclePlate ?? '';
   const driverVehicle: string = driver?.vehicleModel ?? '';
