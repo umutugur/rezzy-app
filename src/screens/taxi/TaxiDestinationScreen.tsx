@@ -265,13 +265,34 @@ export default function TaxiDestinationScreen({ navigation }: any) {
         longitudeDelta: 0.08,
       };
 
+  // Gerçek yol rotasını cihazdan doğrudan OSRM'den çek (Render egress'ine bağlı kalmadan).
+  const [roadCoords, setRoadCoords] = useState<{ latitude: number; longitude: number }[]>([]);
+  useEffect(() => {
+    if (!pickupCoords || !dropoffCoords) { setRoadCoords([]); return; }
+    let cancelled = false;
+    const url =
+      `https://router.project-osrm.org/route/v1/driving/` +
+      `${pickupCoords.lng},${pickupCoords.lat};${dropoffCoords.lng},${dropoffCoords.lat}` +
+      `?overview=full&geometries=geojson`;
+    fetch(url)
+      .then((r) => r.json())
+      .then((d) => {
+        const c = d?.routes?.[0]?.geometry?.coordinates;
+        if (!cancelled && Array.isArray(c) && c.length >= 2) {
+          setRoadCoords(c.map(([lng, lat]: number[]) => ({ latitude: lat, longitude: lng })));
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [pickupCoords?.lat, pickupCoords?.lng, dropoffCoords?.lat, dropoffCoords?.lng]);
+
   const routeCoords =
-    fareEstimate?.geometry && fareEstimate.geometry.length >= 2
-      ? // OSRM gerçek yol rotası — sokakları takip eder
-        fareEstimate.geometry.map((p) => ({ latitude: p.lat, longitude: p.lng }))
+    roadCoords.length >= 2
+      ? roadCoords
+      : fareEstimate?.geometry && fareEstimate.geometry.length >= 2
+      ? fareEstimate.geometry.map((p) => ({ latitude: p.lat, longitude: p.lng }))
       : pickupCoords && dropoffCoords
-      ? // Henüz tahmin gelmediyse geçici düz çizgi
-        [
+      ? [
           { latitude: pickupCoords.lat, longitude: pickupCoords.lng },
           { latitude: dropoffCoords.lat, longitude: dropoffCoords.lng },
         ]
