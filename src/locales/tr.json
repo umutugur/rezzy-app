@@ -800,7 +800,9 @@
       "pinRequiredTitle": "Konum Gerekli",
       "pinRequiredBody": "Bu sistemde adres için konum (pin) zorunlu.",
       "home": "Ev",
-      "work": "İş"
+      "work": "İş",
+      "other": "Diğer",
+      "useMyLocation": "Konumumu Kullan"
     }
   },
   "myOrders": {

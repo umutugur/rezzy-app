@@ -840,7 +840,9 @@
       "pinRequiredTitle": "Location Required",
       "pinRequiredBody": "A location pin is required to add an address.",
       "home": "Home",
-      "work": "Work"
+      "work": "Work",
+      "other": "Other",
+      "useMyLocation": "Use My Location"
     }
   },
   "myOrders": {
