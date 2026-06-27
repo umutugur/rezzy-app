@@ -109,7 +109,7 @@ export default function TaxiReceiptScreen() {
           <View style={[s.infoRow, s.infoRowBorder]}>
             <Clock size={16} color={theme.colors.textSecondary} strokeWidth={2} />
             <Text style={s.infoLabel}>{t('taxi.receipt.duration')}</Text>
-            <Text style={s.infoValue}>{durationMin} dk</Text>
+            <Text style={s.infoValue}>{durationMin} {t('taxi.unit.min')}</Text>
           </View>
           <View style={[s.infoRow, s.infoRowBorder]}>
             <CreditCard size={16} color={theme.colors.textSecondary} strokeWidth={2} />

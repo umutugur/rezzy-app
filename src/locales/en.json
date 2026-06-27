@@ -1088,7 +1088,16 @@
       "fromPlaceholder": "From? (pickup)",
       "toPlaceholder": "Where to? (drop-off)",
       "payAndCall": "Pay & Call Taxi",
-      "call": "Call Taxi"
+      "call": "Call Taxi",
+      "distance": "Distance",
+      "duration": "Est. time",
+      "paymentTitle": "Payment Method",
+      "cash": "Cash",
+      "card": "Card",
+      "online": "Online"
+    },
+    "unit": {
+      "min": "min"
     }
   },
   "driver": {

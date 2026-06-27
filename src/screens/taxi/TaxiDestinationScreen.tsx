@@ -430,14 +430,14 @@ export default function TaxiDestinationScreen({ navigation }: any) {
         {fareEstimate && !loadingEstimate && (
           <View style={s.estimateCard}>
             <View style={s.estimateMeta}>
-              <Text style={s.estimateMetaLabel}>Mesafe</Text>
+              <Text style={s.estimateMetaLabel}>{t('taxi.destination.distance')}</Text>
               <Text style={s.estimateMetaValue}>
                 {fareEstimate.distanceKm.toFixed(1)} km
               </Text>
             </View>
             <View style={s.estimateMeta}>
-              <Text style={s.estimateMetaLabel}>Tahmini süre</Text>
-              <Text style={s.estimateMetaValue}>{fareEstimate.durationMin} dk</Text>
+              <Text style={s.estimateMetaLabel}>{t('taxi.destination.duration')}</Text>
+              <Text style={s.estimateMetaValue}>{fareEstimate.durationMin} {t('taxi.unit.min')}</Text>
             </View>
             <PriceTag
               amount={fareEstimate.fare}
@@ -451,13 +451,13 @@ export default function TaxiDestinationScreen({ navigation }: any) {
         {/* Ödeme yöntemi — koordinatlar hazır olunca göster */}
         {pickupCoords && dropoffCoords && (
           <View style={s.paymentSection}>
-            <Text style={s.paymentLabel}>Ödeme Yöntemi</Text>
+            <Text style={s.paymentLabel}>{t('taxi.destination.paymentTitle')}</Text>
             <View style={s.paymentRow}>
               {(
                 [
-                  { method: 'cash' as TaxiPaymentMethod, label: 'Nakit', Icon: Banknote },
-                  { method: 'card' as TaxiPaymentMethod, label: 'Kart', Icon: CreditCard },
-                  { method: 'online' as TaxiPaymentMethod, label: 'Online', Icon: Smartphone },
+                  { method: 'cash' as TaxiPaymentMethod, label: t('taxi.destination.cash'), Icon: Banknote },
+                  { method: 'card' as TaxiPaymentMethod, label: t('taxi.destination.card'), Icon: CreditCard },
+                  { method: 'online' as TaxiPaymentMethod, label: t('taxi.destination.online'), Icon: Smartphone },
                 ] as const
               ).map(({ method, label, Icon }) => {
                 const active = selectedPaymentMethod === method;

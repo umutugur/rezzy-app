@@ -177,7 +177,7 @@ export default function TaxiRideDetailScreen({ navigation, route }: any) {
           <View style={s.divider} />
           <InfoRow label={t('taxi.detail.distance')} value={ride.distanceKm ? `${ride.distanceKm.toFixed(1)} km` : '—'} theme={theme} />
           <View style={s.divider} />
-          <InfoRow label={t('taxi.detail.duration')} value={ride.durationMin ? `${ride.durationMin} dk` : '—'} theme={theme} />
+          <InfoRow label={t('taxi.detail.duration')} value={ride.durationMin ? `${ride.durationMin} ${t('taxi.unit.min')}` : '—'} theme={theme} />
           <View style={s.divider} />
           <InfoRow label={t('taxi.detail.fare')} value={ride.fare != null ? formatCurrency(ride.fare, region, language) : '—'} theme={theme} />
           <View style={s.divider} />

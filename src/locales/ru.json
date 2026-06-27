@@ -746,7 +746,16 @@
       "fromPlaceholder": "Откуда? (подача)",
       "toPlaceholder": "Куда? (назначение)",
       "payAndCall": "Оплатить и вызвать такси",
-      "call": "Вызвать такси"
+      "call": "Вызвать такси",
+      "distance": "Расстояние",
+      "duration": "Время в пути",
+      "paymentTitle": "Способ оплаты",
+      "cash": "Наличные",
+      "card": "Карта",
+      "online": "Онлайн"
+    },
+    "unit": {
+      "min": "мин"
     }
   },
   "homeLanding": {

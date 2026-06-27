@@ -766,7 +766,16 @@
       "fromPlaceholder": "Από; (παραλαβή)",
       "toPlaceholder": "Πού; (προορισμός)",
       "payAndCall": "Πληρωμή & Κλήση Ταξί",
-      "call": "Κλήση Ταξί"
+      "call": "Κλήση Ταξί",
+      "distance": "Απόσταση",
+      "duration": "Εκτ. χρόνος",
+      "paymentTitle": "Τρόπος Πληρωμής",
+      "cash": "Μετρητά",
+      "card": "Κάρτα",
+      "online": "Online"
+    },
+    "unit": {
+      "min": "λεπ."
     }
   },
   "homeLanding": {

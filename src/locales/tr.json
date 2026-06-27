@@ -1048,7 +1048,16 @@
       "fromPlaceholder": "Nereden? (kalkış)",
       "toPlaceholder": "Nereye? (varış)",
       "payAndCall": "Öde ve Taksi Çağır",
-      "call": "Taksi Çağır"
+      "call": "Taksi Çağır",
+      "distance": "Mesafe",
+      "duration": "Tahmini süre",
+      "paymentTitle": "Ödeme Yöntemi",
+      "cash": "Nakit",
+      "card": "Kart",
+      "online": "Online"
+    },
+    "unit": {
+      "min": "dk"
     }
   },
   "driver": {

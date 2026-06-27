@@ -423,7 +423,7 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
           <View style={s.etaRow}>
             <Clock size={15} color={theme.colors.success} strokeWidth={2.5} />
             <Text style={s.etaText}>
-              ~{ride.durationMin} dk  •  {ride.distanceKm.toFixed(1)} km
+              ~{ride.durationMin} {t('taxi.unit.min')}  •  {ride.distanceKm.toFixed(1)} km
             </Text>
           </View>
         )}
