@@ -8,18 +8,27 @@ import DeliveryRestaurantScreen from "../screens/DeliveryRestaurantScreen";
 import CartScreen from "../screens/CartScreen";
 import PaymentScreen from "../screens/PaymentScreen";
 import DeliveryAddressPickerScreen from "../screens/DeliveryAddressPickerScreen";
-import DeliveryCreateAddressScreen from "../screens/DeliveryCreateAddressScreen"; // ✅ yeni ekran
+import DeliveryCreateAddressScreen from "../screens/DeliveryCreateAddressScreen";
 import MyOrdersScreen from "../screens/MyOrdersScreen";
+import { useTheme } from "../theme";
 
 const Stack = createStackNavigator<DeliveryStackParams>();
 
 export default function DeliveryNavigator() {
+  const { colors, typography } = useTheme();
+
   return (
     <Stack.Navigator
-      initialRouteName={DeliveryRoutes.AddressPicker}
+      initialRouteName={DeliveryRoutes.DeliveryHome}
       screenOptions={{
         headerShadowVisible: false,
-        headerTitleStyle: { fontWeight: "800" },
+        headerStyle: { backgroundColor: colors.background },
+        headerTintColor: colors.primary,
+        headerTitleStyle: {
+          fontWeight: "800",
+          fontSize: typography.headingMd.fontSize,
+          color: colors.textPrimary,
+        },
       }}
     >
       <Stack.Screen
@@ -32,25 +41,31 @@ export default function DeliveryNavigator() {
         component={MyOrdersScreen}
         options={{ title: "Siparişlerim" }}
       />
-
       <Stack.Screen
         name={DeliveryRoutes.CreateAddress}
         component={DeliveryCreateAddressScreen}
-        options={{ title: "Adres Ekle" }}
+        options={{ headerShown: false }}
       />
-
       <Stack.Screen
         name={DeliveryRoutes.DeliveryHome}
         component={DeliveryHomeScreen}
-        options={{ title: "Paket Servis" }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name={DeliveryRoutes.DeliveryRestaurant}
         component={DeliveryRestaurantScreen}
         options={{ title: "Menü" }}
       />
-      <Stack.Screen name={DeliveryRoutes.Cart} component={CartScreen} options={{ title: "Sepet" }} />
-      <Stack.Screen name={DeliveryRoutes.Checkout} component={PaymentScreen} options={{ title: "Ödeme" }} />
+      <Stack.Screen
+        name={DeliveryRoutes.Cart}
+        component={CartScreen}
+        options={{ title: "Sepet" }}
+      />
+      <Stack.Screen
+        name={DeliveryRoutes.Checkout}
+        component={PaymentScreen}
+        options={{ title: "Ödeme" }}
+      />
     </Stack.Navigator>
   );
 }
