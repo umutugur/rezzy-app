@@ -108,32 +108,40 @@ export default function HomeLandingScreen() {
   const insets = useSafeAreaInsets();
   const { setSelectedAddress } = useDeliveryAddress();
 
-  // Paket Servis'e basınca GPS ile en yakın adresi otomatik seç
-  const handleDeliveryPress = React.useCallback(async () => {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === "granted") {
-        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-        const { latitude, longitude } = loc.coords;
-        const addrs = await listMyAddresses();
-        if (addrs.length > 0) {
-          let nearest = addrs[0];
-          let minDist = Infinity;
-          for (const addr of addrs) {
-            const coords = addr.location?.coordinates;
-            if (!coords) continue;
-            const dist = haversineKm(latitude, longitude, coords[1], coords[0]);
-            if (dist < minDist) { minDist = dist; nearest = addr; }
-          }
-          if (minDist < 100) setSelectedAddress(nearest);
-          else {
-            const def = addrs.find((a) => a.isDefault) ?? addrs[0];
-            setSelectedAddress(def);
-          }
-        }
-      }
-    } catch { /* izin yok veya hata — mevcut seçim kalır */ }
+  // Paket Servis'e basınca GPS ile en yakın adresi otomatik seç.
+  // ÖNEMLİ: navigasyonu GPS'e BLOKLAMA — gerçek cihazda GPS soğuk başlangıcı
+  // onlarca saniye sürebilir. Hemen geç, en yakın adresi arka planda seç.
+  const handleDeliveryPress = React.useCallback(() => {
+    // 1) Ekranı anında aç.
     nav.navigate("Delivery");
+
+    // 2) En yakın kayıtlı adresi arka planda çöz (fire-and-forget).
+    (async () => {
+      try {
+        // Önce adresleri çek; kayıtlı adres yoksa GPS'e hiç gerek yok (seçilecek bir şey yok).
+        const addrs = await listMyAddresses();
+        if (!addrs.length) return;
+
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") return;
+
+        // Son bilinen konum anında döner; yoksa taze fix al.
+        const loc =
+          (await Location.getLastKnownPositionAsync()) ??
+          (await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }));
+        const { latitude, longitude } = loc.coords;
+
+        let nearest = addrs[0];
+        let minDist = Infinity;
+        for (const addr of addrs) {
+          const coords = addr.location?.coordinates;
+          if (!coords) continue;
+          const dist = haversineKm(latitude, longitude, coords[1], coords[0]);
+          if (dist < minDist) { minDist = dist; nearest = addr; }
+        }
+        setSelectedAddress(minDist < 100 ? nearest : (addrs.find((a) => a.isDefault) ?? addrs[0]));
+      } catch { /* izin yok veya hata — mevcut seçim kalır */ }
+    })();
   }, [nav, setSelectedAddress]);
 
   // Stagger entrance animasyonu (5 kart için)
