@@ -132,6 +132,7 @@ export type CreateOrderPayload = {
   deliveryAddressId?: string | null;
   note?: string;
   paymentMethod?: PaymentMethod;
+  couponCampaignId?: string;
 };
 
 // ─── API Functions ──────────────────────────────────────────────────────────────
@@ -163,8 +164,13 @@ export interface ProductDetailResponse {
   related: MarketProduct[];
 }
 
-export async function getProduct(id: string): Promise<ProductDetailResponse> {
-  const { data } = await api.get(`/market/products/${id}`);
+export async function getProduct(
+  id: string,
+  storeId?: string | null,
+): Promise<ProductDetailResponse> {
+  const { data } = await api.get(`/market/products/${id}`, {
+    params: storeId ? { storeId } : undefined,
+  });
   return data as ProductDetailResponse;
 }
 
@@ -177,19 +183,34 @@ export async function getStoreDetail(id: string): Promise<MarketStore> {
 }
 
 /**
- * Market ürünleri — opsiyonel kategori + arama filtresi.
+ * Market ürünleri — opsiyonel kategori + arama filtresi, sayfalı (sonsuz kaydırma).
  */
 export async function getProducts(
   storeId: string,
   category?: string | null,
   q?: string,
+  page = 1,
+  limit = 40,
 ): Promise<PaginatedResponse<MarketProduct>> {
-  const params: Record<string, any> = { limit: 100 };
+  const params: Record<string, any> = { page, limit };
   if (category) params.category = category;
   if (q && q.trim().length >= 2) params.q = q.trim();
 
   const res = await api.get(`/market/stores/${storeId}/products`, { params });
   return res.data as PaginatedResponse<MarketProduct>;
+}
+
+export type StoreCategory = MarketProductCategory & { count: number };
+
+/**
+ * Mağaza kataloğundaki tüm kategoriler (i18n + adet) — kategori tab'ları için.
+ * Sayfalı ürün listesinden bağımsız tam liste döner.
+ */
+export async function getStoreCategories(
+  storeId: string,
+): Promise<StoreCategory[]> {
+  const { data } = await api.get(`/market/stores/${storeId}/categories`);
+  return (data?.items ?? []) as StoreCategory[];
 }
 
 // ─── Koleksiyonlar ───────────────────────────────────────────────────────────

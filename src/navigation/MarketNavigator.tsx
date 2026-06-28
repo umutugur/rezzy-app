@@ -13,6 +13,7 @@ import MarketOwnerDashboardScreen from "../screens/market/MarketOwnerDashboardSc
 import ProductDetailScreen from "../screens/market/ProductDetailScreen";
 import MarketSearchScreen from "../screens/market/MarketSearchScreen";
 import MarketCollectionScreen from "../screens/market/MarketCollectionScreen";
+import MyCouponsScreen from "../screens/promotions/MyCouponsScreen";
 
 const Stack = createStackNavigator<MarketStackParams>();
 
@@ -73,6 +74,11 @@ export default function MarketNavigator() {
       <Stack.Screen
         name={MarketRoutes.Collection}
         component={MarketCollectionScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name={MarketRoutes.MyCoupons}
+        component={MyCouponsScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

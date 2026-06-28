@@ -12,6 +12,34 @@
     "info": "Bilgi",
     "noResults": "Sonuç bulunamadı."
   },
+  "promotions": {
+    "title": "Kuponlarım",
+    "subtitle": "Sana özel indirimler ve fırsatlar",
+    "myCoupons": "Kuponlarım",
+    "collectible": "Toplanabilir",
+    "collect": "Al",
+    "conditions": "Koşullar",
+    "minCart": "Min. sepet {{amount}}",
+    "expiry": "Son: {{date}}",
+    "limited": "Sınırlı sayıda",
+    "remaining": "kalan ~{{count}}",
+    "expiringSoon": "Son {{count}} gün",
+    "apply": "Kupon uygula",
+    "applyTitle": "Kupon seç",
+    "discountLine": "İndirim",
+    "noApplicable": "Bu sepet için uygun kupon yok.",
+    "removeCoupon": "Kaldır",
+    "emptyMineTitle": "Henüz kuponun yok",
+    "emptyMineSub": "Toplanabilir kuponları aşağıdan al.",
+    "loadError": "Kuponlar yüklenemedi.",
+    "collectError": "Kupon alınamadı. Tekrar dene.",
+    "discount": {
+      "percent": "%{{value}} indirim",
+      "fixed": "{{value}} TL indirim",
+      "freeDelivery": "Ücretsiz teslimat",
+      "fixedPrice": "Sabit fiyat {{value}} TL"
+    }
+  },
   "profile": {
     "title": "Profil",
     "logout": "Çıkış yap",

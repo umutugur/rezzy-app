@@ -12,6 +12,34 @@
     "info": "Info",
     "noResults": "No results found."
   },
+  "promotions": {
+    "title": "My Coupons",
+    "subtitle": "Discounts and deals just for you",
+    "myCoupons": "My Coupons",
+    "collectible": "Available to collect",
+    "collect": "Get",
+    "conditions": "Terms",
+    "minCart": "Min. cart {{amount}}",
+    "expiry": "Until {{date}}",
+    "limited": "Limited quantity",
+    "remaining": "~{{count}} left",
+    "expiringSoon": "{{count}} days left",
+    "apply": "Apply coupon",
+    "applyTitle": "Choose a coupon",
+    "discountLine": "Discount",
+    "noApplicable": "No coupons available for this cart.",
+    "removeCoupon": "Remove",
+    "emptyMineTitle": "No coupons yet",
+    "emptyMineSub": "Collect coupons from the list below.",
+    "loadError": "Failed to load coupons.",
+    "collectError": "Couldn't get the coupon. Try again.",
+    "discount": {
+      "percent": "{{value}}% off",
+      "fixed": "{{value}} TL off",
+      "freeDelivery": "Free delivery",
+      "fixedPrice": "Fixed price {{value}} TL"
+    }
+  },
   "profile": {
     "title": "Profile",
     "logout": "Logout",

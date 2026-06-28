@@ -43,6 +43,7 @@ import { useMarketCart } from "../../store/useMarketStore";
 import { useDeliveryAddress } from "../../store/useDeliveryAddress";
 import { listMyAddresses, type UserAddress } from "../../api/addresses";
 import { listActiveBanners, type BannerItem } from "../../api/banners";
+import { getStoreBadges } from "../../api/promotions.api";
 import { MarketRoutes } from "../../navigation/marketRoutes";
 
 // ─── Kategori veri ────────────────────────────────────────────────────────────
@@ -405,10 +406,12 @@ function StoreCard({
   store,
   onPress,
   distanceKm,
+  promoBadge,
 }: {
   store: MarketStore;
   onPress: () => void;
   distanceKm?: number | null;
+  promoBadge?: string | null;
 }) {
   const theme = useTheme();
   const { t, language } = useI18n();
@@ -428,6 +431,12 @@ function StoreCard({
         theme.getElevation(1),
       ]}
     >
+      {promoBadge ? (
+        <View style={sc.promoRibbon}>
+          <Ionicons name="pricetag" size={10} color="#fff" />
+          <Text style={sc.promoRibbonText} numberOfLines={1}>{promoBadge}</Text>
+        </View>
+      ) : null}
       <View style={sc.row}>
         <View style={sc.logoWrap}>
           {logoUri ? (
@@ -745,6 +754,7 @@ export default function MarketHomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<UICategoryKey>("all");
   const [searchText, setSearchText] = useState("");
+  const [storeBadges, setStoreBadges] = useState<Record<string, string>>({});
 
   // Banner + koleksiyonlar
   const [banners, setBanners] = useState<BannerItem[]>([]);
@@ -940,6 +950,25 @@ export default function MarketHomeScreen() {
     fetchStores(selectedCategory);
   }, [selectedCategory, fetchStores]);
 
+  // ── Mağaza promosyon rozetleri (liste yüklendikten sonra tek seferde) ──────────
+  useEffect(() => {
+    if (stores.length === 0) {
+      setStoreBadges({});
+      return;
+    }
+    let alive = true;
+    (async () => {
+      try {
+        const ids = stores.map((s) => s._id);
+        const res = await getStoreBadges("market", ids);
+        if (alive) setStoreBadges(res.badges);
+      } catch {
+        if (alive) setStoreBadges({});
+      }
+    })();
+    return () => { alive = false; };
+  }, [stores]);
+
   // ── Banner + koleksiyon yükleme ─────────────────────────────────────────────
   useEffect(() => {
     let alive = true;
@@ -1005,6 +1034,7 @@ export default function MarketHomeScreen() {
         <StoreCard
           store={item}
           distanceKm={distanceKm}
+          promoBadge={storeBadges[item._id] ?? null}
           onPress={() =>
             navigation.navigate(MarketRoutes.StoreDetail, {
               storeId: item._id,
@@ -1015,7 +1045,7 @@ export default function MarketHomeScreen() {
         />
       );
     },
-    [navigation, serviceMode, pickupLocation]
+    [navigation, serviceMode, pickupLocation, storeBadges]
   );
 
   return (
@@ -1485,6 +1515,22 @@ const sc = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "#E5E7EB",
   },
   catText: { fontSize: 11, fontWeight: "600", color: "#6B7280" },
+  promoRibbon: {
+    position: "absolute",
+    top: 10,
+    right: 0,
+    zIndex: 2,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    maxWidth: "55%",
+    backgroundColor: "#15803D",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderTopLeftRadius: 8,
+    borderBottomLeftRadius: 8,
+  },
+  promoRibbonText: { fontSize: 10, fontWeight: "800", color: "#fff" },
 });
 
 const ls = StyleSheet.create({

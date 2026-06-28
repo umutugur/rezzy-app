@@ -21,8 +21,9 @@ import { useTheme } from "../../contexts/ThemeContext";
 import { useI18n } from "../../i18n";
 import { useRegion } from "../../store/useRegion";
 import { formatCurrency } from "../../utils/format";
-import { Badge, Button, EmptyState, PriceTag } from "../../components/ui";
+import { Badge, BottomSheet, Button, EmptyState, PriceTag } from "../../components/ui";
 import { createOrder, getStoreDetail, type MarketStore, type OrderLinePayload, type PaymentMethod } from "../../api/market.api";
+import { getApplicable, discountSummary, type ApplicableItem } from "../../api/promotions.api";
 import { listMyAddresses, type UserAddress } from "../../api/addresses";
 import {
   computeDeliveryFee,
@@ -288,6 +289,12 @@ export default function MarketCartScreen() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
   const [error, setError] = useState<string | null>(null);
 
+  // Kupon
+  const [couponSheetOpen, setCouponSheetOpen] = useState(false);
+  const [applicable, setApplicable] = useState<ApplicableItem[]>([]);
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [selectedCouponCampaignId, setSelectedCouponCampaignId] = useState<string | null>(null);
+
   const subtotal = computeSubtotal(items);
   const deliveryFee = computeDeliveryFee(
     deliveryType,
@@ -295,7 +302,13 @@ export default function MarketCartScreen() {
     store?.deliveryFee ?? 0,
     store?.freeDeliveryThreshold ?? null,
   );
-  const total = computeTotal(subtotal, deliveryFee);
+  const baseTotal = computeTotal(subtotal, deliveryFee);
+
+  const selectedCoupon = applicable.find(
+    (a) => a.campaign._id === selectedCouponCampaignId,
+  );
+  const couponDiscount = selectedCoupon?.discount ?? 0;
+  const total = Math.max(baseTotal - couponDiscount, 0);
 
   const belowMin =
     store != null &&
@@ -347,6 +360,7 @@ export default function MarketCartScreen() {
         deliveryAddressId:
           deliveryType === "delivery" ? selectedAddressId : null,
         paymentMethod,
+        couponCampaignId: selectedCouponCampaignId ?? undefined,
       });
 
       const { order, payment } = result;
@@ -409,9 +423,31 @@ export default function MarketCartScreen() {
     clearCart,
     navigation,
     paymentMethod,
+    selectedCouponCampaignId,
     initPaymentSheet,
     presentPaymentSheet,
   ]);
+
+  // ─── Kupon: uygulanabilir kuponları getir ─────────────────────────────────────
+  const openCouponSheet = useCallback(async () => {
+    if (!storeId) return;
+    setCouponSheetOpen(true);
+    setCouponLoading(true);
+    try {
+      const res = await getApplicable({
+        surface: "market",
+        storeId,
+        subtotal,
+        deliveryFee,
+        paymentMethod,
+      });
+      setApplicable(res.items);
+    } catch {
+      setApplicable([]);
+    } finally {
+      setCouponLoading(false);
+    }
+  }, [storeId, subtotal, deliveryFee, paymentMethod]);
 
   // ⚠️ renderItem MUST be before the early return — hooks cannot be called after a return
   const renderItem = useCallback(
@@ -662,6 +698,42 @@ export default function MarketCartScreen() {
           </View>
         )}
 
+        {/* Kupon uygula */}
+        <Pressable
+          onPress={selectedCoupon ? () => setSelectedCouponCampaignId(null) : openCouponSheet}
+          style={[
+            styles.section,
+            styles.couponRow,
+            {
+              paddingHorizontal: theme.space[4],
+              paddingVertical: theme.space[4],
+              borderTopColor: theme.colors.borderDefault,
+              gap: theme.space[3],
+            },
+          ]}
+        >
+          <Ionicons name="pricetag-outline" size={20} color={theme.market.main} />
+          <View style={{ flex: 1 }}>
+            {selectedCoupon ? (
+              <>
+                <Text style={{ ...theme.typography.labelMd, color: theme.colors.textPrimary }} numberOfLines={1}>
+                  {selectedCoupon.campaign.title}
+                </Text>
+                <Text style={{ ...theme.typography.caption, color: theme.market.main, marginTop: 1 }}>
+                  {discountSummary(selectedCoupon.campaign.discount, t)}
+                </Text>
+              </>
+            ) : (
+              <Text style={{ ...theme.typography.labelMd, color: theme.colors.textPrimary }}>
+                {t("promotions.apply")}
+              </Text>
+            )}
+          </View>
+          <Text style={{ ...theme.typography.labelSm, color: theme.market.main, fontWeight: "700" }}>
+            {selectedCoupon ? t("promotions.removeCoupon") : t("common.select", { defaultValue: "Seç" })}
+          </Text>
+        </Pressable>
+
         {/* Fiyat özeti */}
         <View
           style={[
@@ -701,6 +773,17 @@ export default function MarketCartScreen() {
               <PriceTag amount={deliveryFee} size="sm" />
             )}
           </View>
+
+          {couponDiscount > 0 && (
+            <View style={styles.summaryRow}>
+              <Text style={{ ...theme.typography.bodyMd, color: theme.market.main }}>
+                {t("promotions.discountLine")}
+              </Text>
+              <Text style={{ ...theme.typography.labelMd, color: theme.market.main }}>
+                -{formatCurrency(couponDiscount, region, language)}
+              </Text>
+            </View>
+          )}
 
           <View
             style={[
@@ -754,6 +837,83 @@ export default function MarketCartScreen() {
           )}
         </Button>
       </View>
+
+      {/* Kupon seçim sheet'i */}
+      <BottomSheet
+        isOpen={couponSheetOpen}
+        onClose={() => setCouponSheetOpen(false)}
+        snapPoints={["55%"]}
+        title={t("promotions.applyTitle")}
+      >
+        {couponLoading ? (
+          <View style={{ paddingVertical: theme.space[8], alignItems: "center" }}>
+            <ActivityIndicator color={theme.market.main} />
+          </View>
+        ) : applicable.length === 0 ? (
+          <Text
+            style={{
+              ...theme.typography.bodyMd,
+              color: theme.colors.textSecondary,
+              textAlign: "center",
+              paddingVertical: theme.space[6],
+              paddingHorizontal: theme.space[4],
+            }}
+          >
+            {t("promotions.noApplicable")}
+          </Text>
+        ) : (
+          <View style={{ paddingHorizontal: theme.space[4], gap: theme.space[2] }}>
+            {applicable.map((item) => {
+              const active = item.campaign._id === selectedCouponCampaignId;
+              return (
+                <Pressable
+                  key={item.campaign._id}
+                  onPress={() => {
+                    setSelectedCouponCampaignId(item.campaign._id);
+                    setCouponSheetOpen(false);
+                  }}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: theme.space[3],
+                    padding: theme.space[3],
+                    borderRadius: theme.radius.md,
+                    borderWidth: active ? 2 : StyleSheet.hairlineWidth,
+                    borderColor: active ? theme.market.main : theme.colors.borderDefault,
+                    backgroundColor: active ? theme.market.light : theme.colors.surfaceAlt,
+                  }}
+                >
+                  <Ionicons name="pricetag" size={20} color={theme.market.main} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ ...theme.typography.labelMd, color: theme.colors.textPrimary }} numberOfLines={1}>
+                      {item.campaign.title}
+                    </Text>
+                    <Text style={{ ...theme.typography.caption, color: theme.market.main, marginTop: 1 }}>
+                      {discountSummary(item.campaign.discount, t)}
+                    </Text>
+                  </View>
+                  <Text style={{ ...theme.typography.labelMd, color: theme.market.main, fontWeight: "700" }}>
+                    -{formatCurrency(item.discount, region, language)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+            {selectedCouponCampaignId && (
+              <Pressable
+                onPress={() => {
+                  setSelectedCouponCampaignId(null);
+                  setCouponSheetOpen(false);
+                }}
+                style={{ paddingVertical: theme.space[3], alignItems: "center" }}
+              >
+                <Text style={{ ...theme.typography.labelMd, color: theme.colors.error }}>
+                  {t("promotions.removeCoupon")}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+      </BottomSheet>
     </View>
   );
 }
@@ -782,6 +942,7 @@ const styles = StyleSheet.create({
   },
   deliveryCard: { alignItems: "center" },
   section: { borderTopWidth: StyleSheet.hairlineWidth },
+  couponRow: { flexDirection: "row", alignItems: "center" },
   addressRow: { flexDirection: "row", alignItems: "flex-start" },
   summaryRow: {
     flexDirection: "row",

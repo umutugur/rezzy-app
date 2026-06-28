@@ -1234,6 +1234,18 @@ export default function ProfileScreen() {
         </PremiumSection>
       )}
 
+      {/* Kuponlarım */}
+      {user?.role === "customer" && (
+        <PremiumSection title={t("promotions.title")}>
+          <ListRow
+            icon="ticket-percent-outline"
+            label={t("promotions.myCoupons")}
+            onPress={() => navigation.navigate("Market", { screen: "MarketMyCoupons" })}
+            isLast
+          />
+        </PremiumSection>
+      )}
+
       {/* Yasal & Destek */}
       <PremiumSection title={t("profile.section.legalSupport")}>
         <ListRow icon="file-document-outline"  label={t("profile.legal.terms")}         onPress={goTerms} />
@@ -2157,6 +2169,7 @@ const ROW_ACCENT: Record<string, { bg: string; color: string }> = {
   "email-outline":         { bg: "#FFF0F0", color: "#8B1A1A" },
   "certificate-outline":   { bg: "#FFFBEB", color: "#B45309" },
   "information-outline":   { bg: "#F5F3FF", color: "#6D28D9" },
+  "ticket-percent-outline":{ bg: "#F0FDF4", color: "#15803D" },
   "trash-can-outline":     { bg: "#FEF2F2", color: "#DC2626" },
 };
 

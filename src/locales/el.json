@@ -12,6 +12,34 @@
     "info": "Πληροφορία",
     "noResults": "Δεν βρέθηκαν αποτελέσματα."
   },
+  "promotions": {
+    "title": "Τα κουπόνια μου",
+    "subtitle": "Εκπτώσεις και προσφορές για εσένα",
+    "myCoupons": "Τα κουπόνια μου",
+    "collectible": "Διαθέσιμα προς συλλογή",
+    "collect": "Λήψη",
+    "conditions": "Όροι",
+    "minCart": "Ελάχ. καλάθι {{amount}}",
+    "expiry": "Έως {{date}}",
+    "limited": "Περιορισμένη ποσότητα",
+    "remaining": "απομένουν ~{{count}}",
+    "expiringSoon": "{{count}} ημέρες ακόμη",
+    "apply": "Εφαρμογή κουπονιού",
+    "applyTitle": "Επιλέξτε κουπόνι",
+    "discountLine": "Έκπτωση",
+    "noApplicable": "Δεν υπάρχουν διαθέσιμα κουπόνια για αυτό το καλάθι.",
+    "removeCoupon": "Αφαίρεση",
+    "emptyMineTitle": "Δεν έχετε κουπόνια ακόμη",
+    "emptyMineSub": "Συλλέξτε κουπόνια από την παρακάτω λίστα.",
+    "loadError": "Αποτυχία φόρτωσης κουπονιών.",
+    "collectError": "Αποτυχία λήψης κουπονιού. Δοκιμάστε ξανά.",
+    "discount": {
+      "percent": "Έκπτωση {{value}}%",
+      "fixed": "Έκπτωση {{value}} TL",
+      "freeDelivery": "Δωρεάν παράδοση",
+      "fixedPrice": "Σταθερή τιμή {{value}} TL"
+    }
+  },
   "profile": {
     "title": "Προφίλ",
     "logout": "Αποσύνδεση",

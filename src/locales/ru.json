@@ -12,6 +12,34 @@
     "info": "Информация",
     "noResults": "Ничего не найдено."
   },
+  "promotions": {
+    "title": "Мои купоны",
+    "subtitle": "Скидки и предложения для вас",
+    "myCoupons": "Мои купоны",
+    "collectible": "Можно получить",
+    "collect": "Взять",
+    "conditions": "Условия",
+    "minCart": "Мин. корзина {{amount}}",
+    "expiry": "До {{date}}",
+    "limited": "Ограниченное количество",
+    "remaining": "осталось ~{{count}}",
+    "expiringSoon": "Осталось {{count}} дн.",
+    "apply": "Применить купон",
+    "applyTitle": "Выберите купон",
+    "discountLine": "Скидка",
+    "noApplicable": "Нет подходящих купонов для этой корзины.",
+    "removeCoupon": "Убрать",
+    "emptyMineTitle": "Купонов пока нет",
+    "emptyMineSub": "Получите купоны из списка ниже.",
+    "loadError": "Не удалось загрузить купоны.",
+    "collectError": "Не удалось получить купон. Повторите.",
+    "discount": {
+      "percent": "Скидка {{value}}%",
+      "fixed": "Скидка {{value}} TL",
+      "freeDelivery": "Бесплатная доставка",
+      "fixedPrice": "Фикс. цена {{value}} TL"
+    }
+  },
   "profile": {
     "title": "Профиль",
     "logout": "Выйти",
