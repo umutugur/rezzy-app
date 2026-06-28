@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import dayjs from "dayjs";
@@ -205,6 +206,7 @@ export default function MyCouponsScreen() {
   const { t } = useI18n();
   const region = useRegion((s) => s.region);
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<any>();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -255,6 +257,13 @@ export default function MyCouponsScreen() {
         end={{ x: 1, y: 1 }}
         style={[styles.header, { paddingTop: insets.top + 12 }]}
       >
+        <Pressable
+          onPress={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate("MarketHome"))}
+          hitSlop={10}
+          style={styles.backBtn}
+        >
+          <Ionicons name="chevron-back" size={22} color="white" />
+        </Pressable>
         <Text style={styles.headerTitle}>{t("promotions.title")}</Text>
         <Text style={styles.headerSub}>{t("promotions.subtitle")}</Text>
       </LinearGradient>
@@ -329,6 +338,10 @@ export default function MyCouponsScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   header: { paddingHorizontal: 16, paddingBottom: 18 },
+  backBtn: {
+    width: 38, height: 38, borderRadius: 12, marginBottom: 6,
+    backgroundColor: "rgba(255,255,255,0.18)", alignItems: "center", justifyContent: "center",
+  },
   headerTitle: { fontSize: 22, fontWeight: "900", color: "white", letterSpacing: -0.5 },
   headerSub: { fontSize: 12, color: "rgba(255,255,255,0.85)", fontWeight: "500", marginTop: 2 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
