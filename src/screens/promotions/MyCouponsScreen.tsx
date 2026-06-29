@@ -80,7 +80,7 @@ function MyCouponCard({ item }: { item: WalletMineItem }) {
       ]}
     >
       {/* Left image panel */}
-      <View style={cc.imageWrap}>
+      <View style={[cc.imageWrap, { backgroundColor: accent.light }]}>
         {campaign.image ? (
           <Image source={{ uri: campaign.image }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
         ) : (
@@ -103,9 +103,9 @@ function MyCouponCard({ item }: { item: WalletMineItem }) {
 
       {/* Perforation */}
       <View style={cc.perfCol}>
-        <View style={[cc.notch, cc.notchTop, { backgroundColor: theme.colors.background }]} />
+        <View style={[cc.notch, cc.notchTop, { backgroundColor: theme.colors.surfaceAlt }]} />
         <View style={[cc.dash, { borderColor: accent.main }]} />
-        <View style={[cc.notch, cc.notchBottom, { backgroundColor: theme.colors.background }]} />
+        <View style={[cc.notch, cc.notchBottom, { backgroundColor: theme.colors.surfaceAlt }]} />
       </View>
 
       {/* Body */}
@@ -328,7 +328,7 @@ export default function MyCouponsScreen() {
   const activeCount = mine.filter((m) => m.status === "active").length;
 
   return (
-    <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
+    <View style={[styles.root, { backgroundColor: theme.colors.surfaceAlt }]}>
       <LinearGradient
         colors={["#0B5B2E", "#15803D", "#22C55E"]}
         start={{ x: 0, y: 0 }}
@@ -500,8 +500,8 @@ const cc = StyleSheet.create({
     marginBottom: 14,
     minHeight: TICKET_H,
   },
-  imageWrap: { width: 104, height: TICKET_H, overflow: "hidden" },
-  glyphHolder: { flex: 1, alignItems: "center", justifyContent: "center" },
+  imageWrap: { width: 104, alignSelf: "stretch", overflow: "hidden" },
+  glyphHolder: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
   surfaceChip: {
     position: "absolute",
     top: 8,
@@ -512,12 +512,13 @@ const cc = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  perfCol: { width: 14, alignItems: "center", justifyContent: "center" },
-  notch: { position: "absolute", width: 14, height: 14, borderRadius: 7 },
+  perfCol: { width: 14, alignSelf: "stretch", alignItems: "center", justifyContent: "center" },
+  notch: { position: "absolute", width: 14, height: 14, borderRadius: 7, zIndex: 1 },
   notchTop: { top: -7 },
   notchBottom: { bottom: -7 },
   dash: {
-    height: "78%",
+    flex: 1,
+    marginVertical: 9,
     borderLeftWidth: 1.5,
     borderStyle: "dashed",
     opacity: 0.45,
