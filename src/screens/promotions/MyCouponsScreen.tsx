@@ -218,7 +218,7 @@ export default function MyCouponsScreen() {
     setLoading(true);
     setError(null);
     try {
-      const res = await getWallet("market", region);
+      const res = await getWallet(undefined, region); // tüm yüzeyler (market + restoran + taksi)
       setMine(res.mine);
       setCollectible(res.collectible);
     } catch {

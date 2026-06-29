@@ -64,11 +64,11 @@ export type PromoSurface = "market" | "restaurant" | "taxi";
  * Kullanıcının cüzdanı: sahip olduğu (mine) + toplayabileceği (collectible) kuponlar.
  */
 export async function getWallet(
-  surface: PromoSurface,
+  surface: PromoSurface | undefined,
   region: string,
 ): Promise<WalletResponse> {
   const { data } = await api.get("/promotions/wallet", {
-    params: { surface, region },
+    params: { ...(surface ? { surface } : {}), region },
     timeout: 15000,
   });
   return {
@@ -152,7 +152,8 @@ export function discountSummary(
 ): string {
   switch (discount.kind) {
     case "percent":
-      return t("promotions.discount.percent", { value: discount.value });
+      // pct param: TR şablonu "{{pct}}{{value}}" → "%15"; diğer diller {{pct}}'i yok sayar.
+      return t("promotions.discount.percent", { value: discount.value, pct: "%" });
     case "fixed":
       return t("promotions.discount.fixed", { value: discount.value });
     case "free_delivery":
