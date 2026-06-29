@@ -56,7 +56,7 @@ export type StoreBadgesResponse = {
   badges: Record<string, string>;
 };
 
-export type PromoSurface = "market" | "restaurant";
+export type PromoSurface = "market" | "restaurant" | "taxi";
 
 // ─── API Functions ──────────────────────────────────────────────────────────────
 
@@ -89,20 +89,36 @@ export async function collectCoupon(
 
 export type ApplicableParams = {
   surface: PromoSurface;
-  storeId: string;
+  /** Market/restaurant için zorunlu. Taxi'de gönderilmez. */
+  storeId?: string;
   subtotal: number;
-  deliveryFee: number;
+  /** Market/restaurant için. Taxi'de yok. */
+  deliveryFee?: number;
+  /** Taxi yüzeyi için araç tipi. */
+  vehicleType?: string;
   paymentMethod?: string;
 };
 
 /**
- * Bu sepet için ŞU AN geçerli olan kuponlar (en iyi başta sıralı).
+ * Bu sepet/yolculuk için ŞU AN geçerli olan kuponlar (en iyi başta sıralı).
+ * Taxi yüzeyinde storeId gönderilmez; bunun yerine vehicleType gönderilir.
  */
 export async function getApplicable(
   params: ApplicableParams,
 ): Promise<ApplicableResponse> {
+  // Taxi'de storeId backend'e gitmemeli (surface'a göre sunucu storeId beklemiyor).
+  const query: Record<string, any> =
+    params.surface === "taxi"
+      ? {
+          surface: params.surface,
+          subtotal: params.subtotal,
+          ...(params.vehicleType ? { vehicleType: params.vehicleType } : {}),
+          ...(params.paymentMethod ? { paymentMethod: params.paymentMethod } : {}),
+        }
+      : params;
+
   const { data } = await api.get("/promotions/applicable", {
-    params,
+    params: query,
     timeout: 15000,
   });
   return { items: Array.isArray(data?.items) ? data.items : [] };

@@ -40,6 +40,10 @@ export interface TaxiRide {
   vehicleType: VehicleType;
   status: RideStatus;
   fare: number;
+  /** İndirim öncesi brüt ücret (kupon uygulandıysa). */
+  grossFare?: number;
+  /** Uygulanan kupon indirimi. */
+  discount?: number;
   distanceKm: number;
   durationMin: number;
   paymentMethod: string;
@@ -55,6 +59,10 @@ export interface TaxiRide {
 
 export interface FareEstimate {
   fare: number;
+  /** İndirim öncesi brüt ücret (kupon uygulandıysa). */
+  grossFare?: number;
+  /** Uygulanan kupon indirimi. */
+  discount?: number;
   distanceKm: number;
   durationMin: number;
   vehicleType: VehicleType;
@@ -89,9 +97,16 @@ export async function estimateFare(
   pickup: RideLocation,
   dropoff: RideLocation,
   vehicleType: VehicleType = 'ride',
+  couponCampaignId?: string,
 ): Promise<FareEstimate> {
   const region = useRegion.getState().region;
-  const { data } = await api.post('/taxi/estimate', { pickup, dropoff, vehicleType, region });
+  const { data } = await api.post('/taxi/estimate', {
+    pickup,
+    dropoff,
+    vehicleType,
+    region,
+    ...(couponCampaignId ? { couponCampaignId } : {}),
+  });
   return data;
 }
 
@@ -108,6 +123,7 @@ export async function createRide(payload: {
   dropoff: RideLocation;
   vehicleType: VehicleType;
   paymentMethod?: string;
+  couponCampaignId?: string;
 }): Promise<{ ride: TaxiRide; nearbyDriverCount: number; payment: TaxiPaymentInfo | null }> {
   const region = useRegion.getState().region;
   const { data } = await api.post('/taxi/rides', { ...payload, region });

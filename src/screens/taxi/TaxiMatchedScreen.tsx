@@ -183,6 +183,8 @@ export default function TaxiMatchedScreen({ route, navigation }: any) {
             navigation.navigate('TaxiReceipt' as any, {
               rideId: r._id,
               fare: r.fare,
+              grossFare: r.grossFare,
+              discount: r.discount,
               distanceKm: r.distanceKm,
               durationMin: r.durationMin,
               pickupAddress: r.pickup?.address ?? '',

@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRoute, useNavigation, type RouteProp } from '@react-navigation/native';
-import { CheckCircle, Clock, Ruler, CreditCard } from 'lucide-react-native';
+import { CheckCircle, Clock, Ruler, CreditCard, Tag } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '../../contexts/ThemeContext';
@@ -35,6 +35,8 @@ function StarRating({ value, onChange, size = 32 }: { value: number; onChange: (
 export type TaxiReceiptParams = {
   rideId: string;
   fare: number;
+  grossFare?: number;
+  discount?: number;
   distanceKm: number;
   durationMin: number;
   pickupAddress: string;
@@ -52,7 +54,10 @@ export default function TaxiReceiptScreen() {
   const { t, language } = useI18n();
   const region = useRegion((s) => s.region);
   const route = useRoute<RouteProp<{ TaxiReceipt: TaxiReceiptParams }, 'TaxiReceipt'>>();
-  const { rideId, fare, distanceKm, durationMin, pickupAddress, dropoffAddress, paymentMethod, driverId, driverName, driverPhotoUrl } = route.params;
+  const { rideId, fare, grossFare, discount, distanceKm, durationMin, pickupAddress, dropoffAddress, paymentMethod, driverId, driverName, driverPhotoUrl } = route.params;
+
+  const hasDiscount = (discount ?? 0) > 0;
+  const grossAmount = grossFare ?? (hasDiscount ? fare + (discount ?? 0) : fare);
 
   const [rating, setRating] = useState(5);
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
@@ -117,6 +122,29 @@ export default function TaxiReceiptScreen() {
             <Text style={s.infoValue}>{paymentLabel}</Text>
           </View>
         </View>
+
+        {/* ── Ücret kırılımı (kupon indirimi varsa) ── */}
+        {hasDiscount && (
+          <View style={s.card}>
+            <View style={s.infoRow}>
+              <Text style={s.infoLabel}>{t('promotions.subtotal', { defaultValue: 'Ara toplam' })}</Text>
+              <Text style={s.infoValue}>{formatCurrency(grossAmount, region, language)}</Text>
+            </View>
+            <View style={[s.infoRow, s.infoRowBorder]}>
+              <Tag size={16} color={theme.taxi.main} strokeWidth={2} />
+              <Text style={[s.infoLabel, { color: theme.taxi.main }]}>{t('promotions.discountLine')}</Text>
+              <Text style={[s.infoValue, { color: theme.taxi.main }]}>
+                -{formatCurrency(discount ?? 0, region, language)}
+              </Text>
+            </View>
+            <View style={[s.infoRow, s.infoRowBorder]}>
+              <Text style={[s.infoLabel, { ...theme.typography.labelMd, color: theme.colors.textPrimary }]}>
+                {t('promotions.total', { defaultValue: 'Toplam' })}
+              </Text>
+              <Text style={[s.infoValue, { color: theme.taxi.main }]}>{formatCurrency(fare, region, language)}</Text>
+            </View>
+          </View>
+        )}
 
         {/* ── Route ── */}
         <View style={s.card}>

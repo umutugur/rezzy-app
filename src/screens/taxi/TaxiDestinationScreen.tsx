@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MapPin, Navigation, ChevronLeft, Banknote, CreditCard, Smartphone } from 'lucide-react-native';
+import { MapPin, Navigation, ChevronLeft, Banknote, CreditCard, Smartphone, Tag } from 'lucide-react-native';
 import { useStripe } from '@stripe/stripe-react-native';
 import * as Linking from 'expo-linking';
 
@@ -27,8 +27,14 @@ import { useRegion } from '../../store/useRegion';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { PriceTag, type PriceCurrency } from '../../components/ui/PriceTag';
-import { currencyFromRegion } from '../../utils/format';
+import { BottomSheet } from '../../components/ui/BottomSheet';
+import { currencyFromRegion, formatCurrency } from '../../utils/format';
 import { useI18n } from '../../i18n';
+import {
+  getApplicable,
+  discountSummary,
+  type ApplicableItem,
+} from '../../api/promotions.api';
 import {
   searchPlaces,
   estimateFare,
@@ -51,7 +57,7 @@ function toRideLocation(place: PlaceResult): RideLocation {
 export default function TaxiDestinationScreen({ navigation }: any) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const region = useRegion((s) => s.region);
   const currency = currencyFromRegion(region);
 
@@ -82,6 +88,14 @@ export default function TaxiDestinationScreen({ navigation }: any) {
   const [error, setError] = useState<string | null>(null);
   const [activeRideModal, setActiveRideModal] = useState<{ rideId: string } | null>(null);
 
+  // Kupon
+  const [couponSheetOpen, setCouponSheetOpen] = useState(false);
+  const [applicable, setApplicable] = useState<ApplicableItem[]>([]);
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [selectedCouponCampaignId, setSelectedCouponCampaignId] = useState<string | null>(null);
+
+  const selectedCoupon = applicable.find((a) => a.campaign._id === selectedCouponCampaignId);
+
   const pickupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dropoffTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -90,6 +104,8 @@ export default function TaxiDestinationScreen({ navigation }: any) {
     setDropoffQuery('');
     setDropoff('', null);
     setFareEstimate(null);
+    setSelectedCouponCampaignId(null);
+    setApplicable([]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -162,13 +178,14 @@ export default function TaxiDestinationScreen({ navigation }: any) {
       { address: pickupAddress, coordinates: [pickupCoords.lng, pickupCoords.lat] },
       { address: dropoffAddress, coordinates: [dropoffCoords.lng, dropoffCoords.lat] },
       selectedVehicleType,
+      selectedCouponCampaignId ?? undefined,
     )
       .then((est) => { if (!cancelled) setFareEstimate(est); })
       .catch(() => { if (!cancelled) setError(t('taxi.destination.estimateFailed')); })
       .finally(() => { if (!cancelled) setLoadingEstimate(false); });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pickupCoords, dropoffCoords, selectedVehicleType]);
+  }, [pickupCoords, dropoffCoords, selectedVehicleType, selectedCouponCampaignId]);
 
   // ── Create ride ──────────────────────────────────────────────────────────
 
@@ -182,6 +199,7 @@ export default function TaxiDestinationScreen({ navigation }: any) {
         dropoff: { address: dropoffAddress, coordinates: [dropoffCoords.lng, dropoffCoords.lat] },
         vehicleType: selectedVehicleType,
         paymentMethod: selectedPaymentMethod,
+        couponCampaignId: selectedCouponCampaignId ?? undefined,
       });
 
       const { ride, payment } = result;
@@ -244,12 +262,34 @@ export default function TaxiDestinationScreen({ navigation }: any) {
     dropoffAddress,
     selectedVehicleType,
     selectedPaymentMethod,
+    selectedCouponCampaignId,
     setActiveRide,
     setIsSearching,
     navigation,
     initPaymentSheet,
     presentPaymentSheet,
   ]);
+
+  // ── Kupon: uygulanabilir kuponları getir ──────────────────────────────────
+
+  const openCouponSheet = useCallback(async () => {
+    if (!pickupCoords || !dropoffCoords) return;
+    setCouponSheetOpen(true);
+    setCouponLoading(true);
+    try {
+      const res = await getApplicable({
+        surface: 'taxi',
+        vehicleType: selectedVehicleType,
+        subtotal: fareEstimate?.grossFare ?? fareEstimate?.fare ?? 0,
+        paymentMethod: selectedPaymentMethod,
+      });
+      setApplicable(res.items);
+    } catch {
+      setApplicable([]);
+    } finally {
+      setCouponLoading(false);
+    }
+  }, [pickupCoords, dropoffCoords, selectedVehicleType, selectedPaymentMethod, fareEstimate]);
 
   // ── Map region ───────────────────────────────────────────────────────────
 
@@ -448,6 +488,49 @@ export default function TaxiDestinationScreen({ navigation }: any) {
           </View>
         )}
 
+        {/* Kupon uygula — koordinatlar hazır olunca göster */}
+        {pickupCoords && dropoffCoords && (
+          <Pressable
+            onPress={
+              selectedCouponCampaignId
+                ? () => setSelectedCouponCampaignId(null)
+                : openCouponSheet
+            }
+            style={s.couponRow}
+          >
+            <Tag size={18} color={theme.taxi.main} strokeWidth={2} />
+            <View style={{ flex: 1 }}>
+              {selectedCoupon ? (
+                <>
+                  <Text style={s.couponTitle} numberOfLines={1}>
+                    {selectedCoupon.campaign.title}
+                  </Text>
+                  <Text style={s.couponSub}>
+                    {discountSummary(selectedCoupon.campaign.discount, t)}
+                  </Text>
+                </>
+              ) : (
+                <Text style={s.couponTitle}>{t('promotions.apply')}</Text>
+              )}
+            </View>
+            <Text style={s.couponAction}>
+              {selectedCouponCampaignId
+                ? t('promotions.removeCoupon')
+                : t('common.select', { defaultValue: 'Seç' })}
+            </Text>
+          </Pressable>
+        )}
+
+        {/* İndirim satırı */}
+        {fareEstimate && !loadingEstimate && (fareEstimate.discount ?? 0) > 0 && (
+          <View style={s.discountRow}>
+            <Text style={s.discountLabel}>{t('promotions.discountLine')}</Text>
+            <Text style={s.discountValue}>
+              -{formatCurrency(fareEstimate.discount ?? 0, region, language)}
+            </Text>
+          </View>
+        )}
+
         {/* Ödeme yöntemi — koordinatlar hazır olunca göster */}
         {pickupCoords && dropoffCoords && (
           <View style={s.paymentSection}>
@@ -552,6 +635,94 @@ export default function TaxiDestinationScreen({ navigation }: any) {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* Kupon seçim sheet'i */}
+      <BottomSheet
+        isOpen={couponSheetOpen}
+        onClose={() => setCouponSheetOpen(false)}
+        snapPoints={['55%']}
+        title={t('promotions.applyTitle')}
+      >
+        {couponLoading ? (
+          <View style={{ paddingVertical: theme.space[8], alignItems: 'center' }}>
+            <ActivityIndicator color={theme.taxi.main} />
+          </View>
+        ) : applicable.length === 0 ? (
+          <Text
+            style={{
+              ...theme.typography.bodyMd,
+              color: theme.colors.textSecondary,
+              textAlign: 'center',
+              paddingVertical: theme.space[6],
+              paddingHorizontal: theme.space[4],
+            }}
+          >
+            {t('promotions.noApplicable')}
+          </Text>
+        ) : (
+          <View style={{ paddingHorizontal: theme.space[4], gap: theme.space[2] }}>
+            {applicable.map((item) => {
+              const active = item.campaign._id === selectedCouponCampaignId;
+              return (
+                <Pressable
+                  key={item.campaign._id}
+                  onPress={() => {
+                    setSelectedCouponCampaignId(item.campaign._id);
+                    setCouponSheetOpen(false);
+                  }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: theme.space[3],
+                    padding: theme.space[3],
+                    borderRadius: theme.radius.md,
+                    borderWidth: active ? 2 : StyleSheet.hairlineWidth,
+                    borderColor: active ? theme.taxi.main : theme.colors.borderDefault,
+                    backgroundColor: active ? theme.taxi.light : theme.colors.surfaceAlt,
+                  }}
+                >
+                  <Tag size={20} color={theme.taxi.main} strokeWidth={2} />
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{ ...theme.typography.labelMd, color: theme.colors.textPrimary }}
+                      numberOfLines={1}
+                    >
+                      {item.campaign.title}
+                    </Text>
+                    <Text
+                      style={{ ...theme.typography.caption, color: theme.taxi.main, marginTop: 1 }}
+                    >
+                      {discountSummary(item.campaign.discount, t)}
+                    </Text>
+                  </View>
+                  <Text
+                    style={{
+                      ...theme.typography.labelMd,
+                      color: theme.taxi.main,
+                      fontWeight: '700',
+                    }}
+                  >
+                    -{formatCurrency(item.discount, region, language)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+            {selectedCouponCampaignId && (
+              <Pressable
+                onPress={() => {
+                  setSelectedCouponCampaignId(null);
+                  setCouponSheetOpen(false);
+                }}
+                style={{ paddingVertical: theme.space[3], alignItems: 'center' }}
+              >
+                <Text style={{ ...theme.typography.labelMd, color: theme.colors.error }}>
+                  {t('promotions.removeCoupon')}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+      </BottomSheet>
     </KeyboardAvoidingView>
   );
 }
@@ -656,6 +827,48 @@ function styles(theme: ReturnType<typeof useTheme>, insets: ReturnType<typeof us
       color: theme.colors.error,
       marginTop: theme.space[2],
       textAlign: 'center',
+    },
+
+    couponRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.space[3],
+      marginTop: theme.space[3],
+      paddingVertical: theme.space[3],
+      paddingHorizontal: theme.space[3],
+      borderRadius: theme.radius.lg,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.borderDefault,
+      backgroundColor: theme.colors.surfaceAlt,
+    },
+    couponTitle: {
+      ...theme.typography.labelMd,
+      color: theme.colors.textPrimary,
+    },
+    couponSub: {
+      ...theme.typography.caption,
+      color: theme.taxi.main,
+      marginTop: 1,
+    },
+    couponAction: {
+      ...theme.typography.labelSm,
+      color: theme.taxi.main,
+      fontWeight: '700' as const,
+    },
+
+    discountRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: theme.space[2],
+    },
+    discountLabel: {
+      ...theme.typography.bodyMd,
+      color: theme.taxi.main,
+    },
+    discountValue: {
+      ...theme.typography.labelMd,
+      color: theme.taxi.main,
     },
 
     paymentSection: {
