@@ -16,6 +16,8 @@ export type PromoCampaign = {
   title: string;
   description?: string;
   image?: string | null;
+  /** Hangi yüzeye ait: market / restoran / taksi. Cüzdan yanıtında döner. */
+  surface?: PromoSurface;
   discount: PromoDiscount;
   conditions?: {
     minSubtotal?: number;

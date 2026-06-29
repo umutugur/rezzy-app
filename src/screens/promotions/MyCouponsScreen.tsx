@@ -15,7 +15,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import dayjs from "dayjs";
 
-import { useTheme } from "../../contexts/ThemeContext";
+import { useTheme, type Theme } from "../../contexts/ThemeContext";
 import { useI18n } from "../../i18n";
 import { useRegion } from "../../store/useRegion";
 import { formatCurrency } from "../../utils/format";
@@ -26,7 +26,24 @@ import {
   discountSummary,
   type WalletMineItem,
   type PromoCampaign,
+  type PromoSurface,
 } from "../../api/promotions.api";
+
+// ─── Surface accent system ──────────────────────────────────────────────────────
+// Her yüzeyin (market / restoran / taksi) kendi rengi ve simgesi olur; kuponun
+// hangi servise ait olduğu tek bakışta anlaşılır.
+type Accent = { main: string; light: string; icon: keyof typeof Ionicons.glyphMap };
+
+function surfaceAccent(theme: Theme, surface?: PromoSurface): Accent {
+  switch (surface) {
+    case "taxi":
+      return { main: theme.taxi.main, light: theme.taxi.light, icon: "car-sport" };
+    case "restaurant":
+      return { main: "#E11D48", light: theme.isDark ? "#3F0717" : "#FFE4E6", icon: "restaurant" };
+    default:
+      return { main: theme.market.main, light: theme.market.light, icon: "storefront" };
+  }
+}
 
 // ─── Owned coupon card (Section A) ──────────────────────────────────────────────
 
@@ -34,15 +51,20 @@ function MyCouponCard({ item }: { item: WalletMineItem }) {
   const theme = useTheme();
   const { t, language } = useI18n();
   const region = useRegion((s) => s.region);
-  const { campaign, remaining } = item;
+  const { campaign, remaining, status } = item;
+  const accent = surfaceAccent(theme, campaign.surface);
 
   const minSubtotal = campaign.conditions?.minSubtotal ?? 0;
+  const total = campaign.usageLimit?.total ?? null;
   const showRemaining = !!campaign.usageLimit?.showRemaining && remaining != null;
+  const remainingPct =
+    showRemaining && total ? Math.max(0.04, Math.min(1, (remaining as number) / total)) : 0;
 
   const daysLeft = campaign.validTo
     ? dayjs(campaign.validTo).startOf("day").diff(dayjs().startOf("day"), "day")
     : null;
   const expiringSoon = daysLeft != null && daysLeft >= 0 && daysLeft <= 3;
+  const inactive = status !== "active";
 
   return (
     <View
@@ -51,25 +73,39 @@ function MyCouponCard({ item }: { item: WalletMineItem }) {
         {
           backgroundColor: theme.colors.surface,
           borderColor: theme.colors.borderDefault,
-          borderRadius: theme.radius.lg,
+          borderRadius: theme.radius.xl,
+          opacity: inactive ? 0.55 : 1,
         },
-        theme.getElevation(1),
+        theme.getElevation(2),
       ]}
     >
-      {/* Left ticket stub */}
-      <View style={[cc.stub, { backgroundColor: theme.market.light }]}>
+      {/* Left image panel */}
+      <View style={cc.imageWrap}>
         {campaign.image ? (
           <Image source={{ uri: campaign.image }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
         ) : (
-          <Ionicons name="pricetag" size={24} color={theme.market.main} />
+          <LinearGradient
+            colors={[accent.main, accent.light]}
+            start={{ x: 0.2, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFillObject}
+          >
+            <View style={cc.glyphHolder}>
+              <Ionicons name="pricetags" size={30} color="rgba(255,255,255,0.92)" />
+            </View>
+          </LinearGradient>
         )}
+        {/* Surface badge (always visible, even over artwork) */}
+        <View style={[cc.surfaceChip, { backgroundColor: accent.main }]}>
+          <Ionicons name={accent.icon} size={13} color="#FFFFFF" />
+        </View>
       </View>
 
-      {/* Notch divider */}
-      <View style={cc.notchCol}>
-        <View style={[cc.notch, { backgroundColor: theme.colors.background }]} />
-        <View style={[cc.dashedLine, { borderColor: theme.colors.borderDefault }]} />
-        <View style={[cc.notch, { backgroundColor: theme.colors.background }]} />
+      {/* Perforation */}
+      <View style={cc.perfCol}>
+        <View style={[cc.notch, cc.notchTop, { backgroundColor: theme.colors.background }]} />
+        <View style={[cc.dash, { borderColor: accent.main }]} />
+        <View style={[cc.notch, cc.notchBottom, { backgroundColor: theme.colors.background }]} />
       </View>
 
       {/* Body */}
@@ -81,45 +117,70 @@ function MyCouponCard({ item }: { item: WalletMineItem }) {
           >
             {campaign.title}
           </Text>
-          {expiringSoon && (
-            <View style={[cc.expBadge, { backgroundColor: theme.colors.errorSoft }]}>
-              <Text style={{ ...theme.typography.caption, color: theme.colors.error, fontWeight: "700" }}>
+          {expiringSoon && !inactive && (
+            <View style={[cc.pill, { backgroundColor: theme.colors.errorSoft }]}>
+              <Ionicons name="time" size={11} color={theme.colors.error} />
+              <Text style={{ ...theme.typography.caption, color: theme.colors.error, fontFamily: theme.fontFamily.bold }}>
                 {t("promotions.expiringSoon", { count: Math.max(daysLeft as number, 0) })}
               </Text>
             </View>
           )}
         </View>
 
-        <Text style={{ ...theme.typography.headingSm, color: theme.market.main, marginTop: theme.space[1] }}>
+        <Text
+          style={{
+            ...theme.typography.headingMd,
+            fontFamily: theme.fontFamily.extraBold,
+            color: accent.main,
+            marginTop: theme.space[1],
+          }}
+          numberOfLines={1}
+        >
           {discountSummary(campaign.discount, t)}
         </Text>
 
         <View style={cc.metaRow}>
           {minSubtotal > 0 && (
-            <Text style={{ ...theme.typography.caption, color: theme.colors.textSecondary }}>
-              {t("promotions.minCart", { amount: formatCurrency(minSubtotal, region, language, 0) })}
-            </Text>
+            <View style={[cc.metaChip, { backgroundColor: theme.colors.surfaceAlt }]}>
+              <Ionicons name="basket-outline" size={12} color={theme.colors.textSecondary} />
+              <Text style={{ ...theme.typography.caption, color: theme.colors.textSecondary }}>
+                {formatCurrency(minSubtotal, region, language, 0)}
+              </Text>
+            </View>
           )}
           {campaign.validTo && (
-            <Text style={{ ...theme.typography.caption, color: theme.colors.textSecondary }}>
-              {t("promotions.expiry", { date: dayjs(campaign.validTo).format("DD MMM YYYY") })}
-            </Text>
+            <View
+              style={[
+                cc.metaChip,
+                { backgroundColor: expiringSoon ? theme.colors.errorSoft : theme.colors.surfaceAlt },
+              ]}
+            >
+              <Ionicons
+                name="calendar-outline"
+                size={12}
+                color={expiringSoon ? theme.colors.error : theme.colors.textSecondary}
+              />
+              <Text
+                style={{
+                  ...theme.typography.caption,
+                  color: expiringSoon ? theme.colors.error : theme.colors.textSecondary,
+                }}
+              >
+                {dayjs(campaign.validTo).format("DD MMM")}
+              </Text>
+            </View>
           )}
         </View>
 
         {showRemaining && (
-          <Text style={{ ...theme.typography.caption, color: theme.colors.textTertiary, marginTop: theme.space[1] }}>
-            {t("promotions.remaining", { count: remaining as number })}
-          </Text>
-        )}
-
-        {!!campaign.description && (
-          <Text
-            style={{ ...theme.typography.caption, color: theme.colors.textTertiary, marginTop: theme.space[1] }}
-            numberOfLines={2}
-          >
-            {t("promotions.conditions")}: {campaign.description}
-          </Text>
+          <View style={cc.remainRow}>
+            <View style={[cc.track, { backgroundColor: theme.colors.surfaceAlt }]}>
+              <View style={[cc.trackFill, { backgroundColor: accent.main, width: `${remainingPct * 100}%` }]} />
+            </View>
+            <Text style={{ ...theme.typography.caption, color: theme.colors.textTertiary }}>
+              {t("promotions.remaining", { count: remaining as number })}
+            </Text>
+          </View>
         )}
       </View>
     </View>
@@ -140,6 +201,7 @@ function CollectibleRow({
   const theme = useTheme();
   const { t, language } = useI18n();
   const region = useRegion((s) => s.region);
+  const accent = surfaceAccent(theme, campaign.surface);
   const minSubtotal = campaign.conditions?.minSubtotal ?? 0;
   const limited = !!campaign.usageLimit?.showRemaining;
 
@@ -150,19 +212,30 @@ function CollectibleRow({
         {
           backgroundColor: theme.colors.surface,
           borderColor: theme.colors.borderDefault,
-          borderRadius: theme.radius.md,
+          borderRadius: theme.radius.lg,
         },
+        theme.getElevation(1),
       ]}
     >
-      <View style={[cr.icon, { backgroundColor: theme.market.light }]}>
-        <Ionicons name="ticket-outline" size={18} color={theme.market.main} />
+      {/* surface rail */}
+      <View style={[cr.rail, { backgroundColor: accent.main }]} />
+
+      <View style={[cr.thumb, { backgroundColor: accent.light }]}>
+        {campaign.image ? (
+          <Image source={{ uri: campaign.image }} style={cr.thumbImg} resizeMode="cover" />
+        ) : (
+          <Ionicons name={accent.icon} size={20} color={accent.main} />
+        )}
       </View>
 
       <View style={{ flex: 1 }}>
         <Text style={{ ...theme.typography.labelMd, color: theme.colors.textPrimary }} numberOfLines={1}>
           {campaign.title}
         </Text>
-        <Text style={{ ...theme.typography.caption, color: theme.market.main, marginTop: 1 }}>
+        <Text
+          style={{ ...theme.typography.caption, color: accent.main, fontFamily: theme.fontFamily.bold, marginTop: 1 }}
+          numberOfLines={1}
+        >
           {discountSummary(campaign.discount, t)}
           {minSubtotal > 0
             ? ` · ${t("promotions.minCart", { amount: formatCurrency(minSubtotal, region, language, 0) })}`
@@ -181,18 +254,21 @@ function CollectibleRow({
         style={({ pressed }) => [
           cr.collectBtn,
           {
-            backgroundColor: theme.market.main,
-            borderRadius: theme.radius.sm,
+            backgroundColor: accent.main,
+            borderRadius: theme.radius.full,
             opacity: collecting ? 0.6 : pressed ? 0.85 : 1,
           },
         ]}
       >
         {collecting ? (
-          <ActivityIndicator size="small" color={theme.colors.textInverse} />
+          <ActivityIndicator size="small" color="#FFFFFF" />
         ) : (
-          <Text style={{ ...theme.typography.labelSm, color: theme.colors.textInverse, fontWeight: "700" }}>
-            {t("promotions.collect")}
-          </Text>
+          <>
+            <Ionicons name="add" size={15} color="#FFFFFF" />
+            <Text style={{ ...theme.typography.labelSm, color: "#FFFFFF", fontFamily: theme.fontFamily.bold }}>
+              {t("promotions.collect")}
+            </Text>
+          </>
         )}
       </Pressable>
     </View>
@@ -249,21 +325,36 @@ export default function MyCouponsScreen() {
     [load],
   );
 
+  const activeCount = mine.filter((m) => m.status === "active").length;
+
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
       <LinearGradient
-        colors={["#0D6E35", "#16A34A", "#22C55E"]}
+        colors={["#0B5B2E", "#15803D", "#22C55E"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[styles.header, { paddingTop: insets.top + 12 }]}
       >
-        <Pressable
-          onPress={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate("MarketHome"))}
-          hitSlop={10}
-          style={styles.backBtn}
-        >
-          <Ionicons name="chevron-back" size={22} color="white" />
-        </Pressable>
+        {/* decorative ticket motif */}
+        <View style={styles.decoCircleA} pointerEvents="none" />
+        <View style={styles.decoCircleB} pointerEvents="none" />
+
+        <View style={styles.headerTopRow}>
+          <Pressable
+            onPress={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate("MarketHome"))}
+            hitSlop={10}
+            style={styles.backBtn}
+          >
+            <Ionicons name="chevron-back" size={22} color="white" />
+          </Pressable>
+          {activeCount > 0 && (
+            <View style={styles.countPill}>
+              <Ionicons name="ticket" size={14} color="white" />
+              <Text style={styles.countText}>{activeCount}</Text>
+            </View>
+          )}
+        </View>
+
         <Text style={styles.headerTitle}>{t("promotions.title")}</Text>
         <Text style={styles.headerSub}>{t("promotions.subtitle")}</Text>
       </LinearGradient>
@@ -281,15 +372,25 @@ export default function MyCouponsScreen() {
           showsVerticalScrollIndicator={false}
         >
           {error && (
-            <Text style={{ color: theme.colors.error, ...theme.typography.bodySm, marginBottom: theme.space[3], textAlign: "center" }}>
+            <Text
+              style={{
+                color: theme.colors.error,
+                ...theme.typography.bodySm,
+                marginBottom: theme.space[3],
+                textAlign: "center",
+              }}
+            >
               {error}
             </Text>
           )}
 
           {/* Section A — Kuponlarım */}
-          <Text style={{ ...theme.typography.headingSm, color: theme.colors.textPrimary, marginBottom: theme.space[3] }}>
-            {t("promotions.myCoupons")}
-          </Text>
+          <View style={styles.sectionHead}>
+            <View style={[styles.sectionDot, { backgroundColor: theme.market.main }]} />
+            <Text style={{ ...theme.typography.headingSm, color: theme.colors.textPrimary }}>
+              {t("promotions.myCoupons")}
+            </Text>
+          </View>
           {mine.length > 0 ? (
             mine.map((it) => <MyCouponCard key={it.userCouponId} item={it} />)
           ) : (
@@ -305,16 +406,12 @@ export default function MyCouponsScreen() {
           {/* Section B — Toplanabilir */}
           {collectible.length > 0 && (
             <>
-              <Text
-                style={{
-                  ...theme.typography.headingSm,
-                  color: theme.colors.textPrimary,
-                  marginTop: theme.space[6],
-                  marginBottom: theme.space[3],
-                }}
-              >
-                {t("promotions.collectible")}
-              </Text>
+              <View style={[styles.sectionHead, { marginTop: theme.space[6] }]}>
+                <View style={[styles.sectionDot, { backgroundColor: theme.taxi.main }]} />
+                <Text style={{ ...theme.typography.headingSm, color: theme.colors.textPrimary }}>
+                  {t("promotions.collectible")}
+                </Text>
+              </View>
               <View style={{ gap: theme.space[2] }}>
                 {collectible.map((c) => (
                   <CollectibleRow
@@ -337,46 +434,140 @@ export default function MyCouponsScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  header: { paddingHorizontal: 16, paddingBottom: 18 },
-  backBtn: {
-    width: 38, height: 38, borderRadius: 12, marginBottom: 6,
-    backgroundColor: "rgba(255,255,255,0.18)", alignItems: "center", justifyContent: "center",
+  header: {
+    paddingHorizontal: 16,
+    paddingBottom: 22,
+    borderBottomLeftRadius: 26,
+    borderBottomRightRadius: 26,
+    overflow: "hidden",
   },
-  headerTitle: { fontSize: 22, fontWeight: "900", color: "white", letterSpacing: -0.5 },
-  headerSub: { fontSize: 12, color: "rgba(255,255,255,0.85)", fontWeight: "500", marginTop: 2 },
+  decoCircleA: {
+    position: "absolute",
+    top: -40,
+    right: -30,
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: "rgba(255,255,255,0.10)",
+  },
+  decoCircleB: {
+    position: "absolute",
+    bottom: -50,
+    right: 60,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: "rgba(255,255,255,0.07)",
+  },
+  headerTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  backBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  countPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.18)",
+  },
+  countText: { color: "white", fontSize: 13, fontWeight: "800" },
+  headerTitle: { fontSize: 24, fontWeight: "900", color: "white", letterSpacing: -0.5 },
+  headerSub: { fontSize: 12.5, color: "rgba(255,255,255,0.88)", fontWeight: "500", marginTop: 3 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
+  sectionHead: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 14 },
+  sectionDot: { width: 8, height: 8, borderRadius: 4 },
 });
 
+// Owned coupon ticket
+const TICKET_H = 118;
 const cc = StyleSheet.create({
   card: {
     flexDirection: "row",
     borderWidth: StyleSheet.hairlineWidth,
     overflow: "hidden",
-    marginBottom: 12,
+    marginBottom: 14,
+    minHeight: TICKET_H,
   },
-  stub: {
-    width: 72,
+  imageWrap: { width: 104, height: TICKET_H, overflow: "hidden" },
+  glyphHolder: { flex: 1, alignItems: "center", justifyContent: "center" },
+  surfaceChip: {
+    position: "absolute",
+    top: 8,
+    left: 8,
+    width: 26,
+    height: 26,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    overflow: "hidden",
   },
-  notchCol: { width: 1, alignItems: "center", justifyContent: "space-between", paddingVertical: 6 },
-  notch: { width: 12, height: 12, borderRadius: 6, marginHorizontal: -6 },
-  dashedLine: { flex: 1, borderLeftWidth: 1, borderStyle: "dashed" },
-  body: { flex: 1, padding: 12 },
+  perfCol: { width: 14, alignItems: "center", justifyContent: "center" },
+  notch: { position: "absolute", width: 14, height: 14, borderRadius: 7 },
+  notchTop: { top: -7 },
+  notchBottom: { bottom: -7 },
+  dash: {
+    height: "78%",
+    borderLeftWidth: 1.5,
+    borderStyle: "dashed",
+    opacity: 0.45,
+  },
+  body: { flex: 1, paddingVertical: 12, paddingRight: 14, paddingLeft: 4, justifyContent: "center" },
   titleRow: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
-  expBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 },
-  metaRow: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 6 },
+  pill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
+  metaRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 8 },
+  metaChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  remainRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 9 },
+  track: { flex: 1, height: 4, borderRadius: 2, overflow: "hidden" },
+  trackFill: { height: "100%", borderRadius: 2 },
 });
 
+// Collectible row
 const cr = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    padding: 12,
+    paddingVertical: 12,
+    paddingRight: 12,
+    paddingLeft: 14,
     borderWidth: StyleSheet.hairlineWidth,
+    overflow: "hidden",
   },
-  icon: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
-  collectBtn: { paddingHorizontal: 16, paddingVertical: 8, minWidth: 56, alignItems: "center", justifyContent: "center" },
+  rail: { position: "absolute", left: 0, top: 0, bottom: 0, width: 4 },
+  thumb: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  thumbImg: { width: "100%", height: "100%" },
+  collectBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    minWidth: 64,
+    justifyContent: "center",
+  },
 });
