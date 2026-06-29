@@ -56,6 +56,7 @@ export type CreateDeliveryOrderInput = {
   items: DeliveryCartItemInput[];
   paymentMethod: "card" | "cash" | "card_on_delivery";
   hexId?: string;
+  couponCampaignId?: string;
 };
 
 export async function createDeliveryOrder(input: CreateDeliveryOrderInput) {
@@ -64,6 +65,7 @@ export async function createDeliveryOrder(input: CreateDeliveryOrderInput) {
     addressId: input.addressId,
     items: input.items,
     hexId: input.hexId,
+    couponCampaignId: input.couponCampaignId,
   };
 
   // ✅ CARD -> /api/delivery/orders/checkout

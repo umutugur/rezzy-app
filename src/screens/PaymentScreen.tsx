@@ -6,7 +6,6 @@ import {
   ActivityIndicator,
   TextInput,
   Platform,
-  StyleSheet,
   Modal,
   LayoutChangeEvent,
 } from "react-native";
@@ -17,15 +16,15 @@ import * as Linking from "expo-linking";
 
 import { Text } from "../components/Themed";
 import { useI18n } from "../i18n";
+import { useTheme } from "../contexts/ThemeContext";
 
 import { useAuth } from "../store/useAuth";
 import { useCart } from "../store/useCart";
 import { getDeliveryRestaurant, createDeliveryOrder } from "../api/delivery";
+import { getApplicable, discountSummary, type ApplicableItem } from "../api/promotions.api";
 import type { DeliveryRestaurant } from "../delivery/deliveryTypes";
 
 import {
-  DeliveryColors,
-  DeliveryRadii,
   DeliveryShadow,
   DeliverySpacing,
 } from "../delivery/deliveryTheme";
@@ -39,6 +38,7 @@ export default function PaymentScreen() {
   const nav = useNavigation<any>();
   const route = useRoute<any>();
   const { t } = useI18n();
+  const theme = useTheme();
 
   const selectedAddress = useDeliveryAddress((s) => s.selectedAddress);
   const selectedAddressId = useDeliveryAddress((s) => s.selectedAddressId);
@@ -97,6 +97,12 @@ export default function PaymentScreen() {
   const [note, setNote] = React.useState("");
   const [stripeBusy, setStripeBusy] = React.useState(false);
 
+  // Kupon
+  const [couponOpen, setCouponOpen] = React.useState(false);
+  const [applicable, setApplicable] = React.useState<ApplicableItem[]>([]);
+  const [couponLoading, setCouponLoading] = React.useState(false);
+  const [selectedCouponCampaignId, setSelectedCouponCampaignId] = React.useState<string | null>(null);
+
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
 
   const [msgOpen, setMsgOpen] = React.useState(false);
@@ -153,7 +159,32 @@ const metaSrc = preview ?? r;
 const meta = React.useMemo(() => (metaSrc ? pickDeliveryMeta(metaSrc) : null), [metaSrc]);
   const deliveryFee = Number(meta?.deliveryFee || 0);
   const minOrder = typeof meta?.minOrder === "number" ? meta?.minOrder : null;
-  const total = subtotal + deliveryFee;
+  const baseTotal = subtotal + deliveryFee;
+
+  const selectedCoupon = applicable.find((a) => a.campaign._id === selectedCouponCampaignId) ?? null;
+  const couponDiscount = selectedCoupon?.discount ?? 0;
+  const total = Math.max(baseTotal - couponDiscount, 0);
+
+  const openCouponSheet = React.useCallback(async () => {
+    const rid = r?._id ? String(r._id) : restaurantIdParam || cartRestaurantId;
+    if (!rid) return;
+    setCouponOpen(true);
+    setCouponLoading(true);
+    try {
+      const res = await getApplicable({
+        surface: "restaurant",
+        storeId: String(rid),
+        subtotal,
+        deliveryFee,
+        paymentMethod: method,
+      });
+      setApplicable(res.items);
+    } catch {
+      setApplicable([]);
+    } finally {
+      setCouponLoading(false);
+    }
+  }, [r?._id, restaurantIdParam, cartRestaurantId, subtotal, deliveryFee, method]);
 
   function buildAddressText(a: any): string {
     if (!a) return "";
@@ -299,6 +330,7 @@ return {
         addressId: String(addressId),
         paymentMethod: method,
         hexId,
+        couponCampaignId: selectedCouponCampaignId ?? undefined,
 
         // ✅ order-level note
         customerNote: note?.trim() || undefined,
@@ -406,9 +438,9 @@ return {
 
   if (loading) {
     return (
-      <View style={styles.center}>
+      <View style={{ flex: 1, backgroundColor: theme.colors.background, alignItems: "center", justifyContent: "center" }}>
         <ActivityIndicator />
-        <Text secondary style={styles.centerHint}>
+        <Text secondary style={{ marginTop: 8 }}>
           {safeT("delivery.loadingPayment", { defaultValue: "Ödeme ekranı hazırlanıyor…" })}
         </Text>
       </View>
@@ -417,17 +449,26 @@ return {
 
   if (!r || count === 0) {
     return (
-      <View style={[styles.center, { padding: 24, gap: 10 }]}>
-        <Ionicons name="alert-circle-outline" size={44} color={DeliveryColors.muted} />
-        <Text style={styles.emptyTitle}>
+      <View style={{ flex: 1, backgroundColor: theme.colors.background, alignItems: "center", justifyContent: "center", padding: theme.space[6], gap: 10 }}>
+        <Ionicons name="alert-circle-outline" size={44} color={theme.colors.textSecondary} />
+        <Text style={{ fontWeight: "900", color: theme.colors.textPrimary, fontSize: 16 }}>
           {safeT("delivery.paymentUnavailable", { defaultValue: "Ödeme ekranı açılamadı" })}
         </Text>
         <Text secondary style={{ textAlign: "center" }}>
           {safeT("delivery.paymentUnavailableHint", { defaultValue: "Sepet boş olabilir veya restoran bilgisi alınamadı." })}
         </Text>
 
-        <Pressable onPress={() => nav.goBack()} style={styles.primaryBtn}>
-          <Text style={styles.primaryBtnText}>
+        <Pressable
+          onPress={() => nav.goBack()}
+          style={{
+            marginTop: 10,
+            backgroundColor: theme.colors.primary,
+            borderRadius: theme.radius.lg,
+            paddingHorizontal: 14,
+            paddingVertical: 10,
+          }}
+        >
+          <Text style={{ color: theme.colors.textInverse, fontWeight: "900" }}>
             {safeT("common.back", { defaultValue: "Geri" })}
           </Text>
         </Pressable>
@@ -436,20 +477,41 @@ return {
   }
 
   return (
-    <View style={styles.root}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       {/* Header */}
-      <View style={styles.header}>
-        <Pressable onPress={() => nav.goBack()} style={styles.iconBtn}>
-          <Ionicons name="arrow-back" size={20} color={DeliveryColors.text} />
+      <View
+        style={{
+          paddingHorizontal: DeliverySpacing.screenX,
+          paddingTop: 12,
+          paddingBottom: 10,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 10,
+        }}
+      >
+        <Pressable
+          onPress={() => nav.goBack()}
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            backgroundColor: theme.colors.surface,
+            borderWidth: 1,
+            borderColor: theme.colors.borderDefault,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Ionicons name="arrow-back" size={20} color={theme.colors.textPrimary} />
         </Pressable>
 
         <View style={{ flex: 1, alignItems: "center" }}>
-          <Text style={styles.headerTitle}>
+          <Text style={{ fontWeight: "900", color: theme.colors.textPrimary, fontSize: 16 }}>
             {safeT("delivery.paymentTitle", { defaultValue: "Ödeme" })}
           </Text>
-          <Text secondary style={styles.headerSub}>
+          <Text secondary style={{ marginTop: 2, fontSize: 12, color: theme.colors.textSecondary, fontWeight: "800" }}>
             {safeT("delivery.summaryShort", { defaultValue: "Toplam" })}:{" "}
-            <Text style={{ fontWeight: "900", color: DeliveryColors.text }}>
+            <Text style={{ fontWeight: "900", color: theme.colors.textPrimary }}>
               {formatMoney(total, symbol)}
             </Text>
           </Text>
@@ -466,32 +528,44 @@ return {
         }}
       >
         {/* Restaurant */}
-        <Card>
-          <View style={styles.cardTopRow}>
+        <Card theme={theme}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
             <View style={{ flex: 1, gap: 4 }}>
-              <Text style={styles.h2}>{r.name}</Text>
-              <Text secondary style={styles.subline}>
+              <Text style={{ fontWeight: "900", color: theme.colors.textPrimary, fontSize: 15 }}>{r.name}</Text>
+              <Text secondary style={{ fontSize: 12, fontWeight: "800", color: theme.colors.textSecondary }}>
                 {safeT("delivery.itemsCount", { defaultValue: "Ürün" })}:{" "}
-                <Text style={{ fontWeight: "900", color: DeliveryColors.text }}>{count}</Text>
+                <Text style={{ fontWeight: "900", color: theme.colors.textPrimary }}>{count}</Text>
               </Text>
             </View>
 
-            <View style={styles.moneyPill}>
-              <Ionicons name="cash-outline" size={14} color={DeliveryColors.primary} />
-              <Text style={styles.moneyPillText}>{formatMoney(total, symbol)}</Text>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
+                paddingHorizontal: 10,
+                paddingVertical: 8,
+                borderRadius: 999,
+                backgroundColor: theme.colors.primarySoft,
+                borderWidth: 1,
+                borderColor: theme.colors.borderDefault,
+              }}
+            >
+              <Ionicons name="cash-outline" size={14} color={theme.colors.primary} />
+              <Text style={{ fontWeight: "900", color: theme.colors.primary }}>{formatMoney(total, symbol)}</Text>
             </View>
           </View>
 
-          <View style={styles.chipsRow}>
-            <MetaChip icon="time-outline" text={meta?.etaText || "—"} />
-            <MetaChip icon="navigate-outline" text={meta?.distanceText || "—"} />
+          <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+            <MetaChip theme={theme} icon="time-outline" text={meta?.etaText || "—"} />
+            <MetaChip theme={theme} icon="navigate-outline" text={meta?.distanceText || "—"} />
           </View>
         </Card>
 
         {/* Address */}
-        <Card>
-          <View style={styles.cardHeadRow}>
-            <Text style={styles.cardTitle}>
+        <Card theme={theme}>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+            <Text style={{ fontWeight: "900", color: theme.colors.textPrimary }}>
               {safeT("delivery.address", { defaultValue: "Adres" })}
             </Text>
 
@@ -502,40 +576,63 @@ return {
                   currentAddressId: addressId,
                 });
               }}
-              style={styles.pillBtn}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
+                paddingHorizontal: 10,
+                paddingVertical: 8,
+                borderRadius: 999,
+                backgroundColor: theme.colors.surface,
+                borderWidth: 1,
+                borderColor: theme.colors.borderDefault,
+              }}
             >
-              <Ionicons name="create-outline" size={16} color={DeliveryColors.primary} />
-              <Text style={styles.pillBtnText}>
+              <Ionicons name="create-outline" size={16} color={theme.colors.primary} />
+              <Text style={{ fontWeight: "900", color: theme.colors.primary, fontSize: 12 }}>
                 {safeT("delivery.edit", { defaultValue: "Düzenle" })}
               </Text>
             </Pressable>
           </View>
 
-          <View style={styles.addrRow}>
-            <View style={styles.addrIcon}>
-              <Ionicons name="location-outline" size={16} color={DeliveryColors.primary} />
+          <View style={{ flexDirection: "row", gap: 10, alignItems: "flex-start" }}>
+            <View
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: 15,
+                backgroundColor: theme.colors.primarySoft,
+                borderWidth: 1,
+                borderColor: theme.colors.borderDefault,
+                alignItems: "center",
+                justifyContent: "center",
+                marginTop: 1,
+              }}
+            >
+              <Ionicons name="location-outline" size={16} color={theme.colors.primary} />
             </View>
-            <Text secondary style={styles.addrText}>
+            <Text secondary style={{ flex: 1, fontSize: 12, lineHeight: 18 }}>
               {addressText || safeT("delivery.addressMissing", { defaultValue: "Teslimat adresi seçilmedi. Lütfen bir adres seçin." })}
             </Text>
           </View>
         </Card>
 
         {/* Payment method */}
-        <Card>
-          <Text style={styles.cardTitle}>
+        <Card theme={theme}>
+          <Text style={{ fontWeight: "900", color: theme.colors.textPrimary }}>
             {safeT("delivery.paymentMethod", { defaultValue: "Ödeme Yöntemi" })}
           </Text>
 
-          <View style={styles.methodSection}>
+          <View style={{ position: "relative" }}>
           <View
-            style={styles.methodRow}
+            style={{ flexDirection: "row", gap: 10 }}
             onLayout={(e) => {
               const layout = e.nativeEvent.layout;
               setMethodRowLayout({ y: layout.y, height: layout.height });
             }}
           >
             <MethodPill
+              theme={theme}
               active={method === "card"}
               icon="card-outline"
               label={safeT("delivery.payOnline", { defaultValue: "Online Ödeme" })}
@@ -545,6 +642,7 @@ return {
               }}
             />
             <MethodPill
+              theme={theme}
               active={method !== "card"}
               icon="home-outline"
               label={safeT("delivery.payAtDoor", { defaultValue: "Kapıda" })}
@@ -561,36 +659,44 @@ return {
 
           {doorOpen && (
             <View
-              style={[
-                styles.doorOptions,
-                styles.doorOptionsFloat,
-                {
-                  top: (methodRowLayout ? methodRowLayout.y + methodRowLayout.height : 0) + 8,
-                  left: doorAnchor?.x ?? 0,
-                  width: doorAnchor?.width ?? "100%",
-                },
-              ]}
+              style={{
+                gap: 8,
+                position: "absolute",
+                zIndex: 5,
+                elevation: 5,
+                top: (methodRowLayout ? methodRowLayout.y + methodRowLayout.height : 0) + 8,
+                left: doorAnchor?.x ?? 0,
+                width: doorAnchor?.width ?? "100%",
+              }}
             >
               <Pressable
                 onPress={() => {
                   setMethod("card_on_delivery");
                   setDoorOpen(true);
                 }}
-                style={[
-                  styles.doorBtn,
-                  method === "card_on_delivery" ? styles.doorBtnActive : styles.doorBtnInactive,
-                ]}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                  paddingVertical: 12,
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  backgroundColor: method === "card_on_delivery" ? theme.colors.primary : theme.colors.surface,
+                  borderColor: theme.colors.primary,
+                }}
               >
                 <Ionicons
                   name="card-outline"
                   size={18}
-                  color={method === "card_on_delivery" ? "#fff" : DeliveryColors.primary}
+                  color={method === "card_on_delivery" ? theme.colors.textInverse : theme.colors.primary}
                 />
                 <Text
-                  style={[
-                    styles.doorBtnText,
-                    { color: method === "card_on_delivery" ? "#fff" : DeliveryColors.primary },
-                  ]}
+                  style={{
+                    fontWeight: "900",
+                    fontSize: 13,
+                    color: method === "card_on_delivery" ? theme.colors.textInverse : theme.colors.primary,
+                  }}
                 >
                   {safeT("delivery.payDoorCard", { defaultValue: "Kapıda Kart" })}
                 </Text>
@@ -601,21 +707,29 @@ return {
                   setMethod("cash");
                   setDoorOpen(true);
                 }}
-                style={[
-                  styles.doorBtn,
-                  method === "cash" ? styles.doorBtnActive : styles.doorBtnInactive,
-                ]}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                  paddingVertical: 12,
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  backgroundColor: method === "cash" ? theme.colors.primary : theme.colors.surface,
+                  borderColor: theme.colors.primary,
+                }}
               >
                 <Ionicons
                   name="cash-outline"
                   size={18}
-                  color={method === "cash" ? "#fff" : DeliveryColors.primary}
+                  color={method === "cash" ? theme.colors.textInverse : theme.colors.primary}
                 />
                 <Text
-                  style={[
-                    styles.doorBtnText,
-                    { color: method === "cash" ? "#fff" : DeliveryColors.primary },
-                  ]}
+                  style={{
+                    fontWeight: "900",
+                    fontSize: 13,
+                    color: method === "cash" ? theme.colors.textInverse : theme.colors.primary,
+                  }}
                 >
                   {safeT("delivery.payDoorCash", { defaultValue: "Kapıda Nakit" })}
                 </Text>
@@ -629,44 +743,136 @@ return {
               {safeT("delivery.note", { defaultValue: "Not (opsiyonel)" })}
             </Text>
 
-            <View style={styles.noteBox}>
+            <View
+              style={{
+                borderWidth: 1,
+                borderColor: theme.colors.borderDefault,
+                borderRadius: 14,
+                backgroundColor: theme.colors.surface,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+              }}
+            >
               <TextInput
                 value={note}
                 onChangeText={setNote}
                 placeholder={safeT("delivery.notePlaceholder", { defaultValue: "Örn: Zil çalışmıyor, arayın." })}
-                placeholderTextColor={DeliveryColors.muted}
-                style={styles.noteInput}
+                placeholderTextColor={theme.colors.textSecondary}
+                style={{ color: theme.colors.textPrimary, fontWeight: "700" }}
                 multiline
               />
             </View>
 
-            <Text secondary style={styles.noteHint}>
+            <Text secondary style={{ fontSize: 11, lineHeight: 16 }}>
               {safeT("delivery.noteHint", { defaultValue: "Bu not siparişin tamamı için geçerlidir." })}
             </Text>
           </View>
           </View>
         </Card>
 
+        {/* Kupon uygula */}
+        <Card theme={theme} style={{ padding: 0 }}>
+          <Pressable
+            onPress={selectedCoupon ? () => setSelectedCouponCampaignId(null) : openCouponSheet}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 10,
+              padding: 14,
+            }}
+          >
+            <View
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: 15,
+                backgroundColor: theme.colors.primarySoft,
+                borderWidth: 1,
+                borderColor: theme.colors.borderDefault,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Ionicons name="pricetag-outline" size={16} color={theme.colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              {selectedCoupon ? (
+                <>
+                  <Text style={{ fontWeight: "900", color: theme.colors.textPrimary, fontSize: 13 }} numberOfLines={1}>
+                    {selectedCoupon.campaign.title}
+                  </Text>
+                  <Text style={{ fontSize: 11, fontWeight: "800", color: theme.colors.primary, marginTop: 1 }}>
+                    {discountSummary(selectedCoupon.campaign.discount, safeT)}
+                  </Text>
+                </>
+              ) : (
+                <Text style={{ fontWeight: "900", color: theme.colors.textPrimary, fontSize: 13 }}>
+                  {safeT("promotions.apply", { defaultValue: "Kupon uygula" })}
+                </Text>
+              )}
+            </View>
+            <Text style={{ fontSize: 12, fontWeight: "900", color: theme.colors.primary }}>
+              {selectedCoupon
+                ? safeT("promotions.removeCoupon", { defaultValue: "Kaldır" })
+                : safeT("common.select", { defaultValue: "Seç" })}
+            </Text>
+          </Pressable>
+        </Card>
+
         {/* Summary */}
-        <Card>
-          <Row label={safeT("delivery.subtotal", { defaultValue: "Ara Toplam" })} value={formatMoney(subtotal, symbol)} />
-          <Row label={safeT("delivery.deliveryFee", { defaultValue: "Teslimat" })} value={formatMoney(deliveryFee, symbol)} />
-          <Divider />
-          <Row strong label={safeT("delivery.total", { defaultValue: "Toplam" })} value={formatMoney(total, symbol)} />
+        <Card theme={theme}>
+          <Row theme={theme} label={safeT("delivery.subtotal", { defaultValue: "Ara Toplam" })} value={formatMoney(subtotal, symbol)} />
+          <Row theme={theme} label={safeT("delivery.deliveryFee", { defaultValue: "Teslimat" })} value={formatMoney(deliveryFee, symbol)} />
+          {couponDiscount > 0 && (
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <Text style={{ fontSize: 13, fontWeight: "800", color: theme.colors.primary }}>
+                {safeT("promotions.discountLine", { defaultValue: "İndirim" })}
+              </Text>
+              <Text style={{ fontSize: 13, fontWeight: "900", color: theme.colors.primary }}>
+                -{formatMoney(couponDiscount, symbol)}
+              </Text>
+            </View>
+          )}
+          <Divider theme={theme} />
+          <Row theme={theme} strong label={safeT("delivery.total", { defaultValue: "Toplam" })} value={formatMoney(total, symbol)} />
 
           {minOrder != null && subtotal < minOrder && (
-            <View style={styles.warnBox}>
-              <Ionicons name="alert-circle-outline" size={18} color={DeliveryColors.primary} />
-              <Text style={styles.warnText}>
+            <View
+              style={{
+                marginTop: 6,
+                padding: 10,
+                borderRadius: 14,
+                backgroundColor: theme.colors.primarySoft,
+                borderWidth: 1,
+                borderColor: theme.colors.borderDefault,
+                flexDirection: "row",
+                gap: 8,
+                alignItems: "center",
+              }}
+            >
+              <Ionicons name="alert-circle-outline" size={18} color={theme.colors.primary} />
+              <Text style={{ fontSize: 12, fontWeight: "900", color: theme.colors.textPrimary, flex: 1 }}>
                 {safeT("delivery.minOrderWarn", { defaultValue: "Minimum sepet tutarına ulaşmadan sipariş veremezsiniz." })}
               </Text>
             </View>
           )}
 
           {!token && (
-            <View style={[styles.warnBox, { backgroundColor: "#F3F4F6", borderColor: DeliveryColors.line }]}>
-              <Ionicons name="log-in-outline" size={18} color={DeliveryColors.text} />
-              <Text style={styles.warnText}>
+            <View
+              style={{
+                marginTop: 6,
+                padding: 10,
+                borderRadius: 14,
+                backgroundColor: theme.colors.surfaceAlt,
+                borderWidth: 1,
+                borderColor: theme.colors.borderDefault,
+                flexDirection: "row",
+                gap: 8,
+                alignItems: "center",
+              }}
+            >
+              <Ionicons name="log-in-outline" size={18} color={theme.colors.textPrimary} />
+              <Text style={{ fontSize: 12, fontWeight: "900", color: theme.colors.textPrimary, flex: 1 }}>
                 {safeT("delivery.loginToOrder", { defaultValue: "Sipariş vermek için giriş yapmalısınız." })}
               </Text>
             </View>
@@ -679,59 +885,187 @@ return {
         onPress={onSubmit}
         disabled={!canSubmit}
         style={[
-          styles.bottomCta,
+          {
+            position: "absolute",
+            left: DeliverySpacing.screenX,
+            right: DeliverySpacing.screenX,
+            bottom: 14,
+            backgroundColor: theme.colors.primary,
+            borderRadius: theme.radius.xl,
+            paddingHorizontal: 14,
+            paddingVertical: 12,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          },
           DeliveryShadow.floating,
           !canSubmit ? { opacity: 0.55 } : null,
         ]}
       >
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
           {submitting || stripeBusy ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={theme.colors.textInverse} />
           ) : (
-            <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+            <Ionicons name="checkmark-circle-outline" size={20} color={theme.colors.textInverse} />
           )}
 
           <View>
-            <Text style={styles.bottomTitle}>
+            <Text style={{ color: theme.colors.textInverse, fontWeight: "900" }}>
               {safeT("delivery.placeOrder", { defaultValue: "Siparişi Onayla" })}
             </Text>
-            <Text style={styles.bottomValue}>{formatMoney(total, symbol)}</Text>
+            <Text style={{ color: "rgba(255,255,255,0.9)", fontWeight: "900", marginTop: 2 }}>{formatMoney(total, symbol)}</Text>
           </View>
         </View>
 
-        <Ionicons name="chevron-forward" size={20} color="#fff" />
+        <Ionicons name="chevron-forward" size={20} color={theme.colors.textInverse} />
       </Pressable>
+
+      {/* Kupon seçim sheet'i */}
+      <Modal visible={couponOpen} transparent animationType="slide" onRequestClose={() => setCouponOpen(false)}>
+        <Pressable style={{ flex: 1, backgroundColor: theme.colors.overlay }} onPress={() => setCouponOpen(false)} />
+        <View
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: theme.colors.surface,
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            paddingTop: 12,
+            paddingHorizontal: DeliverySpacing.screenX,
+            paddingBottom: 24 + (Platform.OS === "ios" ? 10 : 0),
+            maxHeight: "70%",
+          }}
+        >
+          <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: theme.colors.borderDefault, alignSelf: "center", marginBottom: 16 }} />
+          <Text style={{ fontSize: 16, fontWeight: "900", color: theme.colors.textPrimary, marginBottom: 12 }}>
+            {safeT("promotions.applyTitle", { defaultValue: "Kupon seç" })}
+          </Text>
+
+          {couponLoading ? (
+            <View style={{ paddingVertical: 32, alignItems: "center" }}>
+              <ActivityIndicator color={theme.colors.primary} />
+            </View>
+          ) : applicable.length === 0 ? (
+            <Text secondary style={{ textAlign: "center", paddingVertical: 24 }}>
+              {safeT("promotions.noApplicable", { defaultValue: "Bu sepet için uygun kupon yok." })}
+            </Text>
+          ) : (
+            <ScrollView style={{ marginBottom: 8 }} contentContainerStyle={{ gap: 8 }}>
+              {applicable.map((item) => {
+                const active = item.campaign._id === selectedCouponCampaignId;
+                return (
+                  <Pressable
+                    key={item.campaign._id}
+                    onPress={() => {
+                      setSelectedCouponCampaignId(item.campaign._id);
+                      setCouponOpen(false);
+                    }}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: 12,
+                      borderRadius: 14,
+                      borderWidth: active ? 2 : 1,
+                      borderColor: active ? theme.colors.primary : theme.colors.borderDefault,
+                      backgroundColor: active ? theme.colors.primarySoft : theme.colors.surfaceAlt,
+                    }}
+                  >
+                    <Ionicons name="pricetag" size={20} color={theme.colors.primary} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontWeight: "900", color: theme.colors.textPrimary }} numberOfLines={1}>
+                        {item.campaign.title}
+                      </Text>
+                      <Text style={{ fontSize: 12, fontWeight: "800", color: theme.colors.primary, marginTop: 1 }}>
+                        {discountSummary(item.campaign.discount, safeT)}
+                      </Text>
+                    </View>
+                    <Text style={{ fontWeight: "900", color: theme.colors.primary }}>
+                      -{formatMoney(item.discount, symbol)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+              {selectedCouponCampaignId && (
+                <Pressable
+                  onPress={() => {
+                    setSelectedCouponCampaignId(null);
+                    setCouponOpen(false);
+                  }}
+                  style={{ paddingVertical: 12, alignItems: "center" }}
+                >
+                  <Text style={{ fontWeight: "900", color: theme.colors.error }}>
+                    {safeT("promotions.removeCoupon", { defaultValue: "Kaldır" })}
+                  </Text>
+                </Pressable>
+              )}
+            </ScrollView>
+          )}
+        </View>
+      </Modal>
 
       {/* Uyarı / Bilgi Modal */}
       <Modal visible={msgOpen} transparent animationType="fade" onRequestClose={() => setMsgOpen(false)}>
-        <View style={styles.modalOverlay}>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: theme.colors.overlay,
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 20,
+          }}
+        >
           <View
-            style={[
-              styles.modalCard,
-              msgKind === "error"
-                ? { borderColor: "#FCA5A5" }
-                : msgKind === "warn"
-                ? { borderColor: "#FDE68A" }
-                : { borderColor: DeliveryColors.line },
-            ]}
+            style={{
+              backgroundColor: theme.colors.surface,
+              borderRadius: 14,
+              width: "100%",
+              padding: theme.space[4],
+              borderWidth: 1,
+              borderColor:
+                msgKind === "error"
+                  ? theme.colors.error
+                  : msgKind === "warn"
+                  ? theme.colors.warning
+                  : theme.colors.borderDefault,
+            }}
           >
             <Text
-              style={[
-                styles.modalTitle,
-                msgKind === "error"
-                  ? { color: "#B91C1C" }
-                  : msgKind === "warn"
-                  ? { color: "#92400E" }
-                  : { color: DeliveryColors.text },
-              ]}
+              style={{
+                fontSize: 16,
+                fontWeight: "900",
+                marginBottom: 6,
+                color:
+                  msgKind === "error"
+                    ? theme.colors.error
+                    : msgKind === "warn"
+                    ? theme.colors.warning
+                    : theme.colors.textPrimary,
+              }}
             >
               {msgTitle || safeT("common.info", { defaultValue: "Bilgi" })}
             </Text>
-            {!!msgBody && <Text secondary style={styles.modalBody}>{msgBody}</Text>}
+            {!!msgBody && (
+              <Text secondary style={{ marginBottom: 12 }}>
+                {msgBody}
+              </Text>
+            )}
 
-            <View style={styles.modalActions}>
-              <Pressable onPress={() => setMsgOpen(false)} style={styles.modalBtnMuted}>
-                <Text style={styles.modalBtnMutedText}>
+            <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 10 }}>
+              <Pressable
+                onPress={() => setMsgOpen(false)}
+                style={{
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: theme.colors.borderDefault,
+                  backgroundColor: theme.colors.surface,
+                }}
+              >
+                <Text style={{ fontWeight: "900", color: theme.colors.textPrimary }}>
                   {safeT("common.close", { defaultValue: "Kapat" })}
                 </Text>
               </Pressable>
@@ -742,9 +1076,14 @@ return {
                     setMsgOpen(false);
                     if (cb) cb();
                   }}
-                  style={styles.modalBtnPrimary}
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                    borderRadius: 10,
+                    backgroundColor: theme.colors.primary,
+                  }}
                 >
-                  <Text style={styles.modalBtnPrimaryText}>
+                  <Text style={{ fontWeight: "900", color: theme.colors.textInverse }}>
                     {msgAction.label || safeT("common.ok", { defaultValue: "Tamam" })}
                   </Text>
                 </Pressable>
@@ -757,19 +1096,46 @@ return {
   );
 }
 
-function Card(props: { children: any; style?: any }) {
+function Card(props: { children: any; style?: any; theme: ReturnType<typeof useTheme> }) {
+  const { theme } = props;
   return (
-    <View style={[styles.card, DeliveryShadow.card, props.style]}>
+    <View
+      style={[
+        {
+          backgroundColor: theme.colors.surface,
+          borderRadius: theme.radius.xl,
+          borderWidth: 1,
+          borderColor: theme.colors.borderDefault,
+          padding: 14,
+          gap: 10,
+        },
+        DeliveryShadow.card,
+        props.style,
+      ]}
+    >
       {props.children}
     </View>
   );
 }
 
-function MetaChip(props: { icon: any; text: string }) {
+function MetaChip(props: { icon: any; text: string; theme: ReturnType<typeof useTheme> }) {
+  const { theme } = props;
   return (
-    <View style={styles.chip}>
-      <Ionicons name={props.icon} size={14} color={DeliveryColors.primary} />
-      <Text style={styles.chipText}>{props.text}</Text>
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+        borderRadius: 999,
+        backgroundColor: theme.colors.surfaceAlt,
+        borderWidth: 1,
+        borderColor: theme.colors.borderDefault,
+      }}
+    >
+      <Ionicons name={props.icon} size={14} color={theme.colors.primary} />
+      <Text style={{ fontSize: 12, fontWeight: "900", color: theme.colors.textSecondary }}>{props.text}</Text>
     </View>
   );
 }
@@ -780,277 +1146,65 @@ function MethodPill(props: {
   label: string;
   onPress: () => void;
   onLayout?: (e: LayoutChangeEvent) => void;
+  theme: ReturnType<typeof useTheme>;
 }) {
+  const { theme } = props;
   return (
     <Pressable
       onPress={props.onPress}
       onLayout={props.onLayout}
-      style={[
-        styles.methodPill,
-        props.active ? styles.methodPillActive : null,
-      ]}
+      style={{
+        flex: 1,
+        borderRadius: 16,
+        paddingVertical: 12,
+        paddingHorizontal: 12,
+        borderWidth: 1,
+        borderColor: props.active ? theme.colors.primary : theme.colors.borderDefault,
+        backgroundColor: props.active ? theme.colors.primary : theme.colors.surface,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+      }}
     >
-      <Ionicons name={props.icon} size={18} color={props.active ? "#fff" : DeliveryColors.text} />
-      <Text style={[styles.methodPillText, props.active ? { color: "#fff" } : null]}>
+      <Ionicons
+        name={props.icon}
+        size={18}
+        color={props.active ? theme.colors.textInverse : theme.colors.textPrimary}
+      />
+      <Text
+        style={{
+          fontWeight: "900",
+          color: props.active ? theme.colors.textInverse : theme.colors.textPrimary,
+        }}
+      >
         {props.label}
       </Text>
     </Pressable>
   );
 }
 
-function Row(props: { label: string; value: string; strong?: boolean }) {
+function Row(props: { label: string; value: string; strong?: boolean; theme: ReturnType<typeof useTheme> }) {
+  const { theme } = props;
   return (
-    <View style={styles.sumRow}>
+    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
       <Text
         secondary
         style={{
           fontSize: 13,
           fontWeight: props.strong ? "900" : "700",
-          color: props.strong ? DeliveryColors.text : DeliveryColors.muted,
+          color: props.strong ? theme.colors.textPrimary : theme.colors.textSecondary,
         }}
       >
         {props.label}
       </Text>
-      <Text style={{ fontSize: 13, fontWeight: "900", color: DeliveryColors.text }}>
+      <Text style={{ fontSize: 13, fontWeight: "900", color: theme.colors.textPrimary }}>
         {props.value}
       </Text>
     </View>
   );
 }
 
-function Divider() {
-  return <View style={styles.divider} />;
+function Divider(props: { theme: ReturnType<typeof useTheme> }) {
+  return <View style={{ height: 1, backgroundColor: props.theme.colors.borderDefault, opacity: 0.7 }} />;
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: DeliveryColors.bg },
-
-  center: {
-    flex: 1,
-    backgroundColor: DeliveryColors.bg,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  centerHint: { marginTop: 8 },
-
-  emptyTitle: { fontWeight: "900", color: DeliveryColors.text, fontSize: 16 },
-
-  header: {
-    paddingHorizontal: DeliverySpacing.screenX,
-    paddingTop: 12,
-    paddingBottom: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  headerTitle: { fontWeight: "900", color: DeliveryColors.text, fontSize: 16 },
-  headerSub: { marginTop: 2, fontSize: 12, color: DeliveryColors.muted, fontWeight: "800" },
-
-  iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: DeliveryColors.line,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  card: {
-    backgroundColor: DeliveryColors.card,
-    borderRadius: DeliveryRadii.xl,
-    borderWidth: 1,
-    borderColor: DeliveryColors.line,
-    padding: 14,
-    gap: 10,
-  },
-
-  h2: { fontWeight: "900", color: DeliveryColors.text, fontSize: 15 },
-  subline: { fontSize: 12, fontWeight: "800", color: DeliveryColors.muted },
-
-  cardTopRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  moneyPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: "#FFF5F5",
-    borderWidth: 1,
-    borderColor: "#F3DADA",
-  },
-  moneyPillText: { fontWeight: "900", color: DeliveryColors.primary },
-
-  chipsRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
-  chip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: DeliveryColors.chip,
-    borderWidth: 1,
-    borderColor: DeliveryColors.line,
-  },
-  chipText: { fontSize: 12, fontWeight: "900", color: DeliveryColors.chipText },
-
-  cardHeadRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  cardTitle: { fontWeight: "900", color: DeliveryColors.text },
-
-  pillBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: DeliveryColors.line,
-  },
-  pillBtnText: { fontWeight: "900", color: DeliveryColors.primary, fontSize: 12 },
-
-  addrRow: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
-  addrIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "#FFF5F5",
-    borderWidth: 1,
-    borderColor: "#F3DADA",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 1,
-  },
-  addrText: { flex: 1, fontSize: 12, lineHeight: 18 },
-
-  methodPill: {
-    flex: 1,
-    borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: DeliveryColors.line,
-    backgroundColor: "#fff",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  methodPillActive: {
-    borderColor: DeliveryColors.primary,
-    backgroundColor: DeliveryColors.primary,
-  },
-  methodPillText: { fontWeight: "900", color: DeliveryColors.text },
-  methodSection: { position: "relative" },
-  methodRow: { flexDirection: "row", gap: 10 },
-  doorOptions: { gap: 8 },
-  doorOptionsFloat: { position: "absolute", zIndex: 5, elevation: 5 },
-  doorBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 12,
-    borderRadius: 14,
-    borderWidth: 1,
-  },
-  doorBtnActive: {
-    backgroundColor: DeliveryColors.primary,
-    borderColor: DeliveryColors.primary,
-  },
-  doorBtnInactive: {
-    backgroundColor: "#fff",
-    borderColor: DeliveryColors.primary,
-  },
-  doorBtnText: { fontWeight: "900", fontSize: 13 },
-
-  noteBox: {
-    borderWidth: 1,
-    borderColor: DeliveryColors.line,
-    borderRadius: 14,
-    backgroundColor: "#fff",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  noteInput: { color: DeliveryColors.text, fontWeight: "700" },
-  noteHint: { fontSize: 11, lineHeight: 16 },
-
-  sumRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  divider: { height: 1, backgroundColor: DeliveryColors.line, opacity: 0.7 },
-
-  warnBox: {
-    marginTop: 6,
-    padding: 10,
-    borderRadius: 14,
-    backgroundColor: "#FFF5F5",
-    borderWidth: 1,
-    borderColor: "#F3DADA",
-    flexDirection: "row",
-    gap: 8,
-    alignItems: "center",
-  },
-  warnText: { fontSize: 12, fontWeight: "900", color: DeliveryColors.text, flex: 1 },
-
-  primaryBtn: {
-    marginTop: 10,
-    backgroundColor: DeliveryColors.primary,
-    borderRadius: DeliveryRadii.lg,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  primaryBtnText: { color: "#fff", fontWeight: "900" },
-
-  bottomCta: {
-    position: "absolute",
-    left: DeliverySpacing.screenX,
-    right: DeliverySpacing.screenX,
-    bottom: 14,
-    backgroundColor: DeliveryColors.primary,
-    borderRadius: DeliveryRadii.xl,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  bottomTitle: { color: "#fff", fontWeight: "900" },
-  bottomValue: { color: "rgba(255,255,255,0.9)", fontWeight: "900", marginTop: 2 },
-
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  modalCard: {
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    width: "100%",
-    padding: 16,
-    borderWidth: 1,
-  },
-  modalTitle: { fontSize: 16, fontWeight: "900", marginBottom: 6 },
-  modalBody: { marginBottom: 12 },
-  modalActions: { flexDirection: "row", justifyContent: "flex-end", gap: 10 },
-  modalBtnMuted: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: DeliveryColors.line,
-    backgroundColor: "#fff",
-  },
-  modalBtnMutedText: { fontWeight: "900", color: DeliveryColors.text },
-  modalBtnPrimary: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    backgroundColor: DeliveryColors.primary,
-  },
-  modalBtnPrimaryText: { fontWeight: "900", color: "#fff" },
-});

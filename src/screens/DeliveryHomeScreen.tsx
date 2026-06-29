@@ -25,6 +25,7 @@ import { useI18n } from "../i18n";
 import { useRegion } from "../store/useRegion";
 import { useShallow } from "zustand/react/shallow";
 import { listDeliveryRestaurants } from "../api/delivery";
+import { getStoreBadges } from "../api/promotions.api";
 import type { DeliveryRestaurant } from "../delivery/deliveryTypes";
 import { DeliverySpacing } from "../delivery/deliveryTheme";
 import {
@@ -232,6 +233,7 @@ export default function DeliveryHomeScreen() {
   const cartCurrency = useCart((s) => s.currencySymbol);
 
   const [data, setData] = React.useState<DeliveryRestaurant[]>([]);
+  const [badges, setBadges] = React.useState<Record<string, string>>({});
   const [initialLoading, setInitialLoading] = React.useState(true);
   const [fetching, setFetching] = React.useState(false);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -329,7 +331,18 @@ export default function DeliveryHomeScreen() {
 
       const resp = await listDeliveryRestaurants(args);
       const items = Array.isArray(resp?.items) ? resp.items : [];
-      setData(items.filter((r) => r?.deliveryActive !== false));
+      const active = items.filter((r) => r?.deliveryActive !== false);
+      setData(active);
+
+      // Promosyon rozetleri (tek istek)
+      const ids = active.map((r) => String(r?._id || "")).filter(Boolean);
+      if (ids.length > 0) {
+        getStoreBadges("restaurant", ids)
+          .then((res) => setBadges(res.badges))
+          .catch(() => {});
+      } else {
+        setBadges({});
+      }
     } catch (e: any) {
       setError(e?.response?.data?.message || e?.message || t("delivery.errorGeneric"));
       setData([]);
@@ -379,6 +392,7 @@ export default function DeliveryHomeScreen() {
     const distanceText = clampStr(meta?.distanceText) || null;
     const rating = typeof item.rating === "number" ? item.rating : null;
     const isFreeDelivery = item.deliveryFee === 0;
+    const promoBadge = badges[String(item._id)] || null;
 
     return (
       <AnimCard index={index}>
@@ -434,6 +448,12 @@ export default function DeliveryHomeScreen() {
 
               {/* Chip'ler */}
               <View style={rc.chipRow}>
+                {promoBadge ? (
+                  <View style={rc.promoBadge}>
+                    <Ionicons name="pricetag" size={11} color="#fff" />
+                    <Text style={rc.promoBadgeText} numberOfLines={1}>{promoBadge}</Text>
+                  </View>
+                ) : null}
                 {distanceText ? (
                   <View style={[rc.chip, { backgroundColor: "#FFF7ED", borderColor: "#FED7AA" }]}>
                     <Ionicons name="navigate-outline" size={11} color="#C2410C" />
@@ -457,7 +477,7 @@ export default function DeliveryHomeScreen() {
         </Pressable>
       </AnimCard>
     );
-  }, [goRestaurant, region, theme]);
+  }, [goRestaurant, region, theme, badges]);
 
   const isLoading = !regionHydrated || initialLoading;
 
@@ -731,6 +751,12 @@ const rc = StyleSheet.create({
   },
   minOrderText: { fontSize: 11, fontWeight: "800", color: "#C2410C" },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  promoBadge: {
+    flexDirection: "row", alignItems: "center", gap: 4,
+    paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8,
+    backgroundColor: "#C2410C", maxWidth: 160,
+  },
+  promoBadgeText: { fontSize: 11, fontWeight: "800", color: "#fff" },
   chip: {
     flexDirection: "row", alignItems: "center", gap: 4,
     paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, borderWidth: 1,

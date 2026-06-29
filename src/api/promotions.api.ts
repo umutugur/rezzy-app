@@ -56,7 +56,7 @@ export type StoreBadgesResponse = {
   badges: Record<string, string>;
 };
 
-export type PromoSurface = "market";
+export type PromoSurface = "market" | "restaurant";
 
 // ─── API Functions ──────────────────────────────────────────────────────────────
 
