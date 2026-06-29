@@ -431,12 +431,6 @@ function StoreCard({
         theme.getElevation(1),
       ]}
     >
-      {promoBadge ? (
-        <View style={sc.promoRibbon}>
-          <Ionicons name="pricetag" size={10} color="#fff" />
-          <Text style={sc.promoRibbonText} numberOfLines={1}>{promoBadge}</Text>
-        </View>
-      ) : null}
       <View style={sc.row}>
         <View style={sc.logoWrap}>
           {logoUri ? (
@@ -449,6 +443,12 @@ function StoreCard({
         </View>
 
         <View style={{ flex: 1 }}>
+          {promoBadge ? (
+            <View style={sc.promoPill}>
+              <Ionicons name="pricetag" size={10} color="#fff" />
+              <Text style={sc.promoRibbonText} numberOfLines={1}>{promoBadge}</Text>
+            </View>
+          ) : null}
           <View style={sc.nameRow}>
             <Text style={[sc.name, { color: theme.colors.textPrimary }]} numberOfLines={1}>
               {store.name}
@@ -1515,20 +1515,17 @@ const sc = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "#E5E7EB",
   },
   catText: { fontSize: 11, fontWeight: "600", color: "#6B7280" },
-  promoRibbon: {
-    position: "absolute",
-    top: 10,
-    right: 0,
-    zIndex: 2,
+  promoPill: {
+    alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    maxWidth: "55%",
+    maxWidth: "100%",
     backgroundColor: "#15803D",
     paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderTopLeftRadius: 8,
-    borderBottomLeftRadius: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    marginBottom: 6,
   },
   promoRibbonText: { fontSize: 10, fontWeight: "800", color: "#fff" },
 });
