@@ -34,7 +34,7 @@
     "loadError": "Kuponlar yüklenemedi.",
     "collectError": "Kupon alınamadı. Tekrar dene.",
     "discount": {
-      "percent": "%{{value}} indirim",
+      "percent": "%{value} indirim",
       "fixed": "{{value}} TL indirim",
       "freeDelivery": "Ücretsiz teslimat",
       "fixedPrice": "Sabit fiyat {{value}} TL"
