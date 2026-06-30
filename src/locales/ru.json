@@ -913,6 +913,15 @@
     "collections": {
       "seeAll": "See all",
       "title": "Collection"
+    },
+    "store": {
+      "delivery": "Доставка",
+      "minOrder": "Мин. заказ",
+      "hours": "Часы",
+      "reviews": "Отзывы",
+      "outOfStock": "Нет в наличии",
+      "noProducts": "Товары не найдены",
+      "noProductsSub": "В этой категории пока нет товаров."
     }
   },
   "myOrders": {

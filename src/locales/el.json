@@ -933,6 +933,15 @@
     "collections": {
       "seeAll": "See all",
       "title": "Collection"
+    },
+    "store": {
+      "delivery": "Παράδοση",
+      "minOrder": "Ελάχ. παραγγελία",
+      "hours": "Ώρες",
+      "reviews": "Αξιολογήσεις",
+      "outOfStock": "Εξαντλήθηκε",
+      "noProducts": "Δεν βρέθηκαν προϊόντα",
+      "noProductsSub": "Δεν υπάρχουν ακόμη προϊόντα σε αυτή την κατηγορία."
     }
   },
   "myOrders": {

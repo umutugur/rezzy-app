@@ -56,6 +56,7 @@ function ProductRow({
   language: string;
 }) {
   const theme = useTheme();
+  const { t } = useI18n();
   // For org (chain-catalog) items use isAvailable; for local items fall back to stock count.
   const photoUri = (product.source === "org" ? product.imageUrl : product.photos[0]) ?? product.photos[0] ?? null;
   const outOfStock =
@@ -82,7 +83,7 @@ function ProductRow({
           )}
           {outOfStock && (
             <View style={styles.oosOverlay}>
-              <Text style={styles.oosText}>TÜKENDİ</Text>
+              <Text style={styles.oosText}>{t('market.store.outOfStock').toLocaleUpperCase(language)}</Text>
             </View>
           )}
         </View>
@@ -442,16 +443,16 @@ export default function MarketStoreScreen() {
 
             <View style={[styles.statStrip, { borderColor: theme.colors.borderDefault }]}>
               <StoreStat
-                label="TESLİMAT"
+                label={t('market.store.delivery').toLocaleUpperCase(language)}
                 value={store.deliveryFee === 0 ? t('market.free') : formatCurrency(store.deliveryFee, region, language, 0)}
                 accent={store.deliveryFee === 0}
               />
               {store.minOrderAmount > 0 && <View style={[styles.statDivider, { backgroundColor: theme.colors.borderDefault }]} />}
               {store.minOrderAmount > 0 && (
-                <StoreStat label="MİN. SEPET" value={formatCurrency(store.minOrderAmount, region, language, 0)} />
+                <StoreStat label={t('market.store.minOrder').toLocaleUpperCase(language)} value={formatCurrency(store.minOrderAmount, region, language, 0)} />
               )}
               <View style={[styles.statDivider, { backgroundColor: theme.colors.borderDefault }]} />
-              <StoreStat label="SAATLER" value={`${store.workingHours.open}–${store.workingHours.close}`} />
+              <StoreStat label={t('market.store.hours').toLocaleUpperCase(language)} value={`${store.workingHours.open}–${store.workingHours.close}`} />
             </View>
 
             {store.freeDeliveryThreshold && store.deliveryFee > 0 ? (
@@ -540,8 +541,8 @@ export default function MarketStoreScreen() {
           !loading ? (
             <EmptyState
               illustration="market"
-              title="Ürün bulunamadı"
-              subtitle="Bu kategoride henüz ürün yok."
+              title={t('market.store.noProducts')}
+              subtitle={t('market.store.noProductsSub')}
             />
           ) : null
         }
@@ -560,7 +561,7 @@ export default function MarketStoreScreen() {
               >
                 <Ionicons name="star-outline" size={18} color={theme.market.main} />
                 <Text style={{ ...theme.typography.labelMd, color: theme.colors.textPrimary, flex: 1 }}>
-                  Değerlendirmeler
+                  {t('market.store.reviews')}
                 </Text>
                 <Ionicons name="chevron-forward" size={18} color={theme.colors.textTertiary} />
               </Pressable>
@@ -583,7 +584,7 @@ export default function MarketStoreScreen() {
             ]}
           >
             <Text style={{ ...theme.typography.headingSm, color: theme.colors.textPrimary, flex: 1 }}>
-              Değerlendirmeler
+              {t('market.store.reviews')}
             </Text>
             <Pressable onPress={() => setReviewsOpen(false)} hitSlop={10} style={styles.modalClose}>
               <Ionicons name="close" size={22} color={theme.colors.textSecondary} />
@@ -614,8 +615,8 @@ export default function MarketStoreScreen() {
         >
           <Ionicons name="basket" size={22} color="#fff" />
           <View style={{ flex: 1 }}>
-            <Text style={styles.cartSlabTitle}>SEPETE GİT</Text>
-            <Text style={styles.cartSlabSub}>{cartCount} ürün</Text>
+            <Text style={styles.cartSlabTitle}>{t('market.goToCart').toLocaleUpperCase(language)}</Text>
+            <Text style={styles.cartSlabSub}>{t('market.cartItems', { count: cartCount })}</Text>
           </View>
           <Text style={styles.cartSlabTotal}>{formatCurrency(cartSubtotal, region, language)}</Text>
           <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.9)" />

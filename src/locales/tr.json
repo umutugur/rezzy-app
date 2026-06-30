@@ -973,6 +973,15 @@
     "collections": {
       "seeAll": "Tümünü gör",
       "title": "Koleksiyon"
+    },
+    "store": {
+      "delivery": "Teslimat",
+      "minOrder": "Min. sepet",
+      "hours": "Saatler",
+      "reviews": "Değerlendirmeler",
+      "outOfStock": "Tükendi",
+      "noProducts": "Ürün bulunamadı",
+      "noProductsSub": "Bu kategoride henüz ürün yok."
     }
   },
   "taxi": {

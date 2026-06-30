@@ -1013,6 +1013,15 @@
     "collections": {
       "seeAll": "See all",
       "title": "Collection"
+    },
+    "store": {
+      "delivery": "Delivery",
+      "minOrder": "Min. order",
+      "hours": "Hours",
+      "reviews": "Reviews",
+      "outOfStock": "Out of stock",
+      "noProducts": "No products found",
+      "noProductsSub": "No products in this category yet."
     }
   },
   "taxi": {
