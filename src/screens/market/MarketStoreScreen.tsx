@@ -186,6 +186,25 @@ function CategoryTab({ label, active, onPress }: { label: string; active: boolea
   );
 }
 
+// ─── Mağaza istatistik sütunu ───────────────────────────────────────────────────
+
+function StoreStat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  const theme = useTheme();
+  return (
+    <View style={{ flex: 1 }}>
+      <Text style={{ ...theme.typography.caption, color: theme.colors.textTertiary, letterSpacing: 1, fontFamily: theme.fontFamily.bold }}>
+        {label}
+      </Text>
+      <Text
+        style={{ ...theme.typography.labelLg, marginTop: 3, color: accent ? theme.market.main : theme.colors.textPrimary, fontFamily: theme.fontFamily.extraBold }}
+        numberOfLines={1}
+      >
+        {value}
+      </Text>
+    </View>
+  );
+}
+
 // ─── Ekran ─────────────────────────────────────────────────────────────────────
 
 export default function MarketStoreScreen() {
@@ -376,10 +395,6 @@ export default function MarketStoreScreen() {
     [qtyForProduct, addItem, removeItem, updateQty, navigation, region, language],
   );
 
-  const deliveryLabel = store
-    ? (store.deliveryFee === 0 ? t('market.free') : formatCurrency(store.deliveryFee, region, language, 0))
-    : "";
-
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.surface }]}>
       {/* Store header */}
@@ -414,32 +429,39 @@ export default function MarketStoreScreen() {
             </View>
           </View>
 
-          {/* Açıklama + teslimat/min bilgisi */}
-          <View style={{ paddingHorizontal: 18, paddingTop: 14 }}>
+          {/* Açıklama + bilgi şeridi */}
+          <View style={{ paddingHorizontal: 18, paddingTop: 16 }}>
             {store.description ? (
-              <Text style={{ ...theme.typography.bodySm, color: theme.colors.textSecondary, lineHeight: 19, marginBottom: 10 }} numberOfLines={2}>
-                {store.description}
-              </Text>
-            ) : null}
-            <View style={styles.infoMetaRow}>
-              <View style={styles.infoMetaItem}>
-                <Ionicons name="bicycle-outline" size={15} color={theme.market.main} />
-                <Text style={{ ...theme.typography.bodySm, color: theme.colors.textSecondary }}>
-                  {store.deliveryFee === 0 ? t('market.free') : `${t('delivery.deliveryChip')} ${deliveryLabel}`}
+              <View style={styles.descRow}>
+                <View style={[styles.descRule, { backgroundColor: theme.market.main }]} />
+                <Text style={{ ...theme.typography.bodyMd, color: theme.colors.textSecondary, lineHeight: 21, flex: 1 }} numberOfLines={3}>
+                  {store.description}
                 </Text>
               </View>
+            ) : null}
+
+            <View style={[styles.statStrip, { borderColor: theme.colors.borderDefault }]}>
+              <StoreStat
+                label="TESLİMAT"
+                value={store.deliveryFee === 0 ? t('market.free') : formatCurrency(store.deliveryFee, region, language, 0)}
+                accent={store.deliveryFee === 0}
+              />
+              {store.minOrderAmount > 0 && <View style={[styles.statDivider, { backgroundColor: theme.colors.borderDefault }]} />}
               {store.minOrderAmount > 0 && (
-                <>
-                  <Text style={[styles.metaSep, { color: theme.colors.textTertiary }]}>·</Text>
-                  <View style={styles.infoMetaItem}>
-                    <Ionicons name="receipt-outline" size={15} color={theme.colors.textSecondary} />
-                    <Text style={{ ...theme.typography.bodySm, color: theme.colors.textSecondary }}>
-                      {`Min. ${formatCurrency(store.minOrderAmount, region, language, 0)}`}
-                    </Text>
-                  </View>
-                </>
+                <StoreStat label="MİN. SEPET" value={formatCurrency(store.minOrderAmount, region, language, 0)} />
               )}
+              <View style={[styles.statDivider, { backgroundColor: theme.colors.borderDefault }]} />
+              <StoreStat label="SAATLER" value={`${store.workingHours.open}–${store.workingHours.close}`} />
             </View>
+
+            {store.freeDeliveryThreshold && store.deliveryFee > 0 ? (
+              <View style={styles.freeNote}>
+                <Ionicons name="pricetag" size={13} color={theme.market.main} />
+                <Text style={{ ...theme.typography.caption, color: theme.market.main, fontFamily: theme.fontFamily.bold }}>
+                  {t('market.freeThreshold', { amount: formatCurrency(store.freeDeliveryThreshold, region, language, 0) })}
+                </Text>
+              </View>
+            ) : null}
           </View>
 
           {/* Market içi banner şeridi */}
@@ -618,10 +640,18 @@ const styles = StyleSheet.create({
   heroMetaText: { color: "rgba(255,255,255,0.9)", fontSize: 11.5, letterSpacing: 0.6, fontWeight: "600" },
   heroMetaDot: { color: "rgba(255,255,255,0.55)", fontSize: 13, marginHorizontal: 1 },
 
-  // Teslimat / min satırı (hero altı)
-  infoMetaRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8 },
-  infoMetaItem: { flexDirection: "row", alignItems: "center", gap: 5 },
-  metaSep: { fontSize: 13 },
+  // Açıklama + bilgi şeridi
+  descRow: { flexDirection: "row", gap: 11, marginBottom: 16 },
+  descRule: { width: 3, borderRadius: 2, alignSelf: "stretch" },
+  statStrip: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 13,
+  },
+  statDivider: { width: StyleSheet.hairlineWidth, height: 32, marginHorizontal: 14 },
+  freeNote: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 12 },
 
   // Search
   searchRow: {
