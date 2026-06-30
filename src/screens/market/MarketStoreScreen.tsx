@@ -410,28 +410,37 @@ export default function MarketStoreScreen() {
                 </Pressable>
                 <Text style={styles.heroMetaDot}>·</Text>
                 <Text style={styles.heroMetaText}>{store.totalOrders} {t('market.orders').toLocaleUpperCase()}</Text>
-                <Text style={styles.heroMetaDot}>·</Text>
-                <Ionicons name="bicycle" size={13} color="rgba(255,255,255,0.9)" />
-                <Text style={styles.heroMetaText}>{deliveryLabel.toLocaleUpperCase()}</Text>
               </View>
             </View>
           </View>
 
-          {/* Açıklama + min */}
-          {(store.description || store.minOrderAmount > 0) && (
-            <View style={{ paddingHorizontal: 18, paddingTop: 14 }}>
-              {store.description ? (
-                <Text style={{ ...theme.typography.bodySm, color: theme.colors.textSecondary, lineHeight: 19 }} numberOfLines={2}>
-                  {store.description}
+          {/* Açıklama + teslimat/min bilgisi */}
+          <View style={{ paddingHorizontal: 18, paddingTop: 14 }}>
+            {store.description ? (
+              <Text style={{ ...theme.typography.bodySm, color: theme.colors.textSecondary, lineHeight: 19, marginBottom: 10 }} numberOfLines={2}>
+                {store.description}
+              </Text>
+            ) : null}
+            <View style={styles.infoMetaRow}>
+              <View style={styles.infoMetaItem}>
+                <Ionicons name="bicycle-outline" size={15} color={theme.market.main} />
+                <Text style={{ ...theme.typography.bodySm, color: theme.colors.textSecondary }}>
+                  {store.deliveryFee === 0 ? t('market.free') : `${t('delivery.deliveryChip')} ${deliveryLabel}`}
                 </Text>
-              ) : null}
+              </View>
               {store.minOrderAmount > 0 && (
-                <Text style={{ ...theme.typography.caption, color: theme.colors.textTertiary, fontFamily: theme.fontFamily.bold, letterSpacing: 1, marginTop: store.description ? 8 : 0 }}>
-                  {`MİN. SEPET ${formatCurrency(store.minOrderAmount, region, language, 0)}`}
-                </Text>
+                <>
+                  <Text style={[styles.metaSep, { color: theme.colors.textTertiary }]}>·</Text>
+                  <View style={styles.infoMetaItem}>
+                    <Ionicons name="receipt-outline" size={15} color={theme.colors.textSecondary} />
+                    <Text style={{ ...theme.typography.bodySm, color: theme.colors.textSecondary }}>
+                      {`Min. ${formatCurrency(store.minOrderAmount, region, language, 0)}`}
+                    </Text>
+                  </View>
+                </>
               )}
             </View>
-          )}
+          </View>
 
           {/* Market içi banner şeridi */}
           {storeBanner ? (
@@ -608,6 +617,11 @@ const styles = StyleSheet.create({
   heroMetaStrong: { color: "#fff", fontSize: 13, fontWeight: "800" },
   heroMetaText: { color: "rgba(255,255,255,0.9)", fontSize: 11.5, letterSpacing: 0.6, fontWeight: "600" },
   heroMetaDot: { color: "rgba(255,255,255,0.55)", fontSize: 13, marginHorizontal: 1 },
+
+  // Teslimat / min satırı (hero altı)
+  infoMetaRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8 },
+  infoMetaItem: { flexDirection: "row", alignItems: "center", gap: 5 },
+  metaSep: { fontSize: 13 },
 
   // Search
   searchRow: {
